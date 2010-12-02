@@ -29,6 +29,15 @@ Luego de varios años de experiencia desarrollando interfaces y herramientas par
     <li>Contributentes Notificados</li>
 </ul>
 
+<h3>Modo de uso</h3>
+Basicamente la operatoria es la siguiente:
+<ul>
+    <li>Paso 1: Completar los campos generales del comprobante: <b>{{=A("Comenzar...",_href=URL(r=request,c="emision",f="iniciar"))}}</b></li>
+    <li>Paso 2: Completar los detalles del comprobante (artículos)</li>
+    <li>Paso 3: Confirmar, autorizar y confeccionar la factura</li>
+</ul>
+
+El sitio también contempla la funcionalidad de {{=A("Consultas",_href=URL(r=request,c="consultas",f="index"))}} para revisar las facturas electrónicas (no implementado aún).
 
 <h3>Contacto</h3>
 Los interesados pueden contactarse con:
