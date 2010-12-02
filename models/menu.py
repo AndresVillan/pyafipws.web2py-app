@@ -13,7 +13,21 @@ response.subtitle = T('customize me!')
 ##########################################
 
 response.menu = [
-    (T('Index'), False, URL(request.application,'default','index'), [])
+    (T('Inicio'), False, URL(request.application,'default','index'), []),
+    
+    (T('Emisión'), False, URL(request.application,'emision','iniciar'), []),
+    (T('Consultas'), False, URL(request.application,'consultas','index'), []),    
+
+    (T('Info'), False, None , [
+        (T('Información General'), False, "http://www.sistemasagiles.com.ar/trac/wiki/FacturaElectronica", []),
+        (T('Información Técnica'), False, "http://www.sistemasagiles.com.ar/trac/wiki/ManualPyAfipWs", [
+            (T('WSFEv0'), False, "http://www.sistemasagiles.com.ar/trac/wiki/PyAfipWs", []),
+            (T('WSFEv1'), False, "http://www.sistemasagiles.com.ar/trac/wiki/ProyectoWSFEv1", []),
+            (T('WSMTXCA'), False, "http://www.sistemasagiles.com.ar/trac/wiki/FacturaElectronicaMTXCAService", []),
+            (T('WSFEX'), False, "http://www.sistemasagiles.com.ar/trac/wiki/FacturaElectronicaExportacion", []),
+            (T('WSBFE'), False, "http://www.sistemasagiles.com.ar/trac/wiki/FacturaElectronicaExportacion", []),
+        ]),    
+    ]),
     ]
 
 ##########################################
