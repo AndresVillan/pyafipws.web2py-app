@@ -12,16 +12,21 @@ def iniciar():
     'fecha_venc_pago', 'fecha_serv_desde', 'fecha_serv_hasta', ]
     
     # creo un formulario para el comprobante (TODO: modificar)
-    form = SQLFORM(db.comprobante, fields=campos_generales)
+    form = SQLFORM(db.comprobante, session.comprobante_id, fields=campos_generales)
     
     # valido el formulario (si han enviado datos)
     if form.accepts(request.vars, session, dbio=False):
-        # insertar el comprobante (TODO: modificarlo)
-        id = db.comprobante.insert(**form.vars)
+        if not session.comprobante_id:
+            # insertar el comprobante
+            id = db.comprobante.insert(**form.vars)
+            session.flash = "Comprobante creado..."
+        else:
+            id = session.comprobante_id
+            db(db.comprobante.id==id).update(**form.vars)
+            session.flash = "Comprobante actualizado..."
         # guardo el ID del registro creado en la sesión
         session.comprobante_id = id
         # redirijo a la siguiente página
-        session.flash = "Comprobante creado..."
         redirect(URL("detallar"))
     elif form.errors:
        response.flash = '¡Hay errores en el formulario!'
