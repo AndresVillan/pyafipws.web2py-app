@@ -1,0 +1,13 @@
+{{=SQLTABLE(detalles, 
+        columns=['detalle.codigo','detalle.qty','detalle.umed','detalle.precio','detalle.imp_total',
+                 'detalle.iva_id','detalle.ds', 'detalle.ncm', 'detalle.sec', 'detalle.bonif', 
+                 'detalle.id'],
+        headers={'detalle.codigo':'Codigo','detalle.qty':'Cant.','detalle.umed':'U.Med',
+                 'detalle.precio':'Precio','detalle.imp_total':'Imp.Total',
+                 'detalle.iva_id':'IVA','detalle.ds':'Descripción', 
+                 'detalle.ncm':'NCM', 'detalle.sec':'SEC', 'detalle.bonif':'Bonif.', 'detalle.id': 'ID'},
+        linkto=lambda field, type, ref: URL("editar_detalle.html",args=[field]),
+
+)}}
+
+{{=form}}

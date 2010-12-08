@@ -1,0 +1,10 @@
+[patterns]
+**.py = native
+**.txt = native
+**.html = native
+**.load = native
+**.jpg = BIN
+**.png = BIN
+
+[eol]
+only-consistent = False
