@@ -11,3 +11,25 @@
 )}}
 
 {{=form}}
+
+<SCRIPT TYPE="text/javascript">
+<!-- 
+
+function calculate_total(oform) {
+
+var qty = $('#detalle_qty');
+var price = $('#detalle_precio');
+var total = $('#detalle_imp_total');
+
+t = qty.val() * price.val()
+
+total.val(t)
+
+}
+
+$('#detalle_qty').change(calculate_total);
+$('#detalle_precio').change(calculate_total);
+
+
+// -->
+</SCRIPT>
