@@ -38,6 +38,7 @@ def detallar():
     form = SQLFORM(db.comprobante, session.comprobante_id, fields=campos_encabezado, readonly=True)
     
     comprobante = db(db.comprobante.id==session.comprobante_id).select().first()
+
     return dict(form=form, comprobante=comprobante)
     
 def detalle():
@@ -46,7 +47,8 @@ def detalle():
     if form.accepts(request.vars, session):
         response.flash ="Detalle agregado!"
     detalles = db(db.detalle.comprobante_id==session.comprobante_id).select()
-    return dict(form=form,
+    total = sum([detalle.imp_total for detalle in detalles], 0.00)
+    return dict(form=form, total=total,
                 detalles=detalles)
 
 def editar_detalle():

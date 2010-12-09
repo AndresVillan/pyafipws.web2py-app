@@ -16,6 +16,7 @@ SINO = {'S': 'Si', 'N': 'No'}
 db.define_table('tipo_cbte',
     Field('cod', type='id'),
     Field('desc'),
+    Field('discriminar', 'boolean'),
     format="%(desc)s",
     migrate=migrate,
     )
@@ -48,6 +49,7 @@ db.define_table('umed',
 db.define_table('iva',
     Field('cod', type='id'),
     Field('desc'),
+    Field('aliquota', 'double'),
     format="%(desc)s",
     migrate=migrate,
     )
@@ -148,17 +150,23 @@ db.define_table('detalle',
     Field('precio', type='double', notnull=True,
             requires=IS_FLOAT_IN_RANGE(0.01, 1000000000)),
     Field('umed', type=db.umed, default=7,
-            requires=IS_NOT_EMPTY()),
+            ),
     Field('imp_total', type='double', label="Subtotal",
             requires=IS_NOT_EMPTY()),
     Field('iva_id', type=db.iva, default=5, label="IVA",
-            requires=IS_NOT_EMPTY()),
+            represent=lambda id: db.iva[id].desc,
+            comment="Alícuota de IVA"),
     Field('ncm', type='string', length=15, 
             comment="Código Nomenclador Común Mercosur (Bono fiscal)"),
     Field('sec', type='string', length=15,
             comment="Código Secretaría de Comercio (Bono fiscal)"),
     Field('bonif', type='double', default=0.00),
+    Field('iva', type="double", default=0.00, 
+            comment="IVA liquidado",
+            readable=False, writable=False),
     migrate=migrate)
+
+db.detalle.umed.represent=lambda id: db.umed[id].desc
 
 # Comprobantes asociados (para NC yND):
 db.define_table('cmp_asoc',
