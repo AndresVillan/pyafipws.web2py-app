@@ -12,6 +12,12 @@
 
 )}}
 
+{{if not detalles:}}
+Sin artículos ingresados
+{{else:}}
+Subtotal: {{=total}}
+{{pass}}
+
 {{=form}}
 
 <SCRIPT TYPE="text/javascript">
