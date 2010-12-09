@@ -62,4 +62,13 @@ def editar_detalle():
     return dict(form=form)
     
 def finalizar():
-    return {}
+    campos_encabezado = [
+    'fecha_cbte','tipo_cbte','punto_vta','cbte_nro', 'concepto','permiso_existente', 'dst_cmp',
+    'nombre_cliente', 'tipo_doc', 'nro_doc', 'domicilio_cliente', 'id_impositivo',
+    'moneda_id', 'moneda_ctz', 'obs_comerciales', 'obs', 'forma_pago', 
+    'fecha_venc_pago', 'fecha_serv_desde', 'fecha_serv_hasta',]
+    form = SQLFORM(db.comprobante, session.comprobante_id, fields=campos_encabezado, readonly=True)
+    
+    comprobante = db(db.comprobante.id==session.comprobante_id).select().first()
+
+    return dict(form=form, comprobante=comprobante)
