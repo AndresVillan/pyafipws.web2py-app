@@ -4,8 +4,8 @@
 ## Customize your APP title, subtitle and menus here
 #########################################################################
 
-response.title = request.application
-response.subtitle = T('customize me!')
+response.title = ""
+response.subtitle = ""
 
 ##########################################
 ## this is the main application menu
@@ -18,7 +18,7 @@ response.menu = [
     (T('Emisión'), False, URL(request.application,'emision','iniciar'), []),
     (T('Consultas'), False, URL(request.application,'consultas','index'), []),    
 
-    (T('Info'), False, None , [
+    (T('Ayuda'), False, None , [
         (T('Información General'), False, "http://www.sistemasagiles.com.ar/trac/wiki/FacturaElectronica", []),
         (T('Información Técnica'), False, "http://www.sistemasagiles.com.ar/trac/wiki/ManualPyAfipWs", [
             (T('WSFEv0'), False, "http://www.sistemasagiles.com.ar/trac/wiki/PyAfipWs", []),

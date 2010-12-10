@@ -77,7 +77,7 @@
     <div id="header"> <!-- header and login nav -->
       {{block header}} <!-- this is default header -->
       {{try:}}{{=auth.navbar(action=URL('default','user'))}}{{except:pass}}               
-      <div id="logo"><h1>FacturaLibre</h1></div>
+      <div id="logo"><h1>FacturaLibre {{=response.title and ': ' + response.title or ''}}</h1></div>
       <div style="clear: both;"></div><!-- Clear the divs -->
       {{end}}                                     
     </div><!-- header  -->
@@ -106,6 +106,9 @@
 
       <!-- content -->
       <div id="content" {{=XML(style_content)}} >
+        {{if response.subtitle:}}
+        <h2>{{=response.subtitle}}</h2>
+        {{pass}}
         <h3 style="color: red">Servicio Experimental en desarrollo (DEMO)</h3>
         {{include}} 
       </div>
