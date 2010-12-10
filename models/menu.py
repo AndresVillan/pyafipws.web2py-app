@@ -26,6 +26,7 @@ response.menu = [
             (T('WSFEX'), False, URL(request.application,'servicios_web','dummy',args="wsfex"), []),
             (T('WSBFE'), False, URL(request.application,'servicios_web','dummy',args="wsbfe"), []),
         ]),
+        (T('Últ.Nro.Cbte.'), False, URL(request.application,'servicios_web','ultimo_numero_comprobante'), []),
     ]),
     
     (T('Ayuda'), False, None , [
