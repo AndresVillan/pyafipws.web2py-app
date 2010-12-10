@@ -80,6 +80,36 @@ def dummy():
     return result
 
 
+def ultimo_id():
+    "Obtener el último ID de transacción AFIP"
+    response.subtitle = "Consulta el último ID de transacción utilizado"
+    
+    form = SQLFORM.factory(
+        Field('webservice', type='string', length=6, default='wsfe',
+            requires = IS_IN_SET(WEBSERVICES)),
+    )
+    
+    result = {}
+    
+    if form.accepts(request.vars, session, keepvalues=True):                
+        if SERVICE=='wsfe':
+            result = client.FEUltNroRequest(
+                argAuth = {'Token': TOKEN, 'Sign' : SIGN, 'cuit' : CUIT},
+                )['FEUltNroRequestResult']
+        elif SERVICE=='wsfex':
+            result = client.FEXGetLast_ID(
+                Auth={'Token': TOKEN, 'Sign': SIGN, 'Cuit': CUIT,}
+                )['FEXGetLast_IDResult']
+        elif SERVICE=='wsbfe':
+            result = client.BFEGetLast_ID(
+                Auth={'Token': TOKEN, 'Sign': SIGN, 'Cuit': CUIT,}
+                )['BFEGetLast_IDResult']
+        else:
+            pass
+            
+    return {'form': form, 'result': result}
+
+
 def ultimo_numero_comprobante():
     "Obtener el último comprobante autorizado por la AFIP"
     response.subtitle = "Consulta el último número de comprobante autorizado"
