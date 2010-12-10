@@ -215,7 +215,7 @@ def cotizacion():
 
 def autorizar():
     "Facturador (Solicitud de Autorización de Factura Electrónica AFIP)"
-    response.subtitle = "Solicitud de Autorización - CAE"
+    response.subtitle = "Solicitud de Autorización - CAE  (%s)" % SERVICE
     
     comprobante_id = request.args[1]
     comprobante = db(db.comprobante.id==comprobante_id).select().first()
