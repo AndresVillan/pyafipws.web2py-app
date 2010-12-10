@@ -17,6 +17,9 @@ CUIT=20267565393
 def _autenticar(service="wsfe", ttl=60*60*5):
     "Obtener el TA"
 
+    # wsfev1 => wsfe!
+    service = {'wsfev1': 'wsfe'}.get(service, service)
+    
     TA = os.path.join(PRIVATE_PATH, "TA-%s.xml" % service)
     ttl = 60*60*5
     if not os.path.exists(TA) or os.path.getmtime(TA)+(ttl)<time.time():
@@ -45,6 +48,7 @@ elif request.vars:
 else: 
     SERVICE = ""
     TOKEN = SIGN = ''
+    client = None
     
 if SERVICE:        
     # solicito autenticación
@@ -147,6 +151,35 @@ def ultimo_numero_comprobante():
             pass
         elif SERVICE=='wsmtxca':
             pass
+        else:
+            pass
+            
+    return {'form': form, 'result': result}
+
+def cotizacion():
+    "Obtener cotización de referencia según AFIP"
+    response.subtitle = "Consulta cotización de referencia"
+    
+    form = SQLFORM.factory(
+        Field('webservice', type='string', length=6, default='wsfex',
+            requires = IS_IN_SET(WEBSERVICES)),
+        Field('moneda_id', type='integer', default="DOL",
+            requires=IS_IN_DB(db,db.moneda.cod,"%(desc)s")),
+    )
+    
+    result = {}
+    
+    if form.accepts(request.vars, session, keepvalues=True):                
+        if SERVICE=='wsfex':
+            result = client.FEXGetPARAM_Ctz(
+                Auth={'Token': TOKEN, 'Sign': SIGN, 'Cuit': CUIT},
+                      Mon_id= form.vars.moneda_id,
+                )['FEXGetPARAM_CtzResult']
+        elif SERVICE=='wsfev1':
+            result = client.FEParamGetCotizacion(
+                Auth={'Token': TOKEN, 'Sign': SIGN, 'Cuit': CUIT},
+                MonId=form.vars.moneda_id,
+                )['FEParamGetCotizacionResult']    
         else:
             pass
             
