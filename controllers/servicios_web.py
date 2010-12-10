@@ -23,7 +23,7 @@ def _autenticar(service="wsfe", ttl=60*60*5):
         wsaa = local_import("pyafipws.wsaa")
         cert = os.path.join(PRIVATE_PATH,'reingart.crt')
         privatekey = os.path.join(PRIVATE_PATH,'reingart.key')
-        tra = wsaa.create_tra(service="wsfe",ttl=ttl)
+        tra = wsaa.create_tra(service=SERVICE,ttl=ttl)
         cms = wsaa.sign_tra(str(tra),str(cert),str(privatekey))
         wsaa_url = "https://wsaahomo.afip.gov.ar/ws/services/LoginCms"
         ta_string = wsaa.call_wsaa(cms,wsaa_url,trace=False)
@@ -78,3 +78,46 @@ def dummy():
     else:
         result = {}
     return result
+
+
+def ultimo_numero_comprobante():
+    "Obtener el último comprobante autorizado por la AFIP"
+    response.subtitle = "Consulta el último número de comprobante autorizado"
+    
+    form = SQLFORM.factory(
+        Field('webservice', type='string', length=6, default='wsfe',
+            requires = IS_IN_SET(WEBSERVICES)),
+        Field('tipo_cbte', type='integer', 
+                requires=IS_IN_DB(db,db.tipo_cbte.cod,"%(desc)s")),
+        Field('punto_vta', type='integer', default=1,
+                requires=IS_NOT_EMPTY()),
+    )
+    
+    result = {}
+    
+    if form.accepts(request.vars, session, keepvalues=True):                
+        if SERVICE=='wsfe':
+            result = client.FERecuperaLastCMPRequest(
+                argAuth = {'Token': TOKEN, 'Sign' : SIGN, 'cuit' : CUIT},
+                argTCMP={'PtoVta' : form.vars.punto_vta, 'TipoCbte' : form.vars.tipo_cbte}
+                )['FERecuperaLastCMPRequestResult']
+        elif SERVICE=='wsfev1':
+            result = client.FECompUltimoAutorizado(
+                Auth={'Token': TOKEN, 'Sign': SIGN, 'Cuit': CUIT},
+                PtoVta=form.vars.punto_vta,
+                CbteTipo=form.vars.tipo_cbte,
+                )['FECompUltimoAutorizadoResult']
+        elif SERVICE=='wsfex':
+            result = client.FEXGetLast_CMP(
+                Auth={'Token': TOKEN, 'Sign': SIGN, 'Cuit': CUIT,
+                    "Tipo_cbte": form.vars.punto_vta,
+                    "Pto_venta": form.vars.tipo_cbte,}
+                )['FEXGetLast_CMPResult']
+        elif SERVICE=='wsbfe':
+            pass
+        elif SERVICE=='wsmtxca':
+            pass
+        else:
+            pass
+            
+    return {'form': form, 'result': result}
