@@ -73,7 +73,7 @@ def pdf():
         f['item_description%02d' % (max_lines_per_page+1)] = s
 
         f["company_name"] = "Sample Company"
-        f["company_logo"] = os.path.join(request.env.web2py_path,"applications","fe","static","images","sistemas-agiles.png")
+        f["company_logo"] = os.path.join(request.env.web2py_path,"applications",request.application,"static","images","sistemas-agiles.png")
         f["company_header1"] = "Some Address - somewhere -"
         f["company_header2"] = "http://www.example.com"        
         f["company_footer1"] = "Tax Code ..."
