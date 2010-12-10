@@ -4,6 +4,8 @@ response.title = "Servicios Web AFIP"
 
 import os, os.path, time
 
+# Constantes para homologación:
+
 PRIVATE_PATH = os.path.join(request.env.web2py_path,'applications',request.application,'private')
 WSDL = {
     'wsfe': "http://wswhomo.afip.gov.ar/wsfe/service.asmx?WSDL",
@@ -12,7 +14,14 @@ WSDL = {
     'wsbfe': "http://wswhomo.afip.gov.ar/wsbfe/service.asmx?WSDL",
     'wsmtxca': "https://fwshomo.afip.gov.ar/wsmtxca/services/MTXCAService?wsdl",
     }
-CUIT=20267565393
+
+WSAA_URL = "https://wsaahomo.afip.gov.ar/ws/services/LoginCms"
+
+# Configuración (mover al modelo):
+
+CUIT = 20267565393
+CERTIFICATE = 'reingart.crt'
+PRIVATE_KEY = 'reingart.key'
 
 def _autenticar(service="wsfe", ttl=60*60*5):
     "Obtener el TA"
@@ -20,18 +29,24 @@ def _autenticar(service="wsfe", ttl=60*60*5):
     # wsfev1 => wsfe!
     service = {'wsfev1': 'wsfe'}.get(service, service)
     
+    # verifico archivo temporal con el ticket de acceso
     TA = os.path.join(PRIVATE_PATH, "TA-%s.xml" % service)
     ttl = 60*60*5
     if not os.path.exists(TA) or os.path.getmtime(TA)+(ttl)<time.time():
+        # solicito una nueva autenticación
         wsaa = local_import("pyafipws.wsaa")
-        cert = os.path.join(PRIVATE_PATH,'reingart.crt')
-        privatekey = os.path.join(PRIVATE_PATH,'reingart.key')
+        cert = os.path.join(PRIVATE_PATH, CERTIFICATE)
+        privatekey = os.path.join(PRIVATE_PATH, PRIVATE_KEY)
+        # creo un ticket de requerimiento de acceso
         tra = wsaa.create_tra(service=SERVICE,ttl=ttl)
+        # firmo el ticket de requerimiento de acceso
         cms = wsaa.sign_tra(str(tra),str(cert),str(privatekey))
-        wsaa_url = "https://wsaahomo.afip.gov.ar/ws/services/LoginCms"
-        ta_string = wsaa.call_wsaa(cms,wsaa_url,trace=False)
+        # llamo al webservice para obtener el ticket de acceso
+        ta_string = wsaa.call_wsaa(cms,WSAA_URL,trace=False)
+        # guardo el ticket de acceso obtenido:
         open(TA,"w").write(ta_string)
-        
+    
+    # procesar el ticket de acceso y extraer TOKEN y SIGN:
     from gluon.contrib.pysimplesoap.simplexml import SimpleXMLElement
     ta_string=open(TA).read()
     ta = SimpleXMLElement(ta_string)
@@ -39,8 +54,10 @@ def _autenticar(service="wsfe", ttl=60*60*5):
     sign = str(ta.credentials.sign)
     return token, sign
 
-
+# Conexión al webservice:
 from gluon.contrib.pysimplesoap.client import SoapClient, SoapFault
+
+# detecto webservice en uso (desde URL o desde el formulario)
 if request.args:
     SERVICE = request.args[0]
 elif request.vars:
@@ -60,11 +77,14 @@ if SERVICE:
             cache = PRIVATE_PATH,
             trace = False)
 
+# Funciones expuestas al usuario:
+
 def autenticar():
     "Prueba de autenticación"
     response.subtitle = "Prueba de autenticación (%s)" % SERVICE
     token, sign = _autenticar(SERVICE or 'wsfe')
     return dict(token=TOKEN[:10]+"...", sign=SIGN[:10]+"...")
+
 
 def dummy():
     "Obtener el estado de los servidores de la AFIP"
@@ -155,6 +175,7 @@ def ultimo_numero_comprobante():
             pass
             
     return {'form': form, 'result': result}
+
 
 def cotizacion():
     "Obtener cotización de referencia según AFIP"
