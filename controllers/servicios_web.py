@@ -2,7 +2,7 @@
 
 response.title = "Servicios Web AFIP"
 
-import os, os.path, time
+import os, os.path, time, datetime
 
 # Constantes para homologación:
 
@@ -22,6 +22,12 @@ WSAA_URL = "https://wsaahomo.afip.gov.ar/ws/services/LoginCms"
 CUIT = 20267565393
 CERTIFICATE = 'reingart.crt'
 PRIVATE_KEY = 'reingart.key'
+
+
+def ymd2date(vto):
+    "Convertir formato AFIP 20101231 a python date(2010,12,31)"
+    return datetime.date(int(vto[0:4]), int(vto[4:6]), int(vto[6:8]))
+
 
 def _autenticar(service="wsfe", ttl=60*60*5):
     "Obtener el TA"
@@ -205,3 +211,76 @@ def cotizacion():
             pass
             
     return {'form': form, 'result': result}
+
+
+def autorizar():
+    "Facturador (Solicitud de Autorización de Factura Electrónica AFIP)"
+    response.subtitle = "Solicitud de Autorización - CAE"
+    
+    comprobante_id = request.args[1]
+    comprobante = db(db.comprobante.id==comprobante_id).select().first()
+    detalles = db(db.detalle.comprobante_id==comprobante_id).select()
+        
+    result = {}
+    actualizar = {}
+    
+    try:
+        
+        if SERVICE=='wsfe':
+            result = client.FEAutRequest(
+                argAuth={'Token': TOKEN, 'Sign': SIGN, 'cuit': CUIT},
+                Fer={
+                    'Fecr': {'id': long(comprobante_id)+10000, 'cantidadreg': 1, 
+                             'presta_serv': comprobante.concepto==1 and '0' or '1'},
+                    'Fedr': {'FEDetalleRequest': {
+                        'tipo_doc': comprobante.tipo_doc,
+                        'nro_doc':  comprobante.nro_doc.replace("-",""),
+                        'tipo_cbte': comprobante.tipo_cbte,
+                        'punto_vta': comprobante.punto_vta,
+                        'cbt_desde': comprobante.cbte_nro,
+                        'cbt_hasta': comprobante.cbte_nro,
+                        'imp_total': comprobante.imp_total or 0.00,
+                        'imp_tot_conc': comprobante.imp_tot_conc or 0.00,
+                        'imp_neto': comprobante.imp_neto or 0.00,
+                        'impto_liq': comprobante.impto_liq or 0.00,
+                        'impto_liq_rni': 0.00,
+                        'imp_op_ex': comprobante.imp_op_ex or 0.00,
+                        'fecha_cbte': comprobante.fecha_cbte.strftime("%Y%m%d"),
+                        'fecha_venc_pago': comprobante.fecha_venc_pago.strftime("%Y%m%d"),
+                    }}
+                }
+            )['FEAutRequestResult']
+            
+            if 'resultado' in result['FecResp']:
+                # actualizo el registro del comprobante con el resultado:
+                actualizar = dict(
+                    # Resultado: Aceptado o Rechazado
+                    resultado=result['FecResp']['resultado'],
+                    # Motivo general/del detalle:
+                    motivo=result['FecResp']['motivo'],
+                    reproceso=result['FecResp']['reproceso'],
+                    cae=result['FedResp'][0]['FEDetalleResponse']['cae'],
+                    fecha_vto=ymd2date(result['FedResp'][0]['FEDetalleResponse']['fecha_vto']),
+                    )
+        elif SERVICE=='wsfev1':
+            pass
+        elif SERVICE=='wsfex':
+            pass
+        elif SERVICE=='wsbfe':
+            pass
+        elif SERVICE=='wsmtxca':
+            pass
+        else:
+            pass
+
+    except SoapFault,sf:
+        return {'fault': sf.faultstring, 
+                'xml_request': client.xml_request, 
+                'xml_response': client.xml_response,
+                } 
+    
+    # actualizo el registro del comprobante con el resultado:
+    if actualizar:
+        db(db.comprobante.id==comprobante_id).update(**actualizar)
+        
+    return result
