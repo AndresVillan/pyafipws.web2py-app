@@ -161,8 +161,8 @@ db.define_table('detalle',
     Field('sec', type='string', length=15,
             comment="Código Secretaría de Comercio (Bono fiscal)"),
     Field('bonif', type='double', default=0.00),
-    Field('iva', type="double", default=0.00, 
-            comment="IVA liquidado",
+    Field('imp_iva', type="double", default=0.00, 
+            comment="Importe de IVA liquidado",
             readable=False, writable=False),
     migrate=migrate)
 
