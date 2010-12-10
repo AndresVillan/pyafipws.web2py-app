@@ -1,0 +1,9 @@
+{{extend 'layout.html'}}
+<h1>Emision de facturas - Detalles (Paso 2)</h1>
+{{=form}}
+
+{{=LOAD('emision','detalle.load',ajax=True)}}
+
+{{=A("<< Anterior", _href=URL("iniciar"))}}
+-
+{{=A("Siguiente >>", _href=URL("finalizar"))}}

@@ -1,0 +1,43 @@
+{{=SQLTABLE(detalles, 
+        columns=['detalle.codigo','detalle.qty','detalle.umed',
+                 'detalle.ds', 'detalle.ncm', 'detalle.sec', 
+                 'detalle.precio','detalle.imp_total', 'detalle.iva_id',
+                 'detalle.bonif', 
+                 'detalle.id'],
+        headers={'detalle.codigo':'Codigo','detalle.qty':'Cant.','detalle.umed':'U.Med',
+                 'detalle.precio':'Precio','detalle.imp_total':'Imp.Total',
+                 'detalle.iva_id':'IVA','detalle.ds':'Descripción', 
+                 'detalle.ncm':'NCM', 'detalle.sec':'SEC', 'detalle.bonif':'Bonif.', 'detalle.id': 'ID'},
+        linkto=lambda field, type, ref: URL("editar_detalle.html",args=[field]),
+
+)}}
+
+{{if not detalles:}}
+Sin artículos ingresados
+{{else:}}
+Subtotal: {{=total}}
+{{pass}}
+
+{{=form}}
+
+<SCRIPT TYPE="text/javascript">
+<!-- 
+
+function calculate_total(oform) {
+
+var qty = $('#detalle_qty');
+var price = $('#detalle_precio');
+var total = $('#detalle_imp_total');
+
+t = qty.val() * price.val()
+
+total.val(t)
+
+}
+
+$('#detalle_qty').change(calculate_total);
+$('#detalle_precio').change(calculate_total);
+
+
+// -->
+</SCRIPT>

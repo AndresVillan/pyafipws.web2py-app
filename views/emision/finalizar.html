@@ -1,0 +1,10 @@
+{{extend 'layout.html'}}
+<h1>Emision de facturas - Confirmar (Paso 3)</h1>
+
+{{=form}}
+
+{{=A("Autorizar", _href=URL(c="servicios_web",f="autorizar",args=[comprobante.webservice, comprobante.id]))}}
+
+{{=A("Vista Previa", _href=URL(c="salida",f="pdf",args=[comprobante.id]))}}
+
+{{=A("<< Anterior", _href=URL("detallar"))}}
