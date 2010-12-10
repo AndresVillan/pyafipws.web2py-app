@@ -1,7 +1,7 @@
 # coding: utf8
 # try something like
 
-def crear_tipos_doc(): 
+def crear_tipos_doc():
     "Crear inicialmente los tipos de documento más usados"
     data = """\
 80 - CUIT
@@ -19,37 +19,42 @@ def crear_tipos_doc():
         i, desc = d.split(" - ")
         db.tipo_doc.insert(cod=i, desc=desc)
     return dict(ret=SQLTABLE(db(db.tipo_doc.cod>0).select()))
-    
-def crear_tipos_cbte(): 
+
+def crear_tipos_cbte():
     "Crear inicialmente los tipos de comprobantes más usados"
     data = """\
-1 - Factura A
-2 - Nota de Débito A
-3 - Nota de Crédito A
-4 - Recibo A
-6 - Factura B
-7 - Nota de Débito B
-8 - Nota de Crédito B
-9 - Recibo B
-11 - Factura C
-12 - Nota de Débito C
-13 - Nota de Crédito C
-15 - Recibo C
-19 - Factura E
-20 - Nota de Débito E
-21 - Nota de Crédito E
-51 - Factura M
-52 - Nota de Débito M
-53 - Nota de Crédito M
-54 - Recibo M"""
+1 - Factura A - True
+2 - Nota de Débito A - False
+3 - Nota de Crédito A - False
+4 - Recibo A - False
+6 - Factura B - False
+7 - Nota de Débito B - False
+8 - Nota de Crédito B - False
+9 - Recibo B - False
+11 - Factura C - False
+12 - Nota de Débito C - False
+13 - Nota de Crédito C - False
+15 - Recibo C - False
+19 - Factura E - False
+20 - Nota de Débito E - False
+21 - Nota de Crédito E - False
+51 - Factura M - True
+52 - Nota de Débito M - False
+53 - Nota de Crédito M - False
+54 - Recibo M - False"""
     db(db.tipo_cbte.cod>0).delete()
     l = []
     for d in data.split("\n"):
-        i, desc = d.split(" - ")
-        db.tipo_cbte.insert(cod=i, desc=desc)
+        i, desc, discriminar = d.split(" - ")
+
+        if discriminar == "False": discriminar = False
+        elif discriminar == "True": discriminar = True
+        else: discriminar = None
+
+        db.tipo_cbte.insert(cod=i, desc=desc, discriminar=discriminar)
     return dict(ret=SQLTABLE(db(db.tipo_cbte.cod>0).select()))
-    
-def crear_monedas(): 
+
+def crear_monedas():
     "Crear inicialmente las monedas más usadas"
     data = """\
 PES - Pesos Argentinos
@@ -63,12 +68,12 @@ DOL - Dólar Estadounidense
         i, desc = d.split(" - ")
         db.moneda.insert(cod=i, desc=desc)
     return dict(ret=SQLTABLE(db(db.moneda.id>0).select()))
-    
+
 
 # coding: utf8
 # try something like
 
-def crear_tipos_doc(): 
+def crear_tipos_doc():
     "Crear inicialmente los tipos de documento más usados"
     data = """\
 80 - CUIT
@@ -86,24 +91,28 @@ def crear_tipos_doc():
         i, desc = d.split(" - ")
         db.tipo_doc.insert(cod=i, desc=desc)
     return dict(ret=SQLTABLE(db(db.tipo_doc.cod>0).select()))
-    
-def crear_iva(): 
+
+def crear_iva():
     "Crear inicialmente las alícuotas de IVA más usados"
     data = """\
-1 - No gravado
-2 - Exento
-3 - 0%
-4 - 10.5%
-5 - 21%
-6 - 27%"""
+1 - No gravado - None
+2 - Exento - None
+3 - 0% - 0.00
+4 - 10.5% - 0.105
+5 - 21% - 0.210
+6 - 27% - 0.270"""
     db(db.iva.cod>0).delete()
     l = []
     for d in data.split("\n"):
-        i, desc = d.split(" - ")
-        db.iva.insert(cod=i, desc=desc)
+        i, desc, aliquota = d.split(" - ")
+        try:
+            aliquota = float(aliquota)
+        except ValueError, e:
+            aliquota = None
+        db.iva.insert(cod=i, desc=desc, aliquota=aliquota)
     return dict(ret=SQLTABLE(db(db.iva.cod>0).select()))
-    
-def crear_idiomas(): 
+
+def crear_idiomas():
     "Crear inicialmente los idiomas"
     data = """\
 1 - Español
@@ -125,7 +134,7 @@ def crear_umedidas():
 3 - metros cuadrados
 4 - metros cúbicos
 0 -  """
-   
+
     db(db.umed.cod>=0).delete()
     l = []
     for d in data.split("\n"):
