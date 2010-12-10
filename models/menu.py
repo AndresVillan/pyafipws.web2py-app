@@ -18,6 +18,16 @@ response.menu = [
     (T('Emisión'), False, URL(request.application,'emision','iniciar'), []),
     (T('Consultas'), False, URL(request.application,'consultas','index'), []),    
 
+    (T('Servicios Web'), False, None , [
+        (T('Estado (dummy)'), False, "", [
+            (T('WSFEv0'), False, URL(request.application,'servicios_web','dummy',args="wsfe"), []),
+            (T('WSFEv1'), False, URL(request.application,'servicios_web','dummy',args="wsfev1"), []),
+            (T('WSMTXCA'), False, URL(request.application,'servicios_web','dummy',args="wsmtxca"), []),
+            (T('WSFEX'), False, URL(request.application,'servicios_web','dummy',args="wsfex"), []),
+            (T('WSBFE'), False, URL(request.application,'servicios_web','dummy',args="wsbfe"), []),
+        ]),
+    ]),
+    
     (T('Ayuda'), False, None , [
         (T('Información General'), False, "http://www.sistemasagiles.com.ar/trac/wiki/FacturaElectronica", []),
         (T('Información Técnica'), False, "http://www.sistemasagiles.com.ar/trac/wiki/ManualPyAfipWs", [
