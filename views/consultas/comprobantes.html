@@ -1,0 +1,21 @@
+{{extend 'layout.html'}}
+<h1>Comprobantes</h1>
+
+Secciones:
+{{if anterior:}}
+{{=anterior}}
+{{pass}}
+
+{{if los_link:}}
+{{for link in los_link:}}
+{{=link}}
+{{pass}}
+
+{{pass}}
+
+{{if posterior:}}
+{{=posterior}}
+{{pass}}
+
+<!-- El sqltable con los registros-->
+{{=los_comprobantes}}
