@@ -5,7 +5,15 @@ def index(): return dict(message="momentaneamente no implementado")
 def comprobantes():
 
     """ Consulta de comprobantes con parámetros para filtro """
-    
+
+    # Si la consulta es nueva eliminar de session
+    try:
+        if request.vars["nueva"] == "true":
+            session.consulta_comprobante = None
+    except KeyError:
+        # no borrar la consulta almacenada
+        pass
+                
     anterior = None
     posterior = None
     los_link = None
@@ -43,7 +51,11 @@ def comprobantes():
     # crear una nueva (agrupa los id en un arreglo
     # bidimensional de objs. list
     
-    if session.consulta == None:
+    if session.consulta_comprobante == None:
+        anterior = None
+        posterior = None
+        los_link = None
+
         if (filtro_campo and filtro_valor):
             el_set = el_set(filtro_campo + "==" + filtro_valor)
 
@@ -52,66 +64,65 @@ def comprobantes():
         comprobantes = el_set.select(orderby=ordenar_campo + \
         " " + ordenar_sentido)
 
-        session.consulta = list()
+        session.consulta_comprobante = list()
         contador = 0
         nro_seccion = -1
         for cbt in comprobantes:
             if (contador > (registros -1)) or (nro_seccion == -1):
                 contador = 0
-                session.consulta.append(list())   
+                session.consulta_comprobante.append(list())   
                 nro_seccion += 1
-                session.consulta[nro_seccion].append(cbt.id)
+                session.consulta_comprobante[nro_seccion].append(cbt.id)
 
             else:
-                session.consulta[nro_seccion].append(cbt.id)
+                session.consulta_comprobante[nro_seccion].append(cbt.id)
                 contador +=1
 
-        if len(session.consulta) > 0:
+        if len(session.consulta_comprobante) > 0:
             los_comprobantes = db(db.comprobante.id.belongs(\
-            session.consulta[0])).select(orderby=ordenar_campo + \
+            session.consulta_comprobante[0])).select(orderby=ordenar_campo + \
             " " + ordenar_sentido)
         else:
             los_comprobantes = None
-            session.consulta = None
+            session.consulta_comprobante = None
 
     else:
+        # Si existe una consulta previa,
+        # devuelve un obj. rows con la sección especificada
+        # en request.vars
+        # Crear una lista de resultados para navegar entre secciones
+
         try:
             seccion = request.vars["seccion"]
             los_comprobantes = db(db.comprobante.id.belongs(\
-            session.consulta[int(seccion)])).select(\
+            session.consulta_comprobante[int(seccion)])).select(\
             orderby=ordenar_campo + " " + ordenar_sentido)
 
         except KeyError:
             seccion = 0
             los_comprobantes = db(db.comprobante.id.belongs(\
-            session.consulta[0])).select(orderby=ordenar_campo + \
+            session.consulta_comprobante[0])).select(orderby=ordenar_campo + \
             " " + ordenar_sentido)
             
-    # Si existe una consulta previa,
-    # devuelve un obj. rows con la sección especificada
-    # en request.vars
-    # Crear una lista de resultados para navegar entre secciones
-    
-    if session.consulta != None:
+    # preparar los link a cada seccion
+    if session.consulta_comprobante != None:    
         los_link = [A(str(secc + 1), _href=URL(r=request, \
         c="consultas", f="comprobantes", vars={"seccion": secc})) \
-        for secc in range(len(session.consulta))]    
+        for secc in range(len(session.consulta_comprobante))]    
 
-        if seccion > 0:
+        if int(seccion) > 0:
             anterior = A("Anterior", _href=URL(r=request, \
             c="consultas", f="comprobantes", vars={"seccion": seccion}))
         else: anterior = None
         
-        if seccion < len(los_link) -1:
+        if int(seccion) < len(los_link) -1:
             posterior = A("Posterior", _href=URL(r=request, \
             c="consultas", f="comprobantes", vars={"seccion": seccion}))
         else:
             posterior = None
 
-    else:
-        los_link = None
+    if los_comprobantes != None:
+        los_comprobantes = DIV(SQLTABLE(los_comprobantes), _style="overflow: auto;")
 
-    # los datos de style deberían ir en un archivo estático css   
-    return dict(los_comprobantes = DIV(SQLTABLE(los_comprobantes), _style="overflow: auto;"), \
+    return dict(los_comprobantes = los_comprobantes, \
     los_link = los_link, anterior = anterior, posterior = posterior)
-

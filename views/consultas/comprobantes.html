@@ -1,6 +1,7 @@
 {{extend 'layout.html'}}
 <h1>Comprobantes</h1>
 
+{{if los_comprobantes:}}
 Secciones:
 {{if anterior:}}
 {{=anterior}}
@@ -10,7 +11,6 @@ Secciones:
 {{for link in los_link:}}
 {{=link}}
 {{pass}}
-
 {{pass}}
 
 {{if posterior:}}
@@ -19,3 +19,7 @@ Secciones:
 
 <!-- El sqltable con los registros-->
 {{=los_comprobantes}}
+
+{{else:}}
+{{=H3("No hay registros")}}
+{{pass}}
