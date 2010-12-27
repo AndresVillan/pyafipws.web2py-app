@@ -1,5 +1,17 @@
 # coding: utf8
 
+def comprobante_tabla_clientes():
+    """ Muestra una tabla para establecer un cliente """
+    los_clientes = db(db.cliente).select()
+    tabla_clientes = DIV(SQLTABLE(los_clientes, linkto = URL(r=request, c='emision', f='comprobante_seleccionar_cliente')), _style='overflow: auto;')
+    return dict(tabla_clientes = tabla_clientes)
+
+def comprobante_seleccionar_cliente():
+    el_cliente = int(request.args[1])
+    session.cliente_seleccionado = el_cliente
+    response.flash = "Nuevo cliente seleccionado"
+    redirect(URL(r=request, c='emision', f='iniciar'))
+
 def iniciar():
     "Crear/modificar datos generales del comprobante"
     # campos a mostrar:
@@ -17,6 +29,23 @@ def iniciar():
     form = SQLFORM(db.comprobante, session.comprobante_id,
                    fields=campos_generales)
 
+    # Si se seleccionó un cliente cargar datos
+    try:
+        cliente_seleccionado = session.cliente_seleccionado
+    except (KeyError, ValueError):
+        cliente_seleccionado = None
+        
+    if cliente_seleccionado != None:
+        cliente = db(db.cliente.id == cliente_seleccionado).select().first()
+        form.vars.nombre_cliente = cliente.nombre_cliente
+        form.vars.tipo_doc = cliente.tipo_doc
+        form.vars.nro_doc = cliente.nro_doc
+        form.vars.domicilio_cliente = cliente.domicilio_cliente
+        form.vars.telefono_cliente = cliente.telefono_cliente
+        form.vars.localidad_cliente = cliente.localidad_cliente
+        form.vars.provincia_cliente = cliente.provincia_cliente
+        form.vars.email = cliente.email
+
     # valido el formulario (si han enviado datos)
     if form.accepts(request.vars, session, dbio=False):
         if not session.comprobante_id:
@@ -33,7 +62,9 @@ def iniciar():
         redirect(URL("detallar"))
     elif form.errors:
        response.flash = '¡Hay errores en el formulario!'
+   
     return dict(form=form)
+
 
 def detallar():
     # creo un formulario para el comprobante (TODO: modificar)
