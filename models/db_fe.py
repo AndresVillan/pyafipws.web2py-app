@@ -187,6 +187,20 @@ db.define_table('permiso',
     Field('dst_merc', type=db.pais_dst),
     migrate=migrate)
 
+# Tabla de clientes
+db.define_table('cliente', Field('nombre_cliente', type='string', length=200),
+    Field('tipo_doc', type=db.tipo_doc, default='80'),
+    Field('nro_doc', type='string',
+            requires=IS_CUIT()),
+    Field('domicilio_cliente', type='string', length=300),
+    Field('telefono_cliente', type='string', length=50),
+    Field('localidad_cliente', type='string', length=50),
+    Field('provincia_cliente', type='string', length=50),
+    Field('email', type='string', length=100),    
+    Field('id_impositivo', type='string', length=50,
+            comment="CNJP, RUT, RUC (exportación"), migrate=migrate)
+
+
 # Tablas de depuración
 
 # Bitácora de mensajes XML enviados y recibidos

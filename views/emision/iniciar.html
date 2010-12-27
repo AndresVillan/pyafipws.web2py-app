@@ -1,3 +1,4 @@
 {{extend 'layout.html'}}
 <h1>Datos Generales del Comprobante (Paso 1)</h1>
+{{=A("Seleccionar cliente", _href=URL(r=request, c='emision', f='comprobante_tabla_clientes'))}}
 {{=form}}
