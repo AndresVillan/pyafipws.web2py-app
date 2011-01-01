@@ -12,6 +12,23 @@ fuente_localidades = os.path.join(\
 request.env.web2py_path,'applications',\
 request.application,'static') + '/localidades.csv'
 
+def index():
+    """ panel de control del setup """
+    tipos_doc = len(db(db.tipo_doc).select())
+    tipos_cbte = len(db(db.tipo_cbte).select())
+    monedas = len(db(db.moneda).select())   
+    ivas = len(db(db.iva).select())
+    idiomas = len(db(db.idioma).select())
+    umedidas = len(db(db.umed).select())
+    paises = len(db(db.pais_dst).select())
+    provincias = len(db(db.provincia).select())
+    localidades = len(db(db.localidad).select())
+    return dict(tipos_doc = tipos_doc, tipos_cbte = tipos_cbte, \
+                monedas = monedas, ivas = ivas, idiomas = idiomas, \
+                umedidas = umedidas, paises = paises, \
+                provincias = provincias, localidades = localidades)
+
+
 def crear_tipos_doc():
     "Crear inicialmente los tipos de documento más usados"
     data = """\
@@ -29,7 +46,8 @@ def crear_tipos_doc():
     for d in data.split("\n"):
         i, desc = d.split(" - ")
         db.tipo_doc.insert(cod=i, desc=desc)
-    return dict(ret=SQLTABLE(db(db.tipo_doc.cod>0).select()))
+    return dict(ret=SQLTABLE(db(db.tipo_doc.cod>0).select()), \
+                lista = A('Ver lista', _href=URL(r=request, c='setup', f='index')))
 
 def crear_tipos_cbte():
     "Crear inicialmente los tipos de comprobantes más usados"
@@ -63,7 +81,8 @@ def crear_tipos_cbte():
         else: discriminar = None
 
         db.tipo_cbte.insert(cod=i, desc=desc, discriminar=discriminar)
-    return dict(ret=SQLTABLE(db(db.tipo_cbte.cod>0).select()))
+    return dict(ret=SQLTABLE(db(db.tipo_cbte.cod>0).select()),\
+                lista = A('Ver lista', _href=URL(r=request, c='setup', f='index')))
 
 def crear_monedas():
     "Crear inicialmente las monedas más usadas"
@@ -78,30 +97,9 @@ DOL - Dólar Estadounidense
     for d in data.split("\n"):
         i, desc = d.split(" - ")
         db.moneda.insert(cod=i, desc=desc)
-    return dict(ret=SQLTABLE(db(db.moneda.id>0).select()))
+    return dict(ret=SQLTABLE(db(db.moneda.id>0).select()), \
+                lista = A('Ver lista', _href=URL(r=request, c='setup', f='index')))
 
-
-# coding: utf8
-# try something like
-
-def crear_tipos_doc():
-    "Crear inicialmente los tipos de documento más usados"
-    data = """\
-80 - CUIT
-86 - CUIL
-87 - CDI
-89 - LE
-90 - LC
-92 - en trámite
-96 - DNI
-94 - Pasaporte
-99 - Consumidor Final"""
-    db(db.tipo_doc.cod>0).delete()
-    l = []
-    for d in data.split("\n"):
-        i, desc = d.split(" - ")
-        db.tipo_doc.insert(cod=i, desc=desc)
-    return dict(ret=SQLTABLE(db(db.tipo_doc.cod>0).select()))
 
 def crear_iva():
     "Crear inicialmente las alícuotas de IVA más usados"
@@ -121,7 +119,8 @@ def crear_iva():
         except ValueError, e:
             aliquota = None
         db.iva.insert(cod=i, desc=desc, aliquota=aliquota)
-    return dict(ret=SQLTABLE(db(db.iva.cod>0).select()))
+    return dict(ret=SQLTABLE(db(db.iva.cod>0).select()), \
+                lista = A('Ver lista', _href=URL(r=request, c='setup', f='index')))
 
 def crear_idiomas():
     "Crear inicialmente los idiomas"
@@ -129,12 +128,13 @@ def crear_idiomas():
 1 - Español
 2 - Inglés
 3 - Portugués"""
-    db(db.moneda.id>0).delete()
+    db(db.idioma.id>0).delete()
     l = []
     for d in data.split("\n"):
         i, desc = d.split(" - ")
-        db.moneda.insert(cod=i, desc=desc)
-    return dict(ret=SQLTABLE(db(db.moneda.id>0).select()))
+        db.idioma.insert(cod=int(i), desc=desc)
+    return dict(ret=SQLTABLE(db(db.idioma.id>0).select()), \
+                lista = A('Ver lista', _href=URL(r=request, c='setup', f='index')))
 
 def crear_umedidas():
     data = """\
@@ -151,13 +151,15 @@ def crear_umedidas():
     for d in data.split("\n"):
         i, desc = d.split(" - ")
         db.umed.insert(cod=i, desc=desc)
-    return dict(ret=SQLTABLE(db(db.umed.id>0).select()))
+    return dict(ret=SQLTABLE(db(db.umed.id>0).select()), \
+                lista = A('Ver lista', _href=URL(r=request, c='setup', f='index')))
 
 def crear_paises():
     data = {200: u'ARGENTINA', 202: u'BOLIVIA', 203: u'BRASIL', 204: u'CANADA', 205: u'COLOMBIA', 206: u'COSTA RICA', 207: u'CUBA', 208: u'CHILE', 210: u'ECUADOR', 211: u'EL SALVADOR', 212: u'ESTADOS UNIDOS',  218: u'MEXICO', 221: u'PARAGUAY', 222: u'PERU', 225: u'URUGUAY', 226: u'VENEZUELA', 250: u'AAE Tierra del Fuego - ARGENTINA', 251: u'ZF La Plata - ARGENTINA', 252: u'ZF Justo Daract - ARGENTINA', 253: u'ZF R\xedo Gallegos - ARGENTINA', 254: u'Islas Malvinas - ARGENTINA', 255: u'ZF Tucum\xe1n - ARGENTINA', 256: u'ZF C\xf3rdoba - ARGENTINA', 257: u'ZF Mendoza - ARGENTINA', 258: u'ZF General Pico - ARGENTINA', 259: u'ZF Comodoro Rivadavia - ARGENTINA', 260: u'ZF Iquique', 261: u'ZF Punta Arenas', 262: u'ZF Salta - ARGENTINA', 263: u'ZF Paso de los Libres - ARGENTINA', 264: u'ZF Puerto Iguaz\xfa - ARGENTINA', 265: u'SECTOR ANTARTICO ARG.', 270: u'ZF Col\xf3n - REP\xdaBLICA DE PANAM\xc1', 271: u'ZF Winner (Sta. C. de la Sierra) - BOLIVIA', 280: u'ZF Colonia - URUGUAY', 281: u'ZF Florida - URUGUAY', 282: u'ZF Libertad - URUGUAY', 283: u'ZF Zonamerica - URUGUAY', 284: u'ZF Nueva Helvecia - URUGUAY', 285: u'ZF Nueva Palmira - URUGUAY', 286: u'ZF R\xedo Negro - URUGUAY', 287: u'ZF Rivera - URUGUAY', 288: u'ZF San Jos\xe9 - URUGUAY', 291: u'ZF Manaos - BRASIL', }
     for k,v in data.items():
         db.pais_dst.insert(cod=k, desc=v)
-    return dict(ret=SQLTABLE(db(db.pais_dst.id>0).select()))
+    return dict(ret=SQLTABLE(db(db.pais_dst.id>0).select()), \
+                lista = A('Ver lista', _href=URL(r=request, c='setup', f='index')))
 
 def crear_provincias():
     data = {0: u"C.A.B.A.",1: u"Buenos Aires", 2: u"Catamarca", 3: u"Córdoba",4: u"Corrientes", 5: u"Entre Ríos", 6:
@@ -167,7 +169,8 @@ u"Tucuman", 16: u"Chaco", 17: u"Chubut", 18: u"Formosa", 19: u"Misiones", 20:
 u"Neuquen", 21: u"La Pampa", 22: u"Río Negro", 23: u"Santa Cruz", 24: u"Tierra del Fuego"}
     for k,v in data.items():
         db.provincia.insert(cod=k, desc=v)
-    return dict(ret=SQLTABLE(db(db.provincia.id>-1).select()))
+    return dict(ret=SQLTABLE(db(db.provincia.id>-1).select()), \
+                lista = A('Ver lista', _href=URL(r=request, c='setup', f='index')))
 
    
 def crear_localidades():
@@ -191,4 +194,5 @@ def crear_localidades():
                 registros += 1
         except (ValueError, AttributeError, TypeError), e:
             errores.append(e)
-    return dict(registros = registros, errores = errores)
+    return dict(registros = registros, errores = errores, \
+                lista = A('Ver lista', _href=URL(r=request, c='setup', f='index')))
