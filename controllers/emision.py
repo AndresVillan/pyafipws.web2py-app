@@ -42,12 +42,9 @@ def iniciar():
         form.vars.nro_doc = cliente.nro_doc
         form.vars.domicilio_cliente = cliente.domicilio_cliente
         form.vars.telefono_cliente = cliente.telefono_cliente
-        form.vars.localidad_cliente = cliente.localidad_cliente
-        form.vars.provincia_cliente = cliente.provincia_cliente
+        form.vars.localidad_cliente = cliente.localidad_cliente.desc
+        form.vars.provincia_cliente = cliente.provincia_cliente.desc
         form.vars.email = cliente.email
-        form.vars.provincia = cliente.provincia
-        form.vars.localidad = cliente.localidad
-
 
     # valido el formulario (si han enviado datos)
     if form.accepts(request.vars, session, dbio=False):
