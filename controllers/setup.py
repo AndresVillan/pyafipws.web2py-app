@@ -1,6 +1,17 @@
 # coding: utf8
 # try something like
 
+# ubicación de archivo de localidades
+# archivo csv con encabezado y columnas
+# 1: código de localidad
+# 2: denominación de localidad
+# 3: código de referencia de provincia
+import os, csv
+
+fuente_localidades = os.path.join(\
+request.env.web2py_path,'applications',\
+request.application,'static') + '/localidades.csv'
+
 def crear_tipos_doc():
     "Crear inicialmente los tipos de documento más usados"
     data = """\
@@ -147,3 +158,37 @@ def crear_paises():
     for k,v in data.items():
         db.pais_dst.insert(cod=k, desc=v)
     return dict(ret=SQLTABLE(db(db.pais_dst.id>0).select()))
+
+def crear_provincias():
+    data = {0: u"C.A.B.A.",1: u"Buenos Aires", 2: u"Catamarca", 3: u"Córdoba",4: u"Corrientes", 5: u"Entre Ríos", 6:
+u"Jujuy", 7: u"Mendoza", 8: u"La Rioja", 9: u"Salta", 10: u"San Juan", 11:
+u"San Luis", 12: u"Santa Fe", 13: u"Santiago del Estero", 14:
+u"Tucuman", 16: u"Chaco", 17: u"Chubut", 18: u"Formosa", 19: u"Misiones", 20:
+u"Neuquen", 21: u"La Pampa", 22: u"Río Negro", 23: u"Santa Cruz", 24: u"Tierra del Fuego"}
+    for k,v in data.items():
+        db.provincia.insert(cod=k, desc=v)
+    return dict(ret=SQLTABLE(db(db.provincia.id>-1).select()))
+
+   
+def crear_localidades():
+    """ crea localidades en la base de datos
+    """
+    provincias = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,16,17,18,19,20,21,22,23,24]
+    # 1) abrir csv con módulo intérprete
+    spamReader = csv.reader(open(fuente_localidades, "r"))
+    # 2) para cada registro de csv crear un registro de la base
+    # utilizando código de localidad y de provincia (referencia)
+    errores = list()
+    registros = 0
+    db(db.localidad.id > -1).delete()
+    db.commit()
+    for linea in spamReader:
+        try:
+            if (int(linea[0]) and (len(linea[1]) > 0) and (int(linea[2]) in provincias)):
+                # modificar (una consulta por registro)
+                la_provincia = db(db.provincia.cod == linea[2]).select().first().id            
+                db.localidad.insert(cod=str(int(linea[0])), desc=linea[1], provincia=la_provincia)
+                registros += 1
+        except (ValueError, AttributeError, TypeError), e:
+            errores.append(e)
+    return dict(registros = registros, errores = errores)

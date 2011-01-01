@@ -9,6 +9,8 @@ INCOTERMS = ['EXW','FCA','FAS','FOB','CFR','CIF','CPT','CIP','DAF','DES','DEQ','
 CONCEPTOS = {'1': 'Productos', '2': 'Servicios', '3': 'Otros/ambos'}
 IDIOMAS = {'1':'Español', '2': 'Inglés', '3': 'Portugués'}
 SINO = {'S': 'Si', 'N': 'No'}
+PROVINCIAS = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,16,17,18,19,20,21,22,23,24]
+
 
 # Tablas dinámicas (pueden cambiar por AFIP/Usuario):
 
@@ -57,6 +59,23 @@ db.define_table('iva',
 # Paises (destino de exportación)
 db.define_table('pais_dst',
     Field('cod', type='id'),
+    Field('desc'),
+    format="%(desc)s",
+    migrate=migrate,
+    )
+
+# provincia
+db.define_table('provincia',
+    Field('cod',type='integer', requires =IS_IN_SET(PROVINCIAS)),
+    Field('desc'),
+    format="%(desc)s",
+    migrate=migrate,
+    )
+
+# localidad
+db.define_table('localidad',
+    Field('cod'),
+    Field('provincia', type='reference provincia'),
     Field('desc'),
     format="%(desc)s",
     migrate=migrate,
@@ -187,7 +206,7 @@ db.define_table('permiso',
     Field('dst_merc', type=db.pais_dst),
     migrate=migrate)
 
-# Tabla de clientes
+
 db.define_table('cliente', Field('nombre_cliente', type='string', length=200),
     Field('tipo_doc', type=db.tipo_doc, default='80'),
     Field('nro_doc', type='string',
