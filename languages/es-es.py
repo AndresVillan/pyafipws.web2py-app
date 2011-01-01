@@ -29,6 +29,7 @@
 'Check to delete:': 'Check to delete:',
 'Client IP': 'IP del Cliente',
 'Comprobantes': 'Comprobantes',
+'Configurar': 'Configurar',
 'Consultas': 'Consultas',
 'Controller': 'Controlador',
 'Controllers': 'Controladores',

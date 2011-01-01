@@ -31,7 +31,7 @@ response.menu = [
         (T('Últ.ID'), False, URL(request.application,'servicios_web','ultimo_id'), []),
         (T('Cotización'), False, URL(request.application,'servicios_web','cotizacion'), []),
     ]),
-    
+    (T('Configurar'), False, URL(request.application,'setup','index'), []),
     (T('Ayuda'), False, None , [
         (T('Información General'), False, "http://www.sistemasagiles.com.ar/trac/wiki/FacturaElectronica", []),
         (T('Información Técnica'), False, "http://www.sistemasagiles.com.ar/trac/wiki/ManualPyAfipWs", [
