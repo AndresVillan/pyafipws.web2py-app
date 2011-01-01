@@ -38,6 +38,15 @@ db.define_table('moneda',
     format="%(desc)s",
     migrate=migrate,
     )
+    
+# Idiomas (Español, etc.)
+db.define_table('idioma',
+    Field('cod', type='id'),
+    Field('desc'),
+    format="%(desc)s",
+    migrate=migrate,
+    )
+
 
 # Unidades de medida (u, kg, m, etc.) 
 db.define_table('umed',
