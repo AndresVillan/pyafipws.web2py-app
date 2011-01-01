@@ -9,8 +9,11 @@ INCOTERMS = ['EXW','FCA','FAS','FOB','CFR','CIF','CPT','CIP','DAF','DES','DEQ','
 CONCEPTOS = {'1': 'Productos', '2': 'Servicios', '3': 'Otros/ambos'}
 IDIOMAS = {'1':'Español', '2': 'Inglés', '3': 'Portugués'}
 SINO = {'S': 'Si', 'N': 'No'}
-PROVINCIAS = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,16,17,18,19,20,21,22,23,24]
-
+PROVINCIAS = {0: u"C.A.B.A.",1: u"Buenos Aires", 2: u"Catamarca", 3: u"Córdoba",4: u"Corrientes", 5: u"Entre Ríos", 6:
+u"Jujuy", 7: u"Mendoza", 8: u"La Rioja", 9: u"Salta", 10: u"San Juan", 11:
+u"San Luis", 12: u"Santa Fe", 13: u"Santiago del Estero", 14:
+u"Tucuman", 16: u"Chaco", 17: u"Chubut", 18: u"Formosa", 19: u"Misiones", 20:
+u"Neuquen", 21: u"La Pampa", 22: u"Río Negro", 23: u"Santa Cruz", 24: u"Tierra del Fuego"}
 
 # Tablas dinámicas (pueden cambiar por AFIP/Usuario):
 
@@ -47,7 +50,6 @@ db.define_table('idioma',
     migrate=migrate,
     )
 
-
 # Unidades de medida (u, kg, m, etc.) 
 db.define_table('umed',
     Field('cod', type='id'),
@@ -75,9 +77,9 @@ db.define_table('pais_dst',
 
 # provincia
 db.define_table('provincia',
-    Field('cod',type='integer', requires =IS_IN_SET(PROVINCIAS)),
+    Field('cod',type='integer', requires =IS_IN_SET(PROVINCIAS.keys())),
     Field('desc'),
-    format="%(desc)s",
+    format="%(desc)s (%(id)s)",
     migrate=migrate,
     )
 
@@ -86,8 +88,8 @@ db.define_table('localidad',
     Field('cod'),
     Field('provincia', type='reference provincia'),
     Field('desc'),
-    format="%(desc)s",
-    migrate=migrate,
+    format='%(desc)s (%(provincia)s)',
+    migrate=migrate
     )
 
 # Tablas principales
@@ -214,7 +216,7 @@ db.define_table('permiso',
     Field('id_permiso', type='string', length=16),
     Field('dst_merc', type=db.pais_dst),
     migrate=migrate)
-
+    
 
 db.define_table('cliente', Field('nombre_cliente', type='string', length=200),
     Field('tipo_doc', type=db.tipo_doc, default='80'),
@@ -222,12 +224,11 @@ db.define_table('cliente', Field('nombre_cliente', type='string', length=200),
             requires=IS_CUIT()),
     Field('domicilio_cliente', type='string', length=300),
     Field('telefono_cliente', type='string', length=50),
-    Field('localidad_cliente', type='string', length=50),
-    Field('provincia_cliente', type='string', length=50),
+    Field('localidad_cliente', type='reference localidad', comment='Localidad (id de provincia)', length=50),
+    Field('provincia_cliente', type='reference provincia', comment='Provincia (id)'),
     Field('email', type='string', length=100),    
     Field('id_impositivo', type='string', length=50,
-            comment="CNJP, RUT, RUC (exportación"), migrate=migrate)
-
+            comment="CNJP, RUT, RUC (exportación)"), migrate=migrate)
 
 # Tablas de depuración
 
