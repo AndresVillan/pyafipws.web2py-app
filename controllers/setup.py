@@ -156,6 +156,7 @@ def crear_umedidas():
 
 def crear_paises():
     data = {200: u'ARGENTINA', 202: u'BOLIVIA', 203: u'BRASIL', 204: u'CANADA', 205: u'COLOMBIA', 206: u'COSTA RICA', 207: u'CUBA', 208: u'CHILE', 210: u'ECUADOR', 211: u'EL SALVADOR', 212: u'ESTADOS UNIDOS',  218: u'MEXICO', 221: u'PARAGUAY', 222: u'PERU', 225: u'URUGUAY', 226: u'VENEZUELA', 250: u'AAE Tierra del Fuego - ARGENTINA', 251: u'ZF La Plata - ARGENTINA', 252: u'ZF Justo Daract - ARGENTINA', 253: u'ZF R\xedo Gallegos - ARGENTINA', 254: u'Islas Malvinas - ARGENTINA', 255: u'ZF Tucum\xe1n - ARGENTINA', 256: u'ZF C\xf3rdoba - ARGENTINA', 257: u'ZF Mendoza - ARGENTINA', 258: u'ZF General Pico - ARGENTINA', 259: u'ZF Comodoro Rivadavia - ARGENTINA', 260: u'ZF Iquique', 261: u'ZF Punta Arenas', 262: u'ZF Salta - ARGENTINA', 263: u'ZF Paso de los Libres - ARGENTINA', 264: u'ZF Puerto Iguaz\xfa - ARGENTINA', 265: u'SECTOR ANTARTICO ARG.', 270: u'ZF Col\xf3n - REP\xdaBLICA DE PANAM\xc1', 271: u'ZF Winner (Sta. C. de la Sierra) - BOLIVIA', 280: u'ZF Colonia - URUGUAY', 281: u'ZF Florida - URUGUAY', 282: u'ZF Libertad - URUGUAY', 283: u'ZF Zonamerica - URUGUAY', 284: u'ZF Nueva Helvecia - URUGUAY', 285: u'ZF Nueva Palmira - URUGUAY', 286: u'ZF R\xedo Negro - URUGUAY', 287: u'ZF Rivera - URUGUAY', 288: u'ZF San Jos\xe9 - URUGUAY', 291: u'ZF Manaos - BRASIL', }
+    db(db.pais_dst.cod>=0).delete()
     for k,v in data.items():
         db.pais_dst.insert(cod=k, desc=v)
     return dict(ret=SQLTABLE(db(db.pais_dst.id>0).select()), \
@@ -167,6 +168,7 @@ u"Jujuy", 7: u"Mendoza", 8: u"La Rioja", 9: u"Salta", 10: u"San Juan", 11:
 u"San Luis", 12: u"Santa Fe", 13: u"Santiago del Estero", 14:
 u"Tucuman", 16: u"Chaco", 17: u"Chubut", 18: u"Formosa", 19: u"Misiones", 20:
 u"Neuquen", 21: u"La Pampa", 22: u"Río Negro", 23: u"Santa Cruz", 24: u"Tierra del Fuego"}
+    db(db.provincia.cod>=0).delete()
     for k,v in data.items():
         db.provincia.insert(cod=k, desc=v)
     return dict(ret=SQLTABLE(db(db.provincia.id>-1).select()), \
@@ -185,7 +187,9 @@ def crear_localidades():
     registros = 0
     db(db.localidad.id > -1).delete()
     db.commit()
+    contador = 0
     for linea in spamReader:
+        contador +=1
         try:
             if (int(linea[0]) and (len(linea[1]) > 0) and (int(linea[2]) in provincias)):
                 # modificar (una consulta por registro)
@@ -193,6 +197,6 @@ def crear_localidades():
                 db.localidad.insert(cod=str(int(linea[0])), desc=linea[1], provincia=la_provincia)
                 registros += 1
         except (ValueError, AttributeError, TypeError), e:
-            errores.append(e)
+            errores.append(str(e) + " (Fila %s)" % contador)
     return dict(registros = registros, errores = errores, \
                 lista = A('Ver lista', _href=URL(r=request, c='setup', f='index')))
