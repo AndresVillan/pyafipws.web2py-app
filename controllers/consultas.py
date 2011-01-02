@@ -2,6 +2,19 @@
 # try something like
 def index(): return dict(message="momentaneamente no implementado")
 
+def detalle():
+    comprobante, detalle = None, None
+    el_id = int(request.args[1])
+    cbte = db(db.comprobante.id == el_id).select()
+    los_item = db(db.detalle.comprobante_id == el_id).select()
+            
+    if los_item != None:
+        los_item = DIV(SQLTABLE(los_item), _style="overflow: auto;")
+
+    return dict(comprobante = DIV(cbte, _style="overflow: auto;"\
+    ), detalle = los_item)
+
+
 def comprobantes():
 
     """ Consulta de comprobantes con parámetros para filtro """
@@ -122,7 +135,8 @@ def comprobantes():
             posterior = None
 
     if los_comprobantes != None:
-        los_comprobantes = DIV(SQLTABLE(los_comprobantes), _style="overflow: auto;")
+        los_comprobantes = DIV(SQLTABLE(los_comprobantes, linkto=URL(\
+        r=request, c='consultas', f='detalle')), _style="overflow: auto;")
 
     return dict(los_comprobantes = los_comprobantes, \
     los_link = los_link, anterior = anterior, posterior = posterior)
