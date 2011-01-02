@@ -125,12 +125,12 @@ def comprobantes():
 
         if int(seccion) > 0:
             anterior = A("Anterior", _href=URL(r=request, \
-            c="consultas", f="comprobantes", vars={"seccion": seccion}))
+            c="consultas", f="comprobantes", vars={"seccion": int(seccion) -1}))
         else: anterior = None
         
         if int(seccion) < len(los_link) -1:
             posterior = A("Posterior", _href=URL(r=request, \
-            c="consultas", f="comprobantes", vars={"seccion": seccion}))
+            c="consultas", f="comprobantes", vars={"seccion": int(seccion) +1}))
         else:
             posterior = None
 
@@ -139,4 +139,4 @@ def comprobantes():
         r=request, c='consultas', f='detalle')), _style="overflow: auto;")
 
     return dict(los_comprobantes = los_comprobantes, \
-    los_link = los_link, anterior = anterior, posterior = posterior)
+    los_link = los_link, anterior = anterior, posterior = posterior, seccion = seccion)
