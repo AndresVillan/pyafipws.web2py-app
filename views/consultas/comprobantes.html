@@ -2,20 +2,25 @@
 <h1>Comprobantes</h1>
 
 {{if los_comprobantes:}}
+
+{{if los_link:}}
+
 Secciones:
-{{if anterior:}}
+
+{{if (int(seccion) -1)  > -1:}}
 {{=anterior}}
 {{pass}}
 
-{{if los_link:}}
 {{for link in los_link:}}
 {{=link}}
 {{pass}}
-{{pass}}
 
-{{if posterior:}}
+{{if (int(seccion) +1) < len(los_link):}}
 {{=posterior}}
 {{pass}}
+
+{{pass}}
+
 
 <!-- El sqltable con los registros-->
 {{=los_comprobantes}}
