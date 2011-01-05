@@ -6,13 +6,15 @@ def detalle():
     comprobante, detalle = None, None
     el_id = int(request.args[1])
     cbte = db(db.comprobante.id == el_id).select()
-    los_item = db(db.detalle.comprobante_id == el_id).select()
+    detalle = db(db.detalle.comprobante_id == el_id).select()
             
-    if los_item != None:
-        los_item = DIV(SQLTABLE(los_item), _style="overflow: auto;")
+    if ((detalle != None) and (len(detalle) > 0)):
+        detalle = DIV(SQLTABLE(detalle), _style="overflow: auto;")
+    else:
+        detalle = None
 
     return dict(comprobante = DIV(cbte, _style="overflow: auto;"\
-    ), detalle = los_item)
+    ), detalle = detalle)
 
 
 def comprobantes():
