@@ -216,7 +216,17 @@ db.define_table('permiso',
     Field('id_permiso', type='string', length=16),
     Field('dst_merc', type=db.pais_dst),
     migrate=migrate)
-    
+
+db.define_table('producto', Field('ds', type='text', length=4000, label="Descripción", \
+            requires=IS_NOT_EMPTY()), Field('iva_id', \
+    type=db.iva, default=5, label="IVA", represent=lambda id: db.iva[id].desc, \
+    comment="Alícuota de IVA"), Field('codigo', type='string', \
+    length=30, requires=IS_NOT_EMPTY()), Field('precio', \
+    type='double', notnull=True, requires=IS_FLOAT_IN_RANGE(0.01, 1000000000)), \
+    Field('umed', type=db.umed, default=7), Field('ncm', type='string', \
+    length=15, comment="Código Nomenclador Común Mercosur (Bono fiscal)"), \
+    Field('sec', type='string', length=15, \
+    comment="Código Secretaría de Comercio (Bono fiscal)"))
 
 db.define_table('cliente', Field('nombre_cliente', type='string', length=200),
     Field('tipo_doc', type=db.tipo_doc, default='80'),
