@@ -2,7 +2,13 @@
 <h1>Emision de facturas - Detalles (Paso 2)</h1>
 {{=form}}
 
+{{=A('Cargar producto', _href=URL(r=request, f='cargar_producto'))}}
+
+{{if producto:}}
+{{=LOAD('emision','detalle.load',ajax=True, vars={'producto': producto})}}
+{{else:}}
 {{=LOAD('emision','detalle.load',ajax=True)}}
+{{pass}}
 
 {{=A("<< Anterior", _href=URL("iniciar"))}}
 -

@@ -72,10 +72,36 @@ def detallar():
     form = SQLFORM(db.comprobante, session.comprobante_id,
                    fields=campos_encabezado, readonly=True)
     comprobante = db(db.comprobante.id==session.comprobante_id).select().first()
-    return dict(form=form, comprobante=comprobante)
+    
+    try:
+        # Trato de obtener un producto especificado
+        # para pre-completar campos de detalle
+        el_producto = int(request.vars["producto"])
+
+    except KeyError:
+        # no se envió un producto en la solicitud
+        el_producto = None
+
+    return dict(form=form, comprobante=comprobante, producto = el_producto)
+
 
 def detalle():
     form = SQLFORM(db.detalle)
+    try:
+        producto = db(db.producto.id == int(request.vars["producto"])).select().first()
+        form.vars.codigo = producto.codigo
+        form.vars.ds = producto.ds
+        form.vars.iva_id = producto.iva_id
+        form.vars.precio = producto.precio
+        form.vars.umed = producto.umed
+        form.vars.ncm = producto.ncm
+        form.vars.sec = producto.sec
+
+    except KeyError:
+        # no se especifica producto pre-cargado
+        # en el formulario
+        pass
+
     db.detalle.comprobante_id.default = session.comprobante_id
     if form.accepts(request.vars, session):
         response.flash ="Detalle agregado!"
@@ -103,6 +129,17 @@ def editar_detalle():
     elif form.errors:
         response.flash = 'formulario con errores'
     return dict(form=form)
+
+
+def link_cargar_producto(field, type, ref):
+    return URL(r=request, f='detallar', vars={'producto': int(field)})
+
+
+def cargar_producto():
+    los_productos = db(db.producto.id > 0).select()
+    productos = DIV(SQLTABLE(los_productos, linkto=link_cargar_producto), _style='overflow: auto;')
+    return dict(productos=productos)
+
 
 def finalizar():
     campos_encabezado = [

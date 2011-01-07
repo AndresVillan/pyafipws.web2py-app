@@ -40,6 +40,11 @@ total.val(t)
 $('#detalle_qty').change(calculate_total);
 $('#detalle_precio').change(calculate_total);
 
+// autocalcular al descargar el formulario
+// (para carga de productos desde la base de datos)
+$(document).ready(function(){
+calculate_total();
+});
 
 // -->
 </SCRIPT>
