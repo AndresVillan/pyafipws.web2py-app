@@ -41,8 +41,9 @@ def comprobantes():
             # no se envió una consulta
             return dict(los_comprobantes = None, \
         los_link = None, anterior = None, \
-        posterior = None, seccion = None, laseccion = None, form = form, consulta = False, registros = None)
-
+        posterior = None, seccion = None, \
+        laseccion = None, form = form, \
+        consulta = False, registros = None)
 
     if "nueva" in request.vars.keys():
         if request.vars["nueva"] == "true":
@@ -77,8 +78,8 @@ def comprobantes():
     except (KeyError, ValueError):
         # no se pasó cantidad por formulario. Buscar en session
         try:
-            registros = session.consulta_registros
-        except (ValueError, AttributeError):
+            registros = int(session.consulta_registros)
+        except (ValueError, AttributeError, TypeError):
             session.consulta_registros = 30
             registros = 30
             
