@@ -1,11 +1,15 @@
 {{extend 'layout.html'}}
 <h1>Comprobantes</h1>
-
+{{=form}}
 {{if los_comprobantes:}}
+
+{{if registros:}}
+{{=H5("Mostrando %s registros por página" % registros)}}
+{{pass}}
 
 {{if los_link:}}
 
-Secciones ({{=int(seccion) + 1}}):
+Secciones ({{=laseccion}}):
 
 {{if (int(seccion) -1)  > -1:}}
 {{=anterior}}
@@ -26,5 +30,7 @@ Secciones ({{=int(seccion) + 1}}):
 {{=los_comprobantes}}
 
 {{else:}}
+{{if consulta:}}
 {{=H3("No hay registros")}}
+{{pass}}
 {{pass}}
