@@ -1,5 +1,7 @@
 # coding: utf8
 # try something like
+import datetime
+
 def index(): return dict(message="momentaneamente no implementado")
 
 def detalle():
@@ -22,16 +24,33 @@ def comprobantes():
     """ Consulta de comprobantes con parámetros para filtro """
     form_enviado = False
     
-    form = SQLFORM.factory(Field('tipo', \
-    requires = IS_IN_DB(db, db.tipo_cbte.cod, \
-    '%(desc)s') \
+    form = SQLFORM.factory(Field('periodo', 'integer', \
+    requires = IS_IN_SET([y for y in range(1900, 2020)]), \
+    default=datetime.datetime.now().year), Field('tipo', \
+    requires = IS_NULL_OR(IS_IN_DB(db, db.tipo_cbte.cod, \
+    '%(desc)s')) \
     ), Field('cliente', \
-    requires = IS_IN_DB(db, db.cliente.nombre_cliente, \
-    '%(nombre_cliente)s') \
+    requires = IS_NULL_OR(IS_IN_DB(db, db.cliente.nombre_cliente, \
+    '%(nombre_cliente)s')) \
     ), Field('desde_fecha', type="date"), Field('hasta_fecha', type="date")\
     , Field('desde_cbte'), \
     Field('hasta_cbte'), Field('registros', type="integer") )
 
+    if form.accepts(request.vars, session, keepvalues = True):
+        # conservar los valores del form
+        pass
+
+    else:
+        if form.errors:
+            response.flash = "Hay errores en la consulta"
+        """
+        return dict(los_comprobantes = None, \
+        los_link = None, anterior = None, \
+        posterior = None, seccion = None, \
+        laseccion = None, form = form, \
+        consulta = False, registros = None)
+        """
+        
     if "desde_fecha" in request.vars.keys():
         session.consulta_comprobante = None
         form_enviado = True
@@ -54,7 +73,9 @@ def comprobantes():
     los_link = None
     seccion = 0
     la_seccion = ""
-
+    primera = None
+    primera = None
+    
     # recuperar datos de filtrado
     try:
         filtro_campo = "id.comprobante. " + request.vars["filtro_campo"]
@@ -92,7 +113,14 @@ def comprobantes():
         posterior = None
         los_link = None
 
-        el_set = db(db.comprobante)
+        try:
+            el_periodo = datetime.datetime(int(request.vars["periodo"]), 1, 1)
+            el_set = db((db.comprobante.fecha_cbte >= str(\
+            el_periodo.year) + "-01-01") & (db.comprobante.fecha_cbte < str(el_periodo.year +1) + "-01-01"))
+        except (ValueError, KeyError, AttributeError), e:
+            el_periodo = datetime.datetime(datetime.datetime.now().year, 1, 1)        
+            el_set = db((db.comprobante.fecha_cbte >= str(\
+            el_periodo.year) + "-01-01") & (db.comprobante.fecha_cbte < str(el_periodo.year +1) + "-01-01"))
 
         # subset sucesivos según filtro
         if form_enviado:
@@ -178,6 +206,10 @@ def comprobantes():
         # obtengo la sección seleccionada como texto
         if len(los_link) > 0:
             la_seccion = los_link[int(seccion)]
+            primera = A( 'Primera', _href=URL(r=request, \
+        c="consultas", f="comprobantes", vars={"seccion": 0}))
+            ultima = A( 'Última', _href=URL(r=request, \
+        c="consultas", f="comprobantes", vars={"seccion": len(los_link) -1}))
 
         if int(seccion) > 0:
             anterior = A("Anterior", _href=URL(r=request, \
@@ -197,4 +229,5 @@ def comprobantes():
     return dict(los_comprobantes = los_comprobantes, \
     los_link = los_link, anterior = anterior, \
     posterior = posterior, seccion = seccion, laseccion = la_seccion, \
-    form = form, consulta = True, registros = registros)
+    form = form, consulta = True, registros = registros, primera = primera, \
+    ultima = ultima)
