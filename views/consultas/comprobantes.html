@@ -10,19 +10,26 @@
 {{if los_link:}}
 
 Secciones ({{=laseccion}}):
-
+{{=primera}}
 {{if (int(seccion) -1)  > -1:}}
 {{=anterior}}
 {{pass}}
 
+{{contador = 0}}
+
 {{for link in los_link:}}
+{{contador +=1}}
+
+{{if (contador > int(seccion) -5) and (contador < int(seccion) +5):}}
 {{=link}}
+{{pass}}
+
 {{pass}}
 
 {{if (int(seccion) +1) < len(los_link):}}
 {{=posterior}}
 {{pass}}
-
+{{=ultima}}
 {{pass}}
 
 
