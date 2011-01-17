@@ -20,10 +20,9 @@ def detalle():
 
 
 def comprobantes():
-
     """ Consulta de comprobantes con parámetros para filtro """
     form_enviado = False
-    
+   
     form = SQLFORM.factory(Field('periodo', 'integer', \
     requires = IS_IN_SET([y for y in range(1900, 2020)]), \
     default=datetime.datetime.now().year), Field('tipo', \
@@ -34,7 +33,10 @@ def comprobantes():
     '%(nombre_cliente)s')) \
     ), Field('desde_fecha', type="date"), Field('hasta_fecha', type="date")\
     , Field('desde_cbte'), \
-    Field('hasta_cbte'), Field('registros', type="integer") )
+    Field('hasta_cbte'), Field('ordenar_campo', \
+    requires = IS_IN_SET(db.comprobante.fields()), default = "id"), \
+    Field('ordenar_sentido', requires = IS_IN_SET(['asc', 'desc']), default = 'asc' ), \
+    Field('registros', type="integer") )
 
     if form.accepts(request.vars, session, keepvalues = True):
         # conservar los valores del form
@@ -43,13 +45,6 @@ def comprobantes():
     else:
         if form.errors:
             response.flash = "Hay errores en la consulta"
-        """
-        return dict(los_comprobantes = None, \
-        los_link = None, anterior = None, \
-        posterior = None, seccion = None, \
-        laseccion = None, form = form, \
-        consulta = False, registros = None)
-        """
         
     if "desde_fecha" in request.vars.keys():
         session.consulta_comprobante = None
@@ -74,7 +69,7 @@ def comprobantes():
     seccion = 0
     la_seccion = ""
     primera = None
-    primera = None
+    ultima = None
     
     # recuperar datos de filtrado
     try:
@@ -225,6 +220,7 @@ def comprobantes():
     if los_comprobantes != None:
         los_comprobantes = DIV(SQLTABLE(los_comprobantes, linkto=URL(\
         r=request, c='consultas', f='detalle')), _style="overflow: auto;")
+    
 
     return dict(los_comprobantes = los_comprobantes, \
     los_link = los_link, anterior = anterior, \
