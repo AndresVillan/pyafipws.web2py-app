@@ -9,6 +9,11 @@ INCOTERMS = ['EXW','FCA','FAS','FOB','CFR','CIF','CPT','CIP','DAF','DES','DEQ','
 CONCEPTOS = {'1': 'Productos', '2': 'Servicios', '3': 'Otros/ambos'}
 IDIOMAS = {'1':'Español', '2': 'Inglés', '3': 'Portugués'}
 SINO = {'S': 'Si', 'N': 'No'}
+PROVINCIAS = {0: u"C.A.B.A.",1: u"Buenos Aires", 2: u"Catamarca", 3: u"Córdoba",4: u"Corrientes", 5: u"Entre Ríos", 6:
+u"Jujuy", 7: u"Mendoza", 8: u"La Rioja", 9: u"Salta", 10: u"San Juan", 11:
+u"San Luis", 12: u"Santa Fe", 13: u"Santiago del Estero", 14:
+u"Tucuman", 16: u"Chaco", 17: u"Chubut", 18: u"Formosa", 19: u"Misiones", 20:
+u"Neuquen", 21: u"La Pampa", 22: u"Río Negro", 23: u"Santa Cruz", 24: u"Tierra del Fuego"}
 
 # Tablas dinámicas (pueden cambiar por AFIP/Usuario):
 
@@ -32,6 +37,14 @@ db.define_table('tipo_doc',
 # Monedas (PES: Peso, DOL: DOLAR, etc.)
 db.define_table('moneda',
     Field('cod', type='string'),
+    Field('desc'),
+    format="%(desc)s",
+    migrate=migrate,
+    )
+    
+# Idiomas (Español, etc.)
+db.define_table('idioma',
+    Field('cod', type='id'),
     Field('desc'),
     format="%(desc)s",
     migrate=migrate,
@@ -60,6 +73,23 @@ db.define_table('pais_dst',
     Field('desc'),
     format="%(desc)s",
     migrate=migrate,
+    )
+
+# provincia
+db.define_table('provincia',
+    Field('cod',type='integer', requires =IS_IN_SET(PROVINCIAS.keys())),
+    Field('desc'),
+    format="%(desc)s (%(id)s)",
+    migrate=migrate,
+    )
+
+# localidad
+db.define_table('localidad',
+    Field('cod'),
+    Field('provincia', type='reference provincia'),
+    Field('desc'),
+    format='%(desc)s (%(provincia)s)',
+    migrate=migrate
     )
 
 # Tablas principales
@@ -186,6 +216,29 @@ db.define_table('permiso',
     Field('id_permiso', type='string', length=16),
     Field('dst_merc', type=db.pais_dst),
     migrate=migrate)
+
+db.define_table('producto', Field('ds', type='text', length=4000, label="Descripción", \
+            requires=IS_NOT_EMPTY()), Field('iva_id', \
+    type=db.iva, default=5, label="IVA", represent=lambda id: db.iva[id].desc, \
+    comment="Alícuota de IVA"), Field('codigo', type='string', \
+    length=30, requires=IS_NOT_EMPTY()), Field('precio', \
+    type='double', notnull=True, requires=IS_FLOAT_IN_RANGE(0.01, 1000000000)), \
+    Field('umed', type=db.umed, default=7), Field('ncm', type='string', \
+    length=15, comment="Código Nomenclador Común Mercosur (Bono fiscal)"), \
+    Field('sec', type='string', length=15, \
+    comment="Código Secretaría de Comercio (Bono fiscal)"))
+
+db.define_table('cliente', Field('nombre_cliente', type='string', length=200),
+    Field('tipo_doc', type=db.tipo_doc, default='80'),
+    Field('nro_doc', type='string',
+            requires=IS_CUIT()),
+    Field('domicilio_cliente', type='string', length=300),
+    Field('telefono_cliente', type='string', length=50),
+    Field('localidad_cliente', type='reference localidad', comment='Localidad (id de provincia)', length=50),
+    Field('provincia_cliente', type='reference provincia', comment='Provincia (id)'),
+    Field('email', type='string', length=100),    
+    Field('id_impositivo', type='string', length=50,
+            comment="CNJP, RUT, RUC (exportación)"), migrate=migrate)
 
 # Tablas de depuración
 

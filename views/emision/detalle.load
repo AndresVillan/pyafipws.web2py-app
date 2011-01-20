@@ -2,11 +2,13 @@
         columns=['detalle.codigo','detalle.qty','detalle.umed',
                  'detalle.ds', 'detalle.ncm', 'detalle.sec', 
                  'detalle.precio','detalle.imp_total', 'detalle.iva_id',
+                 'detalle.imp_iva',
                  'detalle.bonif', 
                  'detalle.id'],
         headers={'detalle.codigo':'Codigo','detalle.qty':'Cant.','detalle.umed':'U.Med',
                  'detalle.precio':'Precio','detalle.imp_total':'Imp.Total',
                  'detalle.iva_id':'IVA','detalle.ds':'Descripción', 
+                 'detalle.imp_iva':'IVA IMP', 
                  'detalle.ncm':'NCM', 'detalle.sec':'SEC', 'detalle.bonif':'Bonif.', 'detalle.id': 'ID'},
         linkto=lambda field, type, ref: URL("editar_detalle.html",args=[field]),
 
@@ -38,6 +40,11 @@ total.val(t)
 $('#detalle_qty').change(calculate_total);
 $('#detalle_precio').change(calculate_total);
 
+// autocalcular al descargar el formulario
+// (para carga de productos desde la base de datos)
+$(document).ready(function(){
+calculate_total();
+});
 
 // -->
 </SCRIPT>

@@ -1,0 +1,43 @@
+{{extend 'layout.html'}}
+<h1>Comprobantes</h1>
+{{=form}}
+{{if los_comprobantes:}}
+
+{{if registros:}}
+{{=H5("Mostrando %s registros por página" % registros)}}
+{{pass}}
+
+{{if los_link:}}
+
+Secciones ({{=laseccion}}):
+{{=primera}}
+{{if (int(seccion) -1)  > -1:}}
+{{=anterior}}
+{{pass}}
+
+{{contador = 0}}
+
+{{for link in los_link:}}
+{{contador +=1}}
+
+{{if (contador > int(seccion) -5) and (contador < int(seccion) +5):}}
+{{=link}}
+{{pass}}
+
+{{pass}}
+
+{{if (int(seccion) +1) < len(los_link):}}
+{{=posterior}}
+{{pass}}
+{{=ultima}}
+{{pass}}
+
+
+<!-- El sqltable con los registros-->
+{{=los_comprobantes}}
+
+{{else:}}
+{{if consulta:}}
+{{=H3("No hay registros")}}
+{{pass}}
+{{pass}}

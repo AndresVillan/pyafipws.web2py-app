@@ -16,7 +16,8 @@ response.menu = [
     (T('Inicio'), False, URL(request.application,'default','index'), []),
     
     (T('Emisión'), False, URL(request.application,'emision','iniciar'), []),
-    (T('Consultas'), False, URL(request.application,'consultas','index'), []),    
+    (T('Consultas'), False, URL(request.application,'consultas','index'), \
+     [(T('Comprobantes'), False, URL(request.application,'consultas', 'comprobantes', vars={"nueva": "true"})),]),    
 
     (T('Servicios Web'), False, None , [
         (T('Estado (dummy)'), False, "", [
@@ -30,7 +31,7 @@ response.menu = [
         (T('Últ.ID'), False, URL(request.application,'servicios_web','ultimo_id'), []),
         (T('Cotización'), False, URL(request.application,'servicios_web','cotizacion'), []),
     ]),
-    
+    (T('Configurar'), False, URL(request.application,'setup','index'), []),
     (T('Ayuda'), False, None , [
         (T('Información General'), False, "http://www.sistemasagiles.com.ar/trac/wiki/FacturaElectronica", []),
         (T('Información Técnica'), False, "http://www.sistemasagiles.com.ar/trac/wiki/ManualPyAfipWs", [
