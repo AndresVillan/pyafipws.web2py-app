@@ -35,6 +35,9 @@ def _autenticar(service="wsfe", ttl=60*60*5):
     # wsfev1 => wsfe!
     service = {'wsfev1': 'wsfe'}.get(service, service)
     
+    if service not in ("wsfe","wsfev1","wsmtxca","wsfex","wsbfe"):
+        raise HTTP(500,"Servicio %s incorrecto" % service)
+    
     # verifico archivo temporal con el ticket de acceso
     TA = os.path.join(PRIVATE_PATH, "TA-%s.xml" % service)
     ttl = 60*60*5
@@ -75,8 +78,9 @@ else:
     
 if SERVICE:        
     # solicito autenticación
-    TOKEN, SIGN = _autenticar(SERVICE)        
-    
+    if request.controller!="dummy":
+        TOKEN, SIGN = _autenticar(SERVICE)        
+        
     # conecto al webservice
     client = SoapClient( 
             wsdl = WSDL[SERVICE],
@@ -246,12 +250,12 @@ def autorizar():
                         'impto_liq_rni': 0.00,
                         'imp_op_ex': comprobante.imp_op_ex or 0.00,
                         'fecha_cbte': comprobante.fecha_cbte.strftime("%Y%m%d"),
-                        'fecha_venc_pago': comprobante.fecha_venc_pago.strftime("%Y%m%d"),
+                        'fecha_venc_pago': comprobante.fecha_venc_pago and comprobante.fecha_venc_pago.strftime("%Y%m%d"),
                     }}
                 }
             )['FEAutRequestResult']
             
-            if 'resultado' in result['FecResp']:
+            if 'resultado' in result.get('FecResp',{}):
                 # actualizo el registro del comprobante con el resultado:
                 actualizar = dict(
                     # Resultado: Aceptado o Rechazado
