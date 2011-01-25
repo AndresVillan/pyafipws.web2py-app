@@ -81,6 +81,7 @@ def comprobantes():
     try:
         ordenar_campo = request.vars["ordenar_campo"]
         ordenar_sentido = request.vars["ordenar_sentido"]
+
     except KeyError:
         ordenar_campo = "id"
         ordenar_sentido = "asc"
@@ -146,6 +147,9 @@ def comprobantes():
         if (filtro_campo and filtro_valor):
             el_set = el_set(filtro_campo + "==" + filtro_valor)
 
+        # acá da error la consulta si los parámetros son cadenas vacías
+        if not ordenar_campo: ordenar_campo = "id"
+        if not ordenar_sentido: ordenar_sentido = "asc"
         comprobantes = el_set.select(orderby=ordenar_campo + \
         " " + ordenar_sentido)
 
