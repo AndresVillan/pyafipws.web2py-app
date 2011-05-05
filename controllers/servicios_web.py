@@ -1,4 +1,4 @@
-# coding: utf8
+# -*- coding: utf-8 -*-
 
 response.title = "Servicios Web AFIP"
 
@@ -19,9 +19,9 @@ WSAA_URL = "https://wsaahomo.afip.gov.ar/ws/services/LoginCms"
 
 # Configuración (mover al modelo):
 
-CUIT = 20267565393
-CERTIFICATE = 'reingart.crt'
-PRIVATE_KEY = 'reingart.key'
+CUIT = None # [cuit sin guiones]
+CERTIFICATE = None # '[empresa].crt'
+PRIVATE_KEY = None # '[empresa].key'
 
 
 def ymd2date(vto):
@@ -144,6 +144,31 @@ def ultimo_id():
     return {'form': form, 'result': result}
 
 
+# devuelve unicamente id
+def f_ultimo_id(comprobante):
+    "Obtener el último ID de transacción AFIP (sin formulario)"
+    
+    result = {}
+    
+    if SERVICE=='wsfe':
+        result = client.FEUltNroRequest(
+            argAuth = {'Token': TOKEN, 'Sign' : SIGN, 'cuit' : CUIT},
+            )['FEUltNroRequestResult']
+    elif SERVICE=='wsfex':
+        result = client.FEXGetLast_ID(
+            Auth={'Token': TOKEN, 'Sign': SIGN, 'Cuit': CUIT,}
+            )['FEXGetLast_IDResult']
+    elif SERVICE=='wsbfe':
+        result = client.BFEGetLast_ID(
+            Auth={'Token': TOKEN, 'Sign': SIGN, 'Cuit': CUIT,}
+            )['BFEGetLast_IDResult']
+    else:
+        pass
+            
+    return result
+
+
+
 def ultimo_numero_comprobante():
     "Obtener el último comprobante autorizado por la AFIP"
     response.subtitle = "Consulta el último número de comprobante autorizado"
@@ -187,6 +212,39 @@ def ultimo_numero_comprobante():
     return {'form': form, 'result': result}
 
 
+# devuelve último cbte
+def f_ultimo_numero_comprobante(comprobante):
+    "Obtener el último comprobante autorizado por la AFIP (sin formulario)"
+    
+    result = {}
+    if True:    
+        if SERVICE=='wsfe':
+            result = client.FERecuperaLastCMPRequest(
+                argAuth = {'Token': TOKEN, 'Sign' : SIGN, 'cuit' : CUIT},
+                argTCMP={'PtoVta' : comprobante.punto_vta, 'TipoCbte' : comprobante.tipo_cbte}
+                )['FERecuperaLastCMPRequestResult']
+        elif SERVICE=='wsfev1':
+            result = client.FECompUltimoAutorizado(
+                Auth={'Token': TOKEN, 'Sign': SIGN, 'Cuit': CUIT},
+                PtoVta=comprobante.punto_vta,
+                CbteTipo=comprobante.tipo_cbte,
+                )['FECompUltimoAutorizadoResult']
+        elif SERVICE=='wsfex':
+            result = client.FEXGetLast_CMP(
+                Auth={'Token': TOKEN, 'Sign': SIGN, 'Cuit': CUIT,
+                    "Tipo_cbte": comprobante.punto_vta,
+                    "Pto_venta": comprobante.tipo_cbte,}
+                )['FEXGetLast_CMPResult']
+        elif SERVICE=='wsbfe':
+            pass
+        elif SERVICE=='wsmtxca':
+            pass
+        else:
+            pass
+            
+    return result
+
+
 def cotizacion():
     "Obtener cotización de referencia según AFIP"
     response.subtitle = "Consulta cotización de referencia"
@@ -224,17 +282,29 @@ def autorizar():
     comprobante_id = request.args[1]
     comprobante = db(db.comprobante.id==comprobante_id).select().first()
     detalles = db(db.detalle.comprobante_id==comprobante_id).select()
+
+    # cálculo de cbte para autorización
+    calcular_comprobante(comprobante)
         
     result = {}
     actualizar = {}
-    
+
+    # si el cbte no tiene id_ws o nro => consultar último/s
+    if not comprobante.id_ws:
+        comprobante.id_ws = int(f_ultimo_id(comprobante)['nro']['value']) +1
+
+    if not comprobante.cbte_nro:
+        comprobante.cbte_nro = int(f_ultimo_numero_comprobante(comprobante)['cbte_nro']) +1
+        response.flash=comprobante.cbte_nro
+
     try:
         
         if SERVICE=='wsfe':
+            
             result = client.FEAutRequest(
                 argAuth={'Token': TOKEN, 'Sign': SIGN, 'cuit': CUIT},
                 Fer={
-                    'Fecr': {'id': long(comprobante_id)+10000, 'cantidadreg': 1, 
+                    'Fecr': {'id': long(comprobante.id_ws)+10000, 'cantidadreg': 1, 
                              'presta_serv': comprobante.concepto==1 and '0' or '1'},
                     'Fedr': {'FEDetalleRequest': {
                         'tipo_doc': comprobante.tipo_doc,
@@ -243,10 +313,10 @@ def autorizar():
                         'punto_vta': comprobante.punto_vta,
                         'cbt_desde': comprobante.cbte_nro,
                         'cbt_hasta': comprobante.cbte_nro,
-                        'imp_total': comprobante.imp_total or 0.00,
+                        'imp_total': comprobante.imp_total,
                         'imp_tot_conc': comprobante.imp_tot_conc or 0.00,
-                        'imp_neto': comprobante.imp_neto or 0.00,
-                        'impto_liq': comprobante.impto_liq or 0.00,
+                        'imp_neto': comprobante.imp_neto,
+                        'impto_liq': comprobante.impto_liq,
                         'impto_liq_rni': 0.00,
                         'imp_op_ex': comprobante.imp_op_ex or 0.00,
                         'fecha_cbte': comprobante.fecha_cbte.strftime("%Y%m%d"),
@@ -256,7 +326,18 @@ def autorizar():
             )['FEAutRequestResult']
             
             if 'resultado' in result.get('FecResp',{}):
+            
                 # actualizo el registro del comprobante con el resultado:
+                # intento recuperar fecha de vto.
+                
+                # para operación aprobada reset de id (local)
+                if result['FecResp']['resultado'] == "A":
+                    session.comprobante_id = None
+                    
+                try:
+                    la_fecha_vto = ymd2date(result['FedResp'][0]['FEDetalleResponse']['fecha_vto'])
+                except ValueError:
+                    la_fecha_vto = None    
                 actualizar = dict(
                     # Resultado: Aceptado o Rechazado
                     resultado=result['FecResp']['resultado'],
@@ -264,8 +345,12 @@ def autorizar():
                     motivo=result['FecResp']['motivo'],
                     reproceso=result['FecResp']['reproceso'],
                     cae=result['FedResp'][0]['FEDetalleResponse']['cae'],
-                    fecha_vto=ymd2date(result['FedResp'][0]['FEDetalleResponse']['fecha_vto']),
+                    fecha_vto=la_fecha_vto,
+                    cbte_nro=result['FedResp'][0]['FEDetalleResponse']['cbt_desde'],
+                    id_ws=result['FecResp']['id'],
                     )
+        
+
         elif SERVICE=='wsfev1':
             pass
         elif SERVICE=='wsfex':
@@ -286,5 +371,36 @@ def autorizar():
     # actualizo el registro del comprobante con el resultado:
     if actualizar:
         db(db.comprobante.id==comprobante_id).update(**actualizar)
-        
+
     return result
+
+
+def calcular_comprobante(comprobante):
+    """ Cálculo del cbte usando una sección
+    de código de Marcelo como ejemplo para el
+    bucle de consulta a la base de datos"""
+
+    detalles = db(db.detalle.comprobante_id==comprobante.id).select()
+    tipo_cbte = db(db.tipo_cbte.id==comprobante.tipo_cbte).select().first()
+    
+    for p in range(len(detalles)):
+        iva = db(db.iva.id==detalles[p].iva_id).select().first()
+        if tipo_cbte.discriminar:
+            detalles[p].imp_iva = detalles[p].qty * detalles[p].precio * iva.aliquota
+            detalles[p].imp_neto = detalles[p].qty * detalles[p].precio
+            detalles[p].imp_total = detalles[p].imp_neto + detalles[p].imp_iva
+
+        else:
+            detalles[p].imp_iva = 0
+            detalles[p].imp_neto = detalles[p].qty * detalles[p].precio
+            detalles[p].imp_total = detalles[p].imp_neto
+        
+    liq = sum([detalle.imp_iva for detalle in detalles], 0.00)
+    neto = sum([detalle.imp_neto for detalle in detalles], 0.00)
+    total = sum([detalle.imp_total for detalle in detalles], 0.00)
+    
+    comprobante.imp_total = total
+    comprobante.imp_neto = neto
+    comprobante.impto_liq = liq
+
+    return True
