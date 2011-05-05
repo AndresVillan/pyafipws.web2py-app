@@ -1,4 +1,4 @@
-# coding: utf8
+# -*- coding: utf-8 -*-
 
 migrate = True
 
@@ -96,18 +96,18 @@ db.define_table('localidad',
 
 # Datos generales del comprobante:
 db.define_table('comprobante',
-    Field('id', type='id'),
+    Field('id_ws', 'integer', unique = True, writable=False, requires=IS_EMPTY_OR(IS_INT_IN_RANGE(0, 1e7))),
     Field('webservice', type='string', length=6, default='wsfe',
             requires = IS_IN_SET(WEBSERVICES)),
     Field('fecha_cbte', type='date', default=request.now.date(),
-            requires=IS_NOT_EMPTY(),
+            requires=IS_NOT_EMPTY(), writable = False,
             comment="Fecha de emisión"),
     Field('tipo_cbte', type=db.tipo_cbte,),
     Field('punto_vta', type='integer', 
             comment="Prefijo Habilitado", default=1,
             requires=IS_NOT_EMPTY()),
     Field('cbte_nro', type='integer',
-            comment="Número", default=1,
+            comment="Número", writable=False,
             requires=IS_NOT_EMPTY()),
     Field('concepto', type='integer', default=1,
             requires=IS_IN_SET(CONCEPTOS),),

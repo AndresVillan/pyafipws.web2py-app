@@ -161,10 +161,10 @@ def comprobantes():
                 contador = 0
                 session.consulta_comprobante.append(list())   
                 nro_seccion += 1
-                session.consulta_comprobante[nro_seccion].append(int(cbt.cbte_nro))
+                session.consulta_comprobante[nro_seccion].append(cbt.cbte_nro)
 
             else:
-                session.consulta_comprobante[nro_seccion].append(int(cbt.cbte_nro))
+                session.consulta_comprobante[nro_seccion].append(cbt.cbte_nro)
                 contador +=1
 
         if len(session.consulta_comprobante) > 0:
