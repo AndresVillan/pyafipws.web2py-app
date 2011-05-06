@@ -14,7 +14,7 @@ u"Jujuy", 7: u"Mendoza", 8: u"La Rioja", 9: u"Salta", 10: u"San Juan", 11:
 u"San Luis", 12: u"Santa Fe", 13: u"Santiago del Estero", 14:
 u"Tucuman", 16: u"Chaco", 17: u"Chubut", 18: u"Formosa", 19: u"Misiones", 20:
 u"Neuquen", 21: u"La Pampa", 22: u"Río Negro", 23: u"Santa Cruz", 24: u"Tierra del Fuego"}
-
+FORMASPAGO = ['Contado/Efectivo', 'Cheque', 'Cuenta corriente', 'Transferencia', 'Sin especificar']
 # Tablas dinámicas (pueden cambiar por AFIP/Usuario):
 
 # Tipo de documento (FCA, FCB, FCC, FCE, NCA, RCA, etc.)
@@ -97,7 +97,7 @@ db.define_table('localidad',
 # Datos generales del comprobante:
 db.define_table('comprobante',
     Field('id_ws', 'integer', unique = True, writable=False, requires=IS_EMPTY_OR(IS_INT_IN_RANGE(0, 1e7))),
-    Field('webservice', type='string', length=6, default='wsfe',
+    Field('webservice', type='string', length=6, default='wsfe', writable = False, 
             requires = IS_IN_SET(WEBSERVICES)),
     Field('fecha_cbte', type='date', default=request.now.date(),
             requires=IS_NOT_EMPTY(), writable = False,
@@ -105,7 +105,7 @@ db.define_table('comprobante',
     Field('tipo_cbte', type=db.tipo_cbte,),
     Field('punto_vta', type='integer', 
             comment="Prefijo Habilitado", default=1,
-            requires=IS_NOT_EMPTY()),
+            requires=IS_NOT_EMPTY(), writable = False),
     Field('cbte_nro', type='integer',
             comment="Número", writable=False,
             requires=IS_NOT_EMPTY()),
@@ -141,7 +141,7 @@ db.define_table('comprobante',
     Field('moneda_ctz', type='double', default="1.000"),
     Field('obs_comerciales', type='string', length=1000),
     Field('obs', type='text', length=1000),
-    Field('forma_pago', type='string', length=50),
+    Field('forma_pago', type='string', length=50, requires = IS_IN_SET(FORMASPAGO)),
     Field('incoterms', type='string', length=3,
         requires=IS_EMPTY_OR(IS_IN_SET(INCOTERMS)),
         comment="Términos de comercio exterior"),
@@ -164,6 +164,7 @@ db.define_table('comprobante',
     Field('err_code', type='string', length=6, writable=False),
     Field('err_msg', type='string', length=1000, writable=False),
     Field('formato_id', type='integer', writable=False),
+    Field('usuario', 'reference auth_user', default=auth.user_id, requires = IS_NOT_EMPTY()),
     migrate=migrate)
 
 # detalle de los artículos por cada comprobante
@@ -198,15 +199,6 @@ db.define_table('detalle',
 
 db.detalle.umed.represent=lambda id: db.umed[id].desc
 
-# Comprobantes asociados (para NC yND):
-db.define_table('cmp_asoc',
-    Field('id', type='id'),
-    Field('comprobante_id', type='reference comprobante'),
-    Field('tipo_reg', type='integer'),
-    Field('cbte_tipo', type='integer'),
-    Field('cbte_punto_vta', type='integer'),
-    Field('cbte_nro', type='integer'),
-    migrate=migrate)
 
 # Permisos de exportación (si es requerido):
 db.define_table('permiso',
@@ -226,7 +218,8 @@ db.define_table('producto', Field('ds', type='text', length=4000, label="Descrip
     Field('umed', type=db.umed, default=7), Field('ncm', type='string', \
     length=15, comment="Código Nomenclador Común Mercosur (Bono fiscal)"), \
     Field('sec', type='string', length=15, \
-    comment="Código Secretaría de Comercio (Bono fiscal)"))
+    comment="Código Secretaría de Comercio (Bono fiscal)"),
+    migrate=migrate)
 
 db.define_table('cliente', Field('nombre_cliente', type='string', length=200),
     Field('tipo_doc', type=db.tipo_doc, default='80'),
@@ -239,6 +232,15 @@ db.define_table('cliente', Field('nombre_cliente', type='string', length=200),
     Field('email', type='string', length=100),    
     Field('id_impositivo', type='string', length=50,
             comment="CNJP, RUT, RUC (exportación)"), migrate=migrate)
+
+# punto de venta
+db.define_table('punto_de_venta', Field('numero', 'integer', unique = True), Field('nombre'), Field('domicilio'), Field('localidad', 'reference localidad'), Field('provincia', 'reference provincia'), migrate = migrate, format="%(nombre)s")
+
+# variables generales (único registro)
+db.define_table('variables', Field('punto_de_venta', 'reference punto_de_venta'), Field('cuit', 'integer'), Field('domicilio'), Field('telefono'), Field('localidad', 'reference localidad'), Field('provincia', 'reference provincia'), Field('certificate'), Field('private_key'), Field('produccion', 'boolean', default = False), Field('moneda', 'reference moneda'), Field('web_service', requires = IS_IN_SET(WEBSERVICES), default='wsfe'), Field('tipo_cbte', 'reference tipo_cbte'), Field('venc_pago', 'integer', default=30), Field('forma_pago', requires = IS_IN_SET(FORMASPAGO), default = 'Sin especificar'), migrate = migrate)
+
+# TODO: VARIABLES POR USUARIO
+
 
 # Tablas de depuración
 
