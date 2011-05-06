@@ -2,6 +2,9 @@
 <h1>Setup: panel de control</h1>
 
 <UL>
+{{if variables:}}
+<LI>Variables ({{=A('Modificar', _href=URL(r=request, c='setup', f='variables') )}}):{{=variables.as_dict()}}</LI>
+{{pass}}
 <LI>Idiomas: {{=idiomas}} ({{=A('Crear idiomas', _href=URL(r=request, c='setup', f='crear_idiomas'))}})</LI>
 <LI>IVA(s): {{=ivas}} ({{=A('Crear iva(s)', _href=URL(r=request, c='setup', f='crear_iva'))}})</LI>
 <LI>Monedas: {{=monedas}} ({{=A('Crear monedas', _href=URL(r=request, c='setup', f='crear_monedas'))}})</LI>
@@ -15,4 +18,6 @@ f='crear_tipos_cbte'))}})</LI>
 f='crear_tipos_doc'))}})</LI>
 <LI>Unidades de medida: {{=umedidas}} ({{=A('Crear unidades de medida', _href=URL(r=request, c='setup', \
 f='crear_umedidas'))}})</LI>
+<LI>Puntos de venta: {{=puntos_de_venta}}</LI>
 </UL>
+<br />

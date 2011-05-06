@@ -7,7 +7,19 @@ import os, os.path, time, datetime
 # Constantes para homologación:
 
 PRIVATE_PATH = os.path.join(request.env.web2py_path,'applications',request.application,'private')
-WSDL = {
+
+# Configuración
+# recuperar registro de variables
+variables = db(db.variables).select().first()
+if not variables: raise Exception("No se configuró el registro variables")
+CUIT = variables.cuit
+CERTIFICATE = variables.certificate
+PRIVATE_KEY = variables.private_key
+
+if variables.produccion:
+    WSDL, WSAA_URL = None, None
+else:
+    WSDL = {
     'wsfe': "http://wswhomo.afip.gov.ar/wsfe/service.asmx?WSDL",
     'wsfev1': "http://wswhomo.afip.gov.ar/wsfev1/service.asmx?WSDL",
     'wsfex': "http://wswhomo.afip.gov.ar/wsfex/service.asmx?WSDL",
@@ -15,15 +27,8 @@ WSDL = {
     'wsmtxca': "https://fwshomo.afip.gov.ar/wsmtxca/services/MTXCAService?wsdl",
     }
 
-WSAA_URL = "https://wsaahomo.afip.gov.ar/ws/services/LoginCms"
-
-# Configuración (mover al modelo):
-
-CUIT = None # [cuit sin guiones]
-CERTIFICATE = None # '[empresa].crt'
-PRIVATE_KEY = None # '[empresa].key'
-
-
+    WSAA_URL = "https://wsaahomo.afip.gov.ar/ws/services/LoginCms"
+    
 def ymd2date(vto):
     "Convertir formato AFIP 20101231 a python date(2010,12,31)"
     return datetime.date(int(vto[0:4]), int(vto[4:6]), int(vto[6:8]))
@@ -33,7 +38,8 @@ def _autenticar(service="wsfe", ttl=60*60*5):
     "Obtener el TA"
 
     # wsfev1 => wsfe!
-    service = {'wsfev1': 'wsfe'}.get(service, service)
+    # service = {'wsfev1': 'wsfe'}.get(service, service)
+    service = variables.web_service
     
     if service not in ("wsfe","wsfev1","wsmtxca","wsfex","wsbfe"):
         raise HTTP(500,"Servicio %s incorrecto" % service)
@@ -295,7 +301,6 @@ def autorizar():
 
     if not comprobante.cbte_nro:
         comprobante.cbte_nro = int(f_ultimo_numero_comprobante(comprobante)['cbte_nro']) +1
-        response.flash=comprobante.cbte_nro
 
     try:
         

@@ -1,4 +1,5 @@
-# coding: utf8
+# -*- coding: utf-8 -*-
+import datetime
 
 def comprobante_tabla_clientes():
     """ Muestra una tabla para establecer un cliente """
@@ -15,7 +16,7 @@ def comprobante_seleccionar_cliente():
 def iniciar():
     "Crear/modificar datos generales del comprobante"
     # campos a mostrar:
-    campos_generales = [
+    campos_generales = ['webservice',
     'fecha_cbte','tipo_cbte','punto_vta','cbte_nro', 'concepto',
     'permiso_existente', 'dst_cmp',
     'nombre_cliente', 'tipo_doc', 'nro_doc', 'domicilio_cliente',
@@ -25,9 +26,39 @@ def iniciar():
     'incoterms', 'incoterms_ds', 'idioma_cbte',
     'fecha_venc_pago', 'fecha_serv_desde', 'fecha_serv_hasta', ]
 
+    try:
+        getattr(session, 'comporbante_id')
+    except AttributeError:
+        session.comprobante_id = None
+
     # creo un formulario para el comprobante (TODO: modificar)
     form = SQLFORM(db.comprobante, session.comprobante_id,
                    fields=campos_generales)
+
+    # si el cbte es nuevo pre cargar el formulario
+    if not session.comprobante_id:    
+        variables = db(db.variables).select().first()
+        if not variables:
+            raise Exception("No se cargaron las opciones para formularios (variables).")
+        else:
+            # Recupero opciones de session o del registro de variables
+            try:
+                if session.punto_vta:
+                    form.vars.webservice = session.webservice
+                    form.vars.tipo_cbte = session.tipo_cbte
+                    form.vars.punto_vta = session.punto_vta
+                    form.vars.moneda_id = session.moneda_id
+                    form.vars.forma_pago = session.forma_pago
+                else: raise KeyError()
+
+            except KeyError:
+                form.vars.webservice = variables.web_service
+                form.vars.tipo_cbte = variables.tipo_cbte
+                form.vars.punto_vta = variables.punto_de_venta.numero
+                form.vars.moneda_id = variables.moneda
+                form.vars.forma_pago = variables.forma_pago
+
+            form.vars.fecha_venc_pago = str(datetime.datetime.now() + datetime.timedelta(variables.venc_pago))[0:10]            
 
     # Si se seleccionó un cliente cargar datos
     try:
@@ -48,6 +79,12 @@ def iniciar():
 
     # valido el formulario (si han enviado datos)
     if form.accepts(request.vars, session, dbio=False):
+        session.webservice = form.vars.webservice
+        session.tipo_cbte = form.vars.tipo_cbte
+        session.moneda_id = form.vars.moneda_id
+        session.punto_vta = form.vars.punto_vta
+        session.forma_pago = form.vars.forma_pago
+        
         if not session.comprobante_id:
             # insertar el comprobante
             id = db.comprobante.insert(**form.vars)

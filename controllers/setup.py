@@ -14,6 +14,22 @@ request.application,'static') + '/localidades.csv'
 
 def index():
     """ panel de control del setup """
+    mensajes = ""
+    puntos_de_venta = 0
+    variables = db(db.variables).select().first()
+    pdvs = db(db.punto_de_venta).select()
+    if not pdvs.first():
+        id_pdv = db.punto_de_venta.insert(numero = 1, nombre = "Punto de venta 1")
+        mensajes += "Nuevo punto de venta (1). "
+        puntos_de_venta += 1
+    if not variables:
+        id_variables = db.variables.insert(punto_de_venta = db(db.punto_de_venta).select().first())
+        variables = db(db.variables).select().first()        
+        mensajes += "Se creó el registro de variables. "
+        
+    if len(mensajes) > 0: response.flash = mensajes
+
+    puntos_de_venta += len(pdvs)
     tipos_doc = len(db(db.tipo_doc).select())
     tipos_cbte = len(db(db.tipo_cbte).select())
     monedas = len(db(db.moneda).select())   
@@ -26,8 +42,12 @@ def index():
     return dict(tipos_doc = tipos_doc, tipos_cbte = tipos_cbte, \
                 monedas = monedas, ivas = ivas, idiomas = idiomas, \
                 umedidas = umedidas, paises = paises, \
-                provincias = provincias, localidades = localidades)
+                provincias = provincias, localidades = localidades, \
+                puntos_de_venta = puntos_de_venta, variables = variables)
 
+def variables():
+    form = crud.update(db.variables, db(db.variables).select().first())
+    return dict(form = form)
 
 def crear_tipos_doc():
     "Crear inicialmente los tipos de documento más usados"
