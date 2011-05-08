@@ -4,8 +4,8 @@ import datetime
 def comprobante_tabla_clientes():
     """ Muestra una tabla para establecer un cliente """
     los_clientes = db(db.cliente).select()
-    tabla_clientes = DIV(SQLTABLE(los_clientes, linkto = URL(r=request, c='emision', f='comprobante_seleccionar_cliente')), _style='overflow: auto;')
-    return dict(tabla_clientes = tabla_clientes)
+    if len(los_clientes) < 1: raise Exception("La tabla de clientes está vacía")
+    return dict(clientes = los_clientes)
 
 def comprobante_seleccionar_cliente():
     el_cliente = int(request.args[1])
@@ -109,7 +109,6 @@ def detallar():
     form = SQLFORM(db.comprobante, session.comprobante_id,
                    fields=campos_encabezado, readonly=True)
     comprobante = db(db.comprobante.id==session.comprobante_id).select().first()
-    
     try:
         # Trato de obtener un producto especificado
         # para pre-completar campos de detalle
@@ -118,14 +117,28 @@ def detallar():
     except KeyError:
         # no se envió un producto en la solicitud
         el_producto = None
+    
+    return dict(form=form, comprobante=comprobante, producto = el_producto, vprevia = None)
 
-    return dict(form=form, comprobante=comprobante, producto = el_producto)
+
+def calcular_item_detalle(form):
+    """ calcula el total del ítem """
+    imp_neto = form.vars.precio * form.vars.qty
+    valor_iva = db.iva[form.vars.iva_id].aliquota
+    form.vars.imp_iva = imp_neto * valor_iva
+    form.vars.imp_total = imp_neto + form.vars.imp_iva - form.vars.bonif
 
 
 def detalle():
-    form = SQLFORM(db.detalle)
+    qty = 1
+    bonif = 0.0
+    form = SQLFORM(db.detalle, _id="formulario_ingreso_detalle", keepvalues = True, _class="excluir", _style="display: none;")
+    iva_texto = ""
+    umed_texto = ""
+    iva_valor = ""
     try:
         producto = db(db.producto.id == int(request.vars["producto"])).select().first()
+        
         form.vars.codigo = producto.codigo
         form.vars.ds = producto.ds
         form.vars.iva_id = producto.iva_id
@@ -133,16 +146,29 @@ def detalle():
         form.vars.umed = producto.umed
         form.vars.ncm = producto.ncm
         form.vars.sec = producto.sec
-
+        form.vars.qty = qty
+        form.vars.bonif = bonif
+        
+        iva = db.iva[producto.iva_id]
+        iva_texto = iva.desc
+        umed_texto = db.umed[producto.umed].desc
+        iva_valor = iva.aliquota
+        
+        form.vars.imp_iva = producto.precio * iva_valor * qty
+        form.vars.imp_total = (producto.precio * qty) + (producto.precio * iva_valor * qty)
+        
     except KeyError:
         # no se especifica producto pre-cargado
         # en el formulario
         pass
 
+   
     db.detalle.comprobante_id.default = session.comprobante_id
-    if form.accepts(request.vars, session):
+    if form.accepts(request.vars, session, keepvalues = True, onvalidation = calcular_item_detalle):
         response.flash ="Detalle agregado!"
+
     detalles = db(db.detalle.comprobante_id==session.comprobante_id).select()
+
     total = sum([detalle.imp_total for detalle in detalles], 0.00)
     # agregado por marcelo
     comprobante = db(db.comprobante.id==session.comprobante_id).select().first()
@@ -155,10 +181,11 @@ def detalle():
             detalles[p].imp_iva = detalles[p].qty * detalles[p].precio * (1+iva.aliquota)
     # fin marcelo
     return dict(form=form, total=total,
-                detalles=detalles)
+                detalles=detalles, iva_texto = iva_texto, umed_texto = umed_texto, iva_valor = iva_valor)
+
 
 def editar_detalle():
-    form = SQLFORM(db.detalle, request.args[0],deletable=True,)
+    form = SQLFORM(db.detalle, request.args[0],deletable=True)
     #db(db.detalle.id==request.args[0]).delete()
     if form.accepts(request.vars, session):
         session.flash = 'formulario aceptado'
@@ -169,13 +196,14 @@ def editar_detalle():
 
 
 def link_cargar_producto(field, type, ref):
+    """ función para carga de campos en detalle (no utilizada)"""
     return URL(r=request, f='detallar', vars={'producto': int(field)})
 
 
 def cargar_producto():
     los_productos = db(db.producto.id > 0).select()
-    productos = DIV(SQLTABLE(los_productos, linkto=link_cargar_producto), _style='overflow: auto;')
-    return dict(productos=productos)
+    if len(los_productos) < 1: raise Exception("La tabla productos está vacía.")
+    return dict(productos=los_productos)
 
 
 def finalizar():

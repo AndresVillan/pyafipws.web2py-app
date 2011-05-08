@@ -263,6 +263,7 @@
 'static': 'estáticos',
 'table': 'tabla',
 'test': 'probar',
+'texto': 'texto',
 'the application logic, each URL path is mapped in one exposed function in the controller': 'la lógica de la aplicación, cada ruta URL se mapea en una función expuesta en el controlador',
 'the data representation, define database tables and sets': 'la representación de datos, define tablas y conjuntos de base de datos',
 'the presentations layer, views are also known as templates': 'la capa de presentación, las vistas también son llamadas plantillas',

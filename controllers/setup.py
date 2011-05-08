@@ -39,11 +39,13 @@ def index():
     paises = len(db(db.pais_dst).select())
     provincias = len(db(db.provincia).select())
     localidades = len(db(db.localidad).select())
+    condiciones_iva = len(db(db.condicion_iva).select())
     return dict(tipos_doc = tipos_doc, tipos_cbte = tipos_cbte, \
                 monedas = monedas, ivas = ivas, idiomas = idiomas, \
                 umedidas = umedidas, paises = paises, \
                 provincias = provincias, localidades = localidades, \
-                puntos_de_venta = puntos_de_venta, variables = variables)
+                puntos_de_venta = puntos_de_venta, variables = variables, \
+                condiciones_iva = condiciones_iva)
 
 def variables():
     form = crud.update(db.variables, db(db.variables).select().first())
@@ -219,4 +221,13 @@ def crear_localidades():
         except (ValueError, AttributeError, TypeError), e:
             errores.append(str(e) + " (Fila %s)" % contador)
     return dict(registros = registros, errores = errores, \
+                lista = A('Ver lista', _href=URL(r=request, c='setup', f='index')))
+
+
+def crear_condiciones_iva():
+    data = {'IVA Responsable Inscripto': 1, 'IVA Responsable no Inscripto': 2, 'IVA no Responsable': 3,'IVA Sujeto Exento': 4,'Consumidor Final': 5, 'Responsable Monotributo': 6, 'Sujeto no Categorizado': 7, 'Importador del Exterior': 8, 'Cliente del Exterior': 9, 'IVA Liberado - Ley Nº 19.640': 10, 'IVA Responsable Inscripto - Agente de Percepción': 11}
+    db(db.condicion_iva.codigo>=0).delete()
+    for k,v in data.items():
+        db.condicion_iva.insert(codigo=v, desc=k)
+    return dict(ret=SQLTABLE(db(db.condicion_iva.id>-1).select()), \
                 lista = A('Ver lista', _href=URL(r=request, c='setup', f='index')))

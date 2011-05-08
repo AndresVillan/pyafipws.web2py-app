@@ -1,4 +1,4 @@
-{{=SQLTABLE(detalles, 
+{{tabla_detalle=SQLTABLE(detalles, 
         columns=['detalle.codigo','detalle.qty','detalle.umed',
                  'detalle.ds', 'detalle.ncm', 'detalle.sec', 
                  'detalle.precio','detalle.imp_total', 'detalle.iva_id',
@@ -10,9 +10,13 @@
                  'detalle.iva_id':'IVA','detalle.ds':'Descripción', 
                  'detalle.imp_iva':'IVA IMP', 
                  'detalle.ncm':'NCM', 'detalle.sec':'SEC', 'detalle.bonif':'Bonif.', 'detalle.id': 'ID'},
-        linkto=lambda field, type, ref: URL("editar_detalle.html",args=[field]),
-
-)}}
+        linkto=lambda field, type, ref: URL("editar_detalle.html",args=[field]), _class="tala_detalles")}}
+{{
+detalles_previos=TR(TD(INPUT(value=form.vars.codigo, _id="previo_codigo", _readonly="readonly", _style="width: 100%;")), TD(INPUT(value=form.vars.qty, _id="previo_qty", _style="width: 100%;")), TD(INPUT(value=umed_texto, _id="previo_umed", _style="width: 100%;", _readonly="readonly")), TD(INPUT(value=form.vars.ds, _id="previo_ds", _class="descripcion", _readonly="readonly", _style="width: 100%;")), TD(INPUT(value=form.vars.ncm, _id="previo_ncm", _style="width: 100%;", _readonly="readonly")), TD(INPUT(value=form.vars.sec, _id="previo_sec", _style="width: 100%;", _readonly="readonly")), TD(INPUT(value=form.vars.precio, _id="previo_precio", _style="width: 100%;", _readonly="readonly")), TD(INPUT(value=form.vars.imp_total, _id="previo_imp_total", _style="width: 100%;", _readonly="readonly")), TD(INPUT(value=iva_texto, _id="previo_iva_id", _style="width: 100%;", _readonly="readonly")), TD(INPUT(value=form.vars.imp_iva, _id="previo_imp_iva", _style="width: 100%;", _readonly="readonly")), TD(INPUT(value=form.vars.bonif, _id="previo_bonif", _style="width: 100%;")), TD(INPUT(_type="button", _value="Ingresar", _id="boton_ingresar_detalle")))
+}}
+{{tabla_detalle.append(detalles_previos)}}
+{{=tabla_detalle}}
+{{pass}}
 
 {{if not detalles:}}
 Sin artículos ingresados
@@ -23,28 +27,65 @@ Subtotal: {{=total}}
 {{=form}}
 
 <SCRIPT TYPE="text/javascript">
-<!-- 
-
-function calculate_total(oform) {
-
-var qty = $('#detalle_qty');
-var price = $('#detalle_precio');
-var total = $('#detalle_imp_total');
-
-t = qty.val() * price.val()
-
-total.val(t)
-
-}
-
-$('#detalle_qty').change(calculate_total);
-$('#detalle_precio').change(calculate_total);
-
 // autocalcular al descargar el formulario
 // (para carga de productos desde la base de datos)
-$(document).ready(function(){
-calculate_total();
-});
+function calculate_total(oform) {
+/*
+var qty = $('#detalle_qty').val();
+var price = $('#detalle_precio').val();
+var total = $('#detalle_imp_total').val();
 
-// -->
+t = qty.val() * price.val();
+
+total.val(t);
+*/
+}
+
+$(document).ready(function(){
+var numeroFormatoMoneda;
+var lista_formato_moneda = "";
+var previo_iva = 0;
+var previo_imp_iva = 0;
+var previo_total = 0;
+var previo_neto = 0;
+var previo_bonif = 0;
+var previo_cantidad = 0;
+var previo_qty = 0;
+
+function formatoMoneda(valor){
+numeroFormatoMoneda = new Number(valor);
+return numeroFormatoMoneda.toFixed(2);
+}
+
+function calcularItem(){
+// calcular el total previo del ítem
+// (antes del ingreso a la base de datos)
+if ($("#previo_codigo").val() != ""){
+previo_qty = $("#previo_qty").val();
+previo_neto = $("#previo_precio").val() * previo_qty;
+previo_iva = {{=iva_valor}};
+previo_bonif = $("#previo_bonif").val();
+previo_imp_iva = previo_neto * previo_iva;
+previo_total = previo_neto + previo_imp_iva - previo_bonif;
+$("#previo_imp_total").val(formatoMoneda(previo_total));
+$("#previo_imp_iva").val(formatoMoneda(previo_imp_iva));
+}
+}
+
+//calculate_total();
+//$('#detalle_qty').change(calculate_total);
+//$('#detalle_precio').change(calculate_total);
+
+// actualizar valores de previsualización de ítem
+$("#previo_qty").change(calcularItem);
+$("#previo_bonif").change(calcularItem);
+
+// cargar el ítem si se presionó el botón ingresar
+$('#boton_ingresar_detalle').bind('click', function(event){
+calcularItem();
+$("input[name=qty]").val(previo_qty);
+$("input[name=bonif]").val(previo_bonif);
+$('#formulario_ingreso_detalle').submit();
+});
+});
 </SCRIPT>
