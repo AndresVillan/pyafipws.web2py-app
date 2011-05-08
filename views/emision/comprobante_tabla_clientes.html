@@ -1,3 +1,7 @@
 {{extend 'layout.html'}}
 <h1>Clientes</h1>
-{{=tabla_clientes}}
+{{body = TBODY()}}
+{{for cliente in clientes:}}
+{{ body.append( TR( TD(cliente.id), TD(A(cliente.nombre_cliente, _href=URL(r=request, c='emision', f='comprobante_seleccionar_cliente', args=['cliente', cliente.id]))), TD(db.tipo_doc[cliente.tipo_doc].desc), TD(cliente.nro_doc), TD(cliente.condicion_iva.desc), TD(cliente.email)) ) }}
+{{pass}}
+{{=TABLE(THEAD(TR(TH("ID"), TH("Seleccionar"), TH('Tipo Doc.'), TH('Nro. Doc.'), TH('Condición IVA'), TH('Email'))), body)}}

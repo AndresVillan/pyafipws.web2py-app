@@ -15,7 +15,9 @@ u"San Luis", 12: u"Santa Fe", 13: u"Santiago del Estero", 14:
 u"Tucuman", 16: u"Chaco", 17: u"Chubut", 18: u"Formosa", 19: u"Misiones", 20:
 u"Neuquen", 21: u"La Pampa", 22: u"Río Negro", 23: u"Santa Cruz", 24: u"Tierra del Fuego"}
 FORMASPAGO = ['Contado/Efectivo', 'Cheque', 'Cuenta corriente', 'Transferencia', 'Sin especificar']
+CONDICIONESIVA = {'IVA Responsable Inscripto': 1, 'IVA Responsable no Inscripto': 2, 'IVA no Responsable': 3,'IVA Sujeto Exento': 4,'Consumidor Final': 5, 'Responsable Monotributo': 6, 'Sujeto no Categorizado': 7, 'Importador del Exterior': 8, 'Cliente del Exterior': 9, 'IVA Liberado - Ley Nº 19.640': 10, 'IVA Responsable Inscripto - Agente de Percepción': 11}
 # Tablas dinámicas (pueden cambiar por AFIP/Usuario):
+
 
 # Tipo de documento (FCA, FCB, FCC, FCE, NCA, RCA, etc.)
 db.define_table('tipo_cbte',
@@ -25,6 +27,12 @@ db.define_table('tipo_cbte',
     format="%(desc)s",
     migrate=migrate,
     )
+
+# condición IVA (Tipo de responsable)
+db.define_table('condicion_iva', Field('codigo'), Field('desc'), \
+    format="%(desc)s", \
+    migrate=migrate
+)
 
 # Tipos de documentos (CUIT, CUIL, CDI, DNI, CI, etc.)
 db.define_table('tipo_doc',
@@ -124,9 +132,10 @@ db.define_table('comprobante',
     Field('telefono_cliente', type='string', length=50),
     Field('localidad_cliente', type='string', length=50),
     Field('provincia_cliente', type='string', length=50),
+    Field('condicion_iva_cliente', length=50),
     Field('email', type='string', length=100),    
     Field('id_impositivo', type='string', length=50,
-            comment="CNJP, RUT, RUC (exportación"),
+            comment="CNJP, RUT, RUC (exportación)"),
     Field('imp_total', type='double', writable=False),
     Field('imp_tot_conc', type='double', writable=False),
     Field('imp_neto', type='double', writable=False),
@@ -230,6 +239,7 @@ db.define_table('cliente', Field('nombre_cliente', type='string', length=200),
     Field('localidad_cliente', type='reference localidad', comment='Localidad (id de provincia)', length=50),
     Field('provincia_cliente', type='reference provincia', comment='Provincia (id)'),
     Field('email', type='string', length=100),    
+    Field('condicion_iva', 'reference condicion_iva'), \
     Field('id_impositivo', type='string', length=50,
             comment="CNJP, RUT, RUC (exportación)"), migrate=migrate)
 

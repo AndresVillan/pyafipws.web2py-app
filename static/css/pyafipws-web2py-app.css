@@ -1,0 +1,9 @@
+/* Hoja de estilo para pyafipws-web2py-app */
+.excluir{display: none;}
+/*Anchos de ingreso de texto en formularios*/
+
+.cantidad{width: 1em;}
+.importe{width: 1em;}
+.codigo{width: 1em;}
+.descripcion{width: 1em;}
+.unidad{width: 1em;}

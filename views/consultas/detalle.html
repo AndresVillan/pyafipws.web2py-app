@@ -1,14 +1,8 @@
 {{extend 'layout.html'}}
 <h1>Detalle de comprobante</h1>
 {{if comprobante:}}
-{{=comprobante}}
-
-{{if detalle:}}
-{{=detalle}}
-{{else:}}
-<h3>No hay detalle</h3>
-{{pass}}
-
-{{else:}}
-<h3>Consulta vacía</h3>
+    {{=comprobante}}
+    {{if detalle:}}
+        {{=detalle}}
+    {{pass}}
 {{pass}}

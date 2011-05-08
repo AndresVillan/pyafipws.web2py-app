@@ -7,16 +7,10 @@ def index(): return dict(message="momentaneamente no implementado")
 def detalle():
     comprobante, detalle = None, None
     el_id = int(request.args[1])
-    cbte = db(db.comprobante.id == el_id).select()
+    comprobante = db(db.comprobante.id == el_id).select().first()
     detalle = db(db.detalle.comprobante_id == el_id).select()
-            
-    if ((detalle != None) and (len(detalle) > 0)):
-        detalle = DIV(SQLTABLE(detalle), _style="overflow: auto;")
-    else:
-        detalle = None
 
-    return dict(comprobante = DIV(cbte, _style="overflow: auto;"\
-    ), detalle = detalle)
+    return dict(comprobante = BEAUTIFY(comprobante.as_dict()), detalle = BEAUTIFY(detalle.as_dict()))
 
 
 def comprobantes():
