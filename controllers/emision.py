@@ -132,41 +132,57 @@ def calcular_item_detalle(form):
 def detalle():
     qty = 1
     bonif = 0.0
-    form = SQLFORM(db.detalle, _id="formulario_ingreso_detalle", keepvalues = True, _class="excluir", _style="display: none;")
+    form = SQLFORM(db.detalle, keepvalues = True, _class="excluir", _id="formulario_ingreso_detalle")
     iva_texto = ""
     umed_texto = ""
-    iva_valor = ""
-    try:
-        producto = db(db.producto.id == int(request.vars["producto"])).select().first()
-        
-        form.vars.codigo = producto.codigo
-        form.vars.ds = producto.ds
-        form.vars.iva_id = producto.iva_id
-        form.vars.precio = producto.precio
-        form.vars.umed = producto.umed
-        form.vars.ncm = producto.ncm
-        form.vars.sec = producto.sec
-        form.vars.qty = qty
-        form.vars.bonif = bonif
-        
-        iva = db.iva[producto.iva_id]
-        iva_texto = iva.desc
-        umed_texto = db.umed[producto.umed].desc
-        iva_valor = iva.aliquota
-        
-        form.vars.imp_iva = producto.precio * iva_valor * qty
-        form.vars.imp_total = (producto.precio * qty) + (producto.precio * iva_valor * qty)
-        
-    except KeyError:
-        # no se especifica producto pre-cargado
-        # en el formulario
-        pass
+    iva_valor = 0.0
 
+    if request.vars.codigo:    
+        form.vars.codigo = request.vars.codigo
+        form.vars.ds = request.vars.ds
+        form.vars.iva_id = request.vars.iva_id
+        form.vars.precio = request.vars.precio
+        form.vars.umed = request.vars.umed
+        form.vars.ncm = request.vars.ncm
+        form.vars.sec = request.vars.sec
+        form.vars.qty = request.vars.qty
+        form.vars.bonif = request.vars.bonif
+        umed_texto = db.umed[form.vars.umed].desc
+        iva_texto = db.iva[form.vars.iva_id].desc
+         
+    else:
+        try:
+            producto = db(db.producto.id == int(request.vars["producto"])).select().first()
+            form.vars.codigo = producto.codigo
+            form.vars.ds = producto.ds
+            form.vars.iva_id = producto.iva_id
+            form.vars.precio = producto.precio
+            form.vars.umed = producto.umed
+            form.vars.ncm = producto.ncm
+            form.vars.sec = producto.sec
+            form.vars.qty = qty
+            form.vars.bonif = bonif
+        
+            iva = db.iva[producto.iva_id]
+            iva_texto = iva.desc
+            umed_texto = db.umed[producto.umed].desc
+            iva_valor = iva.aliquota
+        
+            form.vars.imp_iva = producto.precio * iva_valor * qty
+            form.vars.imp_total = (producto.precio * qty) + (producto.precio * iva_valor * qty)
+        
+        except KeyError:
+             # no se especifica producto pre-cargado
+            # en el formulario
+            pass
    
     db.detalle.comprobante_id.default = session.comprobante_id
     if form.accepts(request.vars, session, keepvalues = True, onvalidation = calcular_item_detalle):
         response.flash ="Detalle agregado!"
 
+    elif form.errors:
+        response.flash = "El detalle tiene errores!: " + str(form.errors.keys()) + " " + str(form.errors.values())
+        
     detalles = db(db.detalle.comprobante_id==session.comprobante_id).select()
 
     total = sum([detalle.imp_total for detalle in detalles], 0.00)
@@ -181,11 +197,11 @@ def detalle():
             detalles[p].imp_iva = detalles[p].qty * detalles[p].precio * (1+iva.aliquota)
     # fin marcelo
     return dict(form=form, total=total,
-                detalles=detalles, iva_texto = iva_texto, umed_texto = umed_texto, iva_valor = iva_valor)
+                detalles=detalles, iva_desc = iva_texto, umed_desc = umed_texto, iva_aliquota = iva_valor)
 
 
 def editar_detalle():
-    form = SQLFORM(db.detalle, request.args[0],deletable=True)
+    form = SQLFORM(db.detalle, request.args[0],deletable=True, onvalidation = calcular_item_detalle)
     #db(db.detalle.id==request.args[0]).delete()
     if form.accepts(request.vars, session):
         session.flash = 'formulario aceptado'

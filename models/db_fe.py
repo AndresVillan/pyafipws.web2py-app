@@ -16,6 +16,24 @@ u"Tucuman", 16: u"Chaco", 17: u"Chubut", 18: u"Formosa", 19: u"Misiones", 20:
 u"Neuquen", 21: u"La Pampa", 22: u"Río Negro", 23: u"Santa Cruz", 24: u"Tierra del Fuego"}
 FORMASPAGO = ['Contado/Efectivo', 'Cheque', 'Cuenta corriente', 'Transferencia', 'Sin especificar']
 CONDICIONESIVA = {'IVA Responsable Inscripto': 1, 'IVA Responsable no Inscripto': 2, 'IVA no Responsable': 3,'IVA Sujeto Exento': 4,'Consumidor Final': 5, 'Responsable Monotributo': 6, 'Sujeto no Categorizado': 7, 'Importador del Exterior': 8, 'Cliente del Exterior': 9, 'IVA Liberado - Ley Nº 19.640': 10, 'IVA Responsable Inscripto - Agente de Percepción': 11}
+
+# función para cálculo de detalle en cbte
+def detalle_calcular_imp_iva(r):
+    """ calcula el total del iva """
+    imp_neto = r["precio"] * r["qty"]
+    valor_iva = db.iva[r["iva_id"]].aliquota
+    imp_iva = imp_neto * valor_iva
+    return imp_iva
+
+def detalle_calcular_imp_total(r):
+    """ calcula el total del ítem """
+    imp_neto = r["precio"] * r["qty"]
+    valor_iva = db.iva[r["iva_id"]].aliquota
+    imp_iva = imp_neto * valor_iva
+    imp_total = imp_neto + imp_iva - r["bonif"]
+    return imp_total
+
+
 # Tablas dinámicas (pueden cambiar por AFIP/Usuario):
 
 
@@ -192,7 +210,7 @@ db.define_table('detalle',
     Field('umed', type=db.umed, default=7,
             ),
     Field('imp_total', type='double', label="Subtotal",
-            requires=IS_NOT_EMPTY()),
+            requires=IS_NOT_EMPTY(), compute=detalle_calcular_imp_total),
     Field('iva_id', type=db.iva, default=5, label="IVA",
             represent=lambda id: db.iva[id].desc,
             comment="Alícuota de IVA"),
@@ -200,10 +218,11 @@ db.define_table('detalle',
             comment="Código Nomenclador Común Mercosur (Bono fiscal)"),
     Field('sec', type='string', length=15,
             comment="Código Secretaría de Comercio (Bono fiscal)"),
-    Field('bonif', type='double', default=0.00),
+    Field('bonif', type='double', default=0.00,
+            requires=IS_FLOAT_IN_RANGE(0.0, 1000000000)),
     Field('imp_iva', type="double", default=0.00, 
             comment="Importe de IVA liquidado",
-            readable=False, writable=False),
+            readable=False, writable=False, compute=detalle_calcular_imp_iva),
     migrate=migrate)
 
 db.detalle.umed.represent=lambda id: db.umed[id].desc
@@ -249,7 +268,9 @@ db.define_table('punto_de_venta', Field('numero', 'integer', unique = True), Fie
 # variables generales (único registro)
 db.define_table('variables', Field('punto_de_venta', 'reference punto_de_venta'), Field('cuit', 'integer'), Field('domicilio'), Field('telefono'), Field('localidad', 'reference localidad'), Field('provincia', 'reference provincia'), Field('certificate'), Field('private_key'), Field('produccion', 'boolean', default = False), Field('moneda', 'reference moneda'), Field('web_service', requires = IS_IN_SET(WEBSERVICES), default='wsfe'), Field('tipo_cbte', 'reference tipo_cbte'), Field('venc_pago', 'integer', default=30), Field('forma_pago', requires = IS_IN_SET(FORMASPAGO), default = 'Sin especificar'), migrate = migrate)
 
-# TODO: VARIABLES POR USUARIO
+# Tablas accesorias
+db.define_table('sugerir', Field('sugerir_producto', 'reference producto'), migrate = migrate)
+db.sugerir.sugerir_producto.widget=SQLFORM.widgets.autocomplete(request, db.producto.ds, id_field=db.producto.id, limitby=(0,10), min_length=2)
 
 
 # Tablas de depuración

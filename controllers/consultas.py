@@ -1,6 +1,7 @@
 # coding: utf8
 # try something like
 import datetime
+import json
 
 def index(): return dict(message="momentaneamente no implementado")
 
@@ -151,7 +152,8 @@ def comprobantes():
         contador = 0
         nro_seccion = -1
         for cbt in comprobantes:
-            if (contador > (int(registros) -1)) or (nro_seccion == -1):
+            contador +=1
+            if (contador > (int(registros))) or (nro_seccion == -1):
                 contador = 0
                 session.consulta_comprobante.append(list())   
                 nro_seccion += 1
@@ -159,7 +161,7 @@ def comprobantes():
 
             else:
                 session.consulta_comprobante[nro_seccion].append(cbt.cbte_nro)
-                contador +=1
+
 
         if len(session.consulta_comprobante) > 0:
             los_comprobantes = db(db.comprobante.cbte_nro.belongs(\
@@ -225,3 +227,11 @@ def comprobantes():
     posterior = posterior, seccion = seccion, laseccion = la_seccion, \
     form = form, consulta = True, registros = registros, primera = primera, \
     ultima = ultima)
+
+
+def producto():
+    """ lista de valores de un producto """
+    el_producto = db.producto[int(request.args[0])]
+    iva = db.iva[el_producto.iva_id]
+    return dict(codigo = el_producto.codigo, iva = iva.cod, umed = el_producto.umed, \
+    umed_desc = db.umed[el_producto.umed].desc, ds = el_producto.ds, ncm = el_producto.ncm, sec = el_producto.sec, precio = el_producto.precio, iva_aliquota = iva.aliquota, iva_desc = iva.desc)
