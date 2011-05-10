@@ -4,6 +4,10 @@
 
 {{=A('Cargar producto', _href=URL(r=request, f='cargar_producto'))}}
 
+{{# widget autocomplete para la descripción del producto }}
+{{form_sugerir=SQLFORM(db.sugerir, _id="formulario_sugerir")}}
+{{=form_sugerir[0][0][1]}}
+
 {{if producto:}}
 {{=LOAD('emision','detalle.load',ajax=True, vars={'producto': producto})}}
 {{else:}}

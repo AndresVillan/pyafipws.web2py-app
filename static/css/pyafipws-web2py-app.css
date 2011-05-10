@@ -2,8 +2,24 @@
 .excluir{display: none;}
 /*Anchos de ingreso de texto en formularios*/
 
-.cantidad{width: 1em;}
-.importe{width: 1em;}
-.codigo{width: 1em;}
-.descripcion{width: 1em;}
-.unidad{width: 1em;}
+.tabla_detalle{
+/* valores para la tabla de ítem*/
+}
+
+.tabla_detalle input{
+width: 90%;
+}
+
+.tabla_detalle input[type=button]{
+width: 5em;
+margin-left: 10%;
+}
+
+tr.detalles_previos td{
+/**/
+}
+
+/*
+.valor{}
+.texto{}
+*/

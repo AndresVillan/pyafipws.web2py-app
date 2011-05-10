@@ -9,10 +9,21 @@
                  'detalle.precio':'Precio','detalle.imp_total':'Imp.Total',
                  'detalle.iva_id':'IVA','detalle.ds':'Descripción', 
                  'detalle.imp_iva':'IVA IMP', 
-                 'detalle.ncm':'NCM', 'detalle.sec':'SEC', 'detalle.bonif':'Bonif.', 'detalle.id': 'ID'},
-        linkto=lambda field, type, ref: URL("editar_detalle.html",args=[field]), _class="tala_detalles")}}
+                 'detalle.ncm':'NCM', 'detalle.sec':'SEC', 'detalle.bonif':'Bonif.', 'detalle.id': 'ID (Editar)'},
+        linkto=lambda field, type, ref: URL("editar_detalle.html",args=[field]), _class="tabla_detalle" )}}
 {{
-detalles_previos=TR(TD(INPUT(value=form.vars.codigo, _id="previo_codigo", _readonly="readonly", _style="width: 100%;")), TD(INPUT(value=form.vars.qty, _id="previo_qty", _style="width: 100%;")), TD(INPUT(value=umed_texto, _id="previo_umed", _style="width: 100%;", _readonly="readonly")), TD(INPUT(value=form.vars.ds, _id="previo_ds", _class="descripcion", _readonly="readonly", _style="width: 100%;")), TD(INPUT(value=form.vars.ncm, _id="previo_ncm", _style="width: 100%;", _readonly="readonly")), TD(INPUT(value=form.vars.sec, _id="previo_sec", _style="width: 100%;", _readonly="readonly")), TD(INPUT(value=form.vars.precio, _id="previo_precio", _style="width: 100%;", _readonly="readonly")), TD(INPUT(value=form.vars.imp_total, _id="previo_imp_total", _style="width: 100%;", _readonly="readonly")), TD(INPUT(value=iva_texto, _id="previo_iva_id", _style="width: 100%;", _readonly="readonly")), TD(INPUT(value=form.vars.imp_iva, _id="previo_imp_iva", _style="width: 100%;", _readonly="readonly")), TD(INPUT(value=form.vars.bonif, _id="previo_bonif", _style="width: 100%;")), TD(INPUT(_type="button", _value="Ingresar", _id="boton_ingresar_detalle")))
+detalles_previos=TR(TD(INPUT(value=form.vars.codigo, _id="previo_codigo", _readonly="readonly", _class="codigo")), \
+TD(INPUT(_id="previo_qty", _class="valor")), \
+TD(INPUT(_id="previo_umed_desc", _class="valor", _readonly="readonly")), \
+TD(INPUT(_id="previo_ds", _class="texto", _readonly="readonly")), \
+TD(INPUT(_id="previo_ncm", _class="valor", _readonly="readonly")), \
+TD(INPUT(_id="previo_sec", _class="valor", _readonly="readonly")), \
+TD(INPUT(_id="previo_precio", _class="valor", _readonly="readonly")), \
+TD(INPUT(_id="previo_imp_total", _class="valor", _readonly="readonly")), \
+TD(INPUT(_id="previo_iva_desc", _class="valor", _readonly="readonly")), \
+TD(INPUT(_id="previo_imp_iva", _class="valor", _readonly="readonly")), \
+TD(INPUT(_id="previo_bonif", _class="valor")), TD(INPUT(_type="button", \
+_value="Ingresar", _id="boton_ingresar_detalle")), _class="detalles_previos")
 }}
 {{tabla_detalle.append(detalles_previos)}}
 {{=tabla_detalle}}
@@ -29,63 +40,129 @@ Subtotal: {{=total}}
 <SCRIPT TYPE="text/javascript">
 // autocalcular al descargar el formulario
 // (para carga de productos desde la base de datos)
-function calculate_total(oform) {
-/*
-var qty = $('#detalle_qty').val();
-var price = $('#detalle_precio').val();
-var total = $('#detalle_imp_total').val();
-
-t = qty.val() * price.val();
-
-total.val(t);
-*/
-}
 
 $(document).ready(function(){
-var numeroFormatoMoneda;
-var lista_formato_moneda = "";
-var previo_iva = 0;
-var previo_imp_iva = 0;
-var previo_total = 0;
-var previo_neto = 0;
-var previo_bonif = 0;
-var previo_cantidad = 0;
-var previo_qty = 0;
+  try{
+    var numeroFormatoMoneda;
+    var listaFormatoMoneda = "";
 
-function formatoMoneda(valor){
-numeroFormatoMoneda = new Number(valor);
-return numeroFormatoMoneda.toFixed(2);
-}
+    var codigo = "{{=form.vars.codigo or ''}}";
+    var precio = "{{=form.vars.precio or 0}}";
+    var umed = "{{=form.vars.umed or ''}}"; // id de umed
+    var ncm = "{{=form.vars.ncm or ''}}";
+    var sec = "{{=form.vars.sec or ''}}";
+    var iva = "{{=form.vars.iva_id or ''}}"; // id del iva
+    var bonif = "{{=form.vars.bonif or 0}}";
+    var qty = "{{=form.vars.qty or 0}}";
+    var ds = "{{=form.vars.ds or ''}}";
 
-function calcularItem(){
-// calcular el total previo del ítem
-// (antes del ingreso a la base de datos)
-if ($("#previo_codigo").val() != ""){
-previo_qty = $("#previo_qty").val();
-previo_neto = $("#previo_precio").val() * previo_qty;
-previo_iva = {{=iva_valor}};
-previo_bonif = $("#previo_bonif").val();
-previo_imp_iva = previo_neto * previo_iva;
-previo_total = previo_neto + previo_imp_iva - previo_bonif;
-$("#previo_imp_total").val(formatoMoneda(previo_total));
-$("#previo_imp_iva").val(formatoMoneda(previo_imp_iva));
-}
-}
+    var impIva = 0; // total de iva para detalle
+    var total = 0;
+    var neto = 0;
 
-//calculate_total();
-//$('#detalle_qty').change(calculate_total);
-//$('#detalle_precio').change(calculate_total);
+    var ivaAliquota = "{{=iva_aliquota or 0}}"; // alicuota
+    var sugerido;
 
-// actualizar valores de previsualización de ítem
-$("#previo_qty").change(calcularItem);
-$("#previo_bonif").change(calcularItem);
+    var ivaDesc = "{{=iva_desc or ''}}";
+    var umedDesc = "{{=umed_desc or ''}}";
+  }
+  catch(e){
+  /* error al descargar variables */
+  }
+  
+  function formatoMoneda(valor){
+    numeroFormatoMoneda = new Number(valor);
+    return numeroFormatoMoneda.toFixed(2);
+  }
 
-// cargar el ítem si se presionó el botón ingresar
-$('#boton_ingresar_detalle').bind('click', function(event){
-calcularItem();
-$("input[name=qty]").val(previo_qty);
-$("input[name=bonif]").val(previo_bonif);
-$('#formulario_ingreso_detalle').submit();
-});
+  function calcularItem(){
+    // Actualiza el formulario y calcula el total previo del ítem
+    // (antes del ingreso a la base de datos)
+    if (codigo != ""){
+      neto = precio * qty;
+      impIva = neto * ivaAliquota;
+      total = neto + impIva - bonif;
+      // completar formulario de ingreso de detalle
+
+      /* Importante: ¡Estos elementos cambian
+      con las modificaciones del model y los form en web2py! */
+
+      $("input[name=codigo]").val(codigo);
+      $("textarea[name=ds]").val(ds);
+      $("select[name=iva_id]").val(iva);
+      $("input[name=precio]").val(precio);
+      $("select[name=umed]").val(umed);
+      $("input[name=ncm]").val(ncm);
+      $("input[name=sec]").val(sec);
+      $("input[name=qty]").val(qty);
+      $("input[name=bonif]").val(bonif);
+
+      // actualizar previsualización
+      $("#previo_imp_total").val(formatoMoneda(total));
+      $("#previo_imp_iva").val(formatoMoneda(impIva));
+      $("#previo_qty").val(qty);
+      $("#previo_codigo").val(codigo);
+      $("#previo_iva_desc").val(ivaDesc);
+      $("#previo_umed_desc").val(umedDesc);
+      $("#previo_ds").val(ds);
+      $("#previo_ncm").val(ncm);
+      $("#previo_sec").val(sec);
+      $("#previo_precio").val(precio);
+      $("#previo_bonif").val(bonif);
+    }
+  }
+
+  function qtyChangeCallback(){
+    qty = $("#previo_qty").val();
+    calcularItem();
+  }
+
+  function bonifChangeCallback(){
+    bonif = $("#previo_bonif").val();
+    calcularItem();
+  }
+
+  function callbackSugerirProducto(data){
+    codigo = data.codigo;
+    precio = data.precio;
+    umed = data.umed;
+    ncm = data.ncm;
+    sec = data.sec;
+    iva = data.iva;
+    bonif = 0;
+    qty = 1;
+    ds = data.ds;
+
+    umedDesc = data.umed_desc;
+    ivaDesc = data.iva_desc;
+    ivaAliquota = data.iva_aliquota;
+
+    neto = 0;
+    impIva = 0;
+    total = 0;
+
+    calcularItem();
+  }
+
+  function sugerirProducto(){
+    sugerido = $("input[name=sugerir_producto]").val();
+    $.getJSON("{{=URL(c='consultas', f='producto.json')}}" + "/" + String(sugerido), callbackSugerirProducto);
+  }
+
+  $("#previo_qty").change(qtyChangeCallback);
+  $("#previo_bonif").change(bonifChangeCallback);
+
+  //entrada de sugerencia (id del elemento: ¿tabla?_campo en base de datos)
+  $("#sugerir_sugerir_producto").change(sugerirProducto);
+
+  // cargar el ítem si se presionó el botón ingresar
+  $('#boton_ingresar_detalle').bind('click', function(event){
+    // actualizar los valores de qty y bonif
+    qty = $("#previo_qty").val();
+    bonif = $("#previo_bonif").val();
+    calcularItem();
+    $('#formulario_ingreso_detalle').submit();
+  });
+  calcularItem();
 });
 </SCRIPT>
