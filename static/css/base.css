@@ -305,11 +305,11 @@ input[type=text], input[type=password], textarea, select {
 }
 
 input[type=text], input[type=password], select {
-    height: 16px;  
+    height: 16px;
 }
 
 select[multiple=multiple] {
-    height: 90px;  
+    height: 90px;
 }
 
 input[type=submit], input[type=button], button {

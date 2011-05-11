@@ -17,6 +17,15 @@ u"Neuquen", 21: u"La Pampa", 22: u"Río Negro", 23: u"Santa Cruz", 24: u"Tierra 
 FORMASPAGO = ['Contado/Efectivo', 'Cheque', 'Cuenta corriente', 'Transferencia', 'Sin especificar']
 CONDICIONESIVA = {'IVA Responsable Inscripto': 1, 'IVA Responsable no Inscripto': 2, 'IVA no Responsable': 3,'IVA Sujeto Exento': 4,'Consumidor Final': 5, 'Responsable Monotributo': 6, 'Sujeto no Categorizado': 7, 'Importador del Exterior': 8, 'Cliente del Exterior': 9, 'IVA Liberado - Ley Nº 19.640': 10, 'IVA Responsable Inscripto - Agente de Percepción': 11}
 
+
+def comprobante_id_represent(field):
+    dr = None
+    try:
+        dr = str(db.comprobante[field].id)
+    except (TypeError, KeyError, AttributeError):
+        dr = None
+    return dr
+    
 # función para cálculo de detalle en cbte
 def detalle_calcular_imp_iva(r):
     """ calcula el total del iva """
@@ -178,11 +187,11 @@ db.define_table('comprobante',
     Field('zona', type='string', length=5, default="0",
             comment="(no usado)", writable=False),
     Field('fecha_venc_pago', type='date', length=8,
-           comment="(servicios)"),
+           comment="(servicios)", default=request.now.date()),
     Field('fecha_serv_desde', type='date', length=8,
-            comment="(servicios)"),
+            comment="(servicios)", default=request.now.date()),
     Field('fecha_serv_hasta', type='date', 
-            comment="(servicios)"),
+            comment="(servicios)", default=request.now.date()),
     Field('cae', type='string', writable=False),
     Field('fecha_vto', type='date', length=8, writable=False),
     Field('resultado', type='string', length=1, writable=False),
@@ -197,8 +206,8 @@ db.define_table('comprobante',
 # detalle de los artículos por cada comprobante
 db.define_table('detalle',
     Field('id', type='id'),
-    Field('comprobante_id', type='reference comprobante', 
-            readable=False, writable=False),
+    Field('comprobante_id', type='reference comprobante', \
+    writable=False, represent=comprobante_id_represent),
     Field('codigo', type='string', length=30,
             requires=IS_NOT_EMPTY()),
     Field('ds', type='text', length=4000, label="Descripción",

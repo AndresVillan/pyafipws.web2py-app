@@ -229,9 +229,25 @@ def comprobantes():
     ultima = ultima)
 
 
+def detalles():
+    return dict(detalles = db(db.detalle).select())
+
+
 def producto():
     """ lista de valores de un producto """
     el_producto = db.producto[int(request.args[0])]
     iva = db.iva[el_producto.iva_id]
     return dict(codigo = el_producto.codigo, iva = iva.cod, umed = el_producto.umed, \
     umed_desc = db.umed[el_producto.umed].desc, ds = el_producto.ds, ncm = el_producto.ncm, sec = el_producto.sec, precio = el_producto.precio, iva_aliquota = iva.aliquota, iva_desc = iva.desc)
+
+
+def productoporcodigo():
+    """ lista de valores de un producto """
+    existente = False
+    el_producto = db(db.producto.codigo == request.args[0]).select().first()
+    try:
+        id = el_producto.id
+        existente = True
+    except (KeyError, AttributeError):
+        id = None
+    return dict(id = id, existente = existente)

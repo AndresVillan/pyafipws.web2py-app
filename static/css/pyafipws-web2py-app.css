@@ -1,4 +1,8 @@
 /* Hoja de estilo para pyafipws-web2py-app */
+input, select{
+height: 1.5em;
+}
+
 .excluir{display: none;}
 /*Anchos de ingreso de texto en formularios*/
 

@@ -14,6 +14,7 @@ def comprobante_seleccionar_cliente():
     redirect(URL(r=request, c='emision', f='iniciar'))
 
 def iniciar():
+    fecha = datetime.datetime.now()
     "Crear/modificar datos generales del comprobante"
     # campos a mostrar:
     campos_generales = ['webservice',
@@ -58,8 +59,13 @@ def iniciar():
                 form.vars.moneda_id = variables.moneda
                 form.vars.forma_pago = variables.forma_pago
 
-            form.vars.fecha_venc_pago = str(datetime.datetime.now() + datetime.timedelta(variables.venc_pago))[0:10]            
+            
+            form.vars.fecha_venc_pago = str(fecha + datetime.timedelta(variables.venc_pago))[0:10]
+            form.vars.fecha_vto = str(fecha + datetime.timedelta(variables.venc_pago))[0:10]
+            form.vars.fecha_serv_desde = str(fecha)[0:10]
+            form.vars.fecha_serv_hasta = str(fecha)[0:10]
 
+                        
     # Si se seleccionó un cliente cargar datos
     try:
         cliente_seleccionado = session.cliente_seleccionado
