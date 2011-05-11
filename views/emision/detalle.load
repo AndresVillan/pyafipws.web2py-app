@@ -65,6 +65,8 @@ $(document).ready(function(){
 
     var ivaDesc = "{{=iva_desc or ''}}";
     var umedDesc = "{{=umed_desc or ''}}";
+    
+    var cargaPorCodigo;
   }
   catch(e){
   /* error al descargar variables */
@@ -122,6 +124,21 @@ $(document).ready(function(){
     calcularItem();
   }
 
+  function cargarCodigoCallback(data){
+    if (data.existente == true){
+      $("input[name=sugerir_producto]").val(data.id);
+      sugerirProducto();
+    }
+    else{
+      $("#carga_por_codigo").val("Inexistente");
+    }
+  }
+
+  function cargarCodigo(){
+    cargaPorCodigo = $("#carga_por_codigo").val();
+    $.getJSON("{{=URL(c='consultas', f='productoporcodigo.json')}}" + "/" + cargaPorCodigo, cargarCodigoCallback);
+  }
+  
   function callbackSugerirProducto(data){
     codigo = data.codigo;
     precio = data.precio;
@@ -151,6 +168,7 @@ $(document).ready(function(){
 
   $("#previo_qty").change(qtyChangeCallback);
   $("#previo_bonif").change(bonifChangeCallback);
+  $("#carga_por_codigo").change(cargarCodigo);
 
   //entrada de sugerencia (id del elemento: ¿tabla?_campo en base de datos)
   $("#sugerir_sugerir_producto").change(sugerirProducto);

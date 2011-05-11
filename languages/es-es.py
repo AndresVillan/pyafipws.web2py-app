@@ -48,6 +48,7 @@
 'Deploy on Google App Engine': 'Instale en Google App Engine',
 'Description': 'Descripción',
 'Design for': 'Diseño para',
+'Detalles': 'Detalles',
 'E-mail': 'Correo electrónico',
 'EDIT': 'EDITAR',
 'Edit': 'Editar',

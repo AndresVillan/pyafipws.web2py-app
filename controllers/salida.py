@@ -1,4 +1,4 @@
-# coding: utf8
+# -*- coding: utf-8 -*-
 # intente algo como
 
 def pdf():
@@ -10,8 +10,9 @@ def pdf():
     from decimal import Decimal
 
     # read elements from db 
-    
     elements = db(db.pdf_element.pdf_template_id==1).select(orderby=db.pdf_element.priority)
+
+
 
     f = Template(format="A4",
              elements = elements,
@@ -55,7 +56,7 @@ def pdf():
         obs="\n<U>Detail:</U>\n\n" + comprobante.obs
         for ds in f.split_multicell(obs, 'item_description01'):
             li_items.append(dict(code=code, ds=ds, qty=qty, unit=unit, price=None, amount=None))
-    
+        
     # calculate pages:
     lines = len(li_items)
     max_lines_per_page = 24

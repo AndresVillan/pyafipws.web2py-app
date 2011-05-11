@@ -13,6 +13,8 @@ PRIVATE_PATH = os.path.join(request.env.web2py_path,'applications',request.appli
 variables = db(db.variables).select().first()
 if not variables: raise Exception("No se configuró el registro variables")
 CUIT = variables.cuit
+
+# almacenar los certificados en la carpeta private
 CERTIFICATE = variables.certificate
 PRIVATE_KEY = variables.private_key
 
@@ -325,7 +327,9 @@ def autorizar():
                         'impto_liq_rni': 0.00,
                         'imp_op_ex': comprobante.imp_op_ex or 0.00,
                         'fecha_cbte': comprobante.fecha_cbte.strftime("%Y%m%d"),
-                        'fecha_venc_pago': comprobante.fecha_venc_pago and comprobante.fecha_venc_pago.strftime("%Y%m%d"),
+                        'fecha_venc_pago': comprobante.fecha_venc_pago and comprobante.fecha_venc_pago.strftime("%Y%m%d"), \
+                        'fecha_serv_desde': comprobante.fecha_serv_desde and comprobante.fecha_serv_desde.strftime("%Y%m%d"), \
+                        'fecha_serv_hasta': comprobante.fecha_serv_hasta and comprobante.fecha_serv_hasta.strftime("%Y%m%d")
                     }}
                 }
             )['FEAutRequestResult']
@@ -353,6 +357,12 @@ def autorizar():
                     fecha_vto=la_fecha_vto,
                     cbte_nro=result['FedResp'][0]['FEDetalleResponse']['cbt_desde'],
                     id_ws=result['FecResp']['id'],
+                    imp_neto=result['FedResp'][0]['FEDetalleResponse']['imp_neto'],
+                    imp_total=result['FedResp'][0]['FEDetalleResponse']['imp_total'],
+                    impto_liq=result['FedResp'][0]['FEDetalleResponse']['impto_liq'],
+                    impto_liq_rni=result['FedResp'][0]['FEDetalleResponse']['impto_liq_rni'],
+                    imp_op_ex=result['FedResp'][0]['FEDetalleResponse']['imp_op_ex'],
+                    imp_tot_conc=result['FedResp'][0]['FEDetalleResponse']['imp_tot_conc'],                    
                     )
         
 
