@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # intente algo como
 
+@auth.requires_login()
 def pdf():
     from gluon.contrib.pyfpdf import Template
     import os.path

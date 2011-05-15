@@ -1,24 +1,27 @@
 # -*- coding: utf-8 -*-
 import datetime
 
+@auth.requires(auth.has_membership('administrador') or auth.has_membership('emisor'))
 def comprobante_tabla_clientes():
     """ Muestra una tabla para establecer un cliente """
     los_clientes = db(db.cliente).select()
     if len(los_clientes) < 1: raise Exception("La tabla de clientes está vacía")
     return dict(clientes = los_clientes)
 
+@auth.requires(auth.has_membership('administrador') or auth.has_membership('emisor'))
 def comprobante_seleccionar_cliente():
     el_cliente = int(request.args[1])
     session.cliente_seleccionado = el_cliente
     response.flash = "Nuevo cliente seleccionado"
     redirect(URL(r=request, c='emision', f='iniciar'))
 
+
+@auth.requires(auth.has_membership('administrador') or auth.has_membership('emisor'))
 def iniciar():
     fecha = datetime.datetime.now()
     "Crear/modificar datos generales del comprobante"
     # campos a mostrar:
-    campos_generales = ['webservice',
-    'fecha_cbte','tipo_cbte','punto_vta','cbte_nro', 'concepto',
+    campos_generales = ['fecha_cbte','tipo_cbte','punto_vta','cbte_nro', 'concepto',
     'permiso_existente', 'dst_cmp',
     'nombre_cliente', 'tipo_doc', 'nro_doc', 'domicilio_cliente',
     'telefono_cliente',
@@ -40,31 +43,30 @@ def iniciar():
     if not session.comprobante_id:    
         variables = db(db.variables).select().first()
         if not variables:
-            raise Exception("No se cargaron las opciones para formularios (variables).")
+            raise Exception("No se cargaron las opciones globales para formularios.")
+        variables_usuario = db(db.variables_usuario.usuario == auth.user_id).select().first()
+        if not variables_usuario:
+            db.variables_usuario.insert(usuario = auth.user_id, \
+                punto_de_venta = variables.punto_de_venta, \
+                moneda = variables.moneda, \
+                webservice = variables.webservice, \
+                tipo_cbte = variables.tipo_cbte, \
+                venc_pago = variables.venc_pago, \
+                forma_pago = variables.forma_pago
+            )
+            response.flash = "Se generó el registro de variables para formularios del usuario."
         else:
-            # Recupero opciones de session o del registro de variables
-            try:
-                if session.punto_vta:
-                    form.vars.webservice = session.webservice
-                    form.vars.tipo_cbte = session.tipo_cbte
-                    form.vars.punto_vta = session.punto_vta
-                    form.vars.moneda_id = session.moneda_id
-                    form.vars.forma_pago = session.forma_pago
-                else: raise KeyError()
-
-            except KeyError:
-                form.vars.webservice = variables.web_service
-                form.vars.tipo_cbte = variables.tipo_cbte
-                form.vars.punto_vta = variables.punto_de_venta.numero
-                form.vars.moneda_id = variables.moneda
-                form.vars.forma_pago = variables.forma_pago
-
-            
-            form.vars.fecha_venc_pago = str(fecha + datetime.timedelta(variables.venc_pago))[0:10]
-            form.vars.fecha_vto = str(fecha + datetime.timedelta(variables.venc_pago))[0:10]
+            # Recupero opciones del registro global de variables
+            form.vars.webservice = variables_usuario.webservice
+            form.vars.tipo_cbte = variables_usuario.tipo_cbte
+            form.vars.punto_vta = variables_usuario.punto_de_venta.numero
+            form.vars.moneda_id = variables_usuario.moneda
+            form.vars.forma_pago = variables_usuario.forma_pago
+           
+            form.vars.fecha_venc_pago = str(fecha + datetime.timedelta(variables_usuario.venc_pago))[0:10]
+            form.vars.fecha_vto = str(fecha + datetime.timedelta(variables_usuario.venc_pago))[0:10]
             form.vars.fecha_serv_desde = str(fecha)[0:10]
             form.vars.fecha_serv_hasta = str(fecha)[0:10]
-
                         
     # Si se seleccionó un cliente cargar datos
     try:
@@ -85,11 +87,13 @@ def iniciar():
 
     # valido el formulario (si han enviado datos)
     if form.accepts(request.vars, session, dbio=False):
+        """
         session.webservice = form.vars.webservice
         session.tipo_cbte = form.vars.tipo_cbte
         session.moneda_id = form.vars.moneda_id
         session.punto_vta = form.vars.punto_vta
         session.forma_pago = form.vars.forma_pago
+        """
         
         if not session.comprobante_id:
             # insertar el comprobante
@@ -97,6 +101,12 @@ def iniciar():
             session.flash = "Comprobante creado..."
         else:
             id = session.comprobante_id
+            
+            # no cambiar el webservice si es un cbte
+            # enviado
+            if db.comprobante[id].resultado:
+                form.vars.webservice = db.comprobante[id].webservice
+                
             db(db.comprobante.id==id).update(**form.vars)
             session.flash = "Comprobante actualizado..."
         # guardo el ID del registro creado en la sesión
@@ -109,6 +119,7 @@ def iniciar():
     return dict(form=form)
 
 
+@auth.requires(auth.has_membership('administrador') or auth.has_membership('emisor'))
 def detallar():
     # creo un formulario para el comprobante (TODO: modificar)
     campos_encabezado = ['fecha_cbte','tipo_cbte','punto_vta','cbte_nro',  ]
@@ -135,6 +146,8 @@ def calcular_item_detalle(form):
     form.vars.imp_total = imp_neto + form.vars.imp_iva - form.vars.bonif
 
 
+
+@auth.requires(auth.has_membership('administrador') or auth.has_membership('emisor'))
 def detalle():
     qty = 1
     bonif = 0.0
@@ -206,6 +219,7 @@ def detalle():
                 detalles=detalles, iva_desc = iva_texto, umed_desc = umed_texto, iva_aliquota = iva_valor)
 
 
+@auth.requires(auth.has_membership('administrador') or auth.has_membership('emisor'))
 def editar_detalle():
     form = SQLFORM(db.detalle, request.args[0],deletable=True, onvalidation = calcular_item_detalle)
     #db(db.detalle.id==request.args[0]).delete()
@@ -217,17 +231,20 @@ def editar_detalle():
     return dict(form=form)
 
 
+@auth.requires_login()
 def link_cargar_producto(field, type, ref):
     """ función para carga de campos en detalle (no utilizada)"""
     return URL(r=request, f='detallar', vars={'producto': int(field)})
 
 
+@auth.requires(auth.has_membership('administrador') or auth.has_membership('emisor'))
 def cargar_producto():
     los_productos = db(db.producto.id > 0).select()
     if len(los_productos) < 1: raise Exception("La tabla productos está vacía.")
     return dict(productos=los_productos)
 
 
+@auth.requires(auth.has_membership('administrador') or auth.has_membership('emisor'))
 def finalizar():
     campos_encabezado = [
         'fecha_cbte','tipo_cbte','punto_vta','cbte_nro', 'concepto',

@@ -5,8 +5,12 @@ def index():
     example action using the internationalization operator T and flash
     rendered by views/default/index.html or views/generic.html
     """
-    response.flash = T('Welcome to web2py')
-    return dict(message=T('Hello World'))
+    
+    if not session.bienvenida:
+        response.flash = T('FacturaLibre. Aplicación en desarrollo')
+        session.bienvenida = True
+    
+    return dict(message=T('FacturaLibre. Aplicación en desarrollo'))
 
 
 def user():
@@ -23,7 +27,9 @@ def user():
         @auth.requires_permission('read','table name',record_id)
     to decorate functions that need access control
     """
-    return dict(form=auth())
+    
+    form=auth()
+    return dict(form=form)
 
 
 def download():

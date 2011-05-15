@@ -1,10 +1,10 @@
-# coding: utf8
+# -*- coding: utf-8 -*-
 # try something like
 import datetime
-import json
 
 def index(): return dict(message="momentaneamente no implementado")
 
+@auth.requires_login()
 def detalle():
     comprobante, detalle = None, None
     el_id = int(request.args[1])
@@ -14,6 +14,7 @@ def detalle():
     return dict(comprobante = BEAUTIFY(comprobante.as_dict()), detalle = BEAUTIFY(detalle.as_dict()))
 
 
+@auth.requires_login()
 def comprobantes():
     """ Consulta de comprobantes con parámetros para filtro """
     form_enviado = False
@@ -229,10 +230,12 @@ def comprobantes():
     ultima = ultima)
 
 
+@auth.requires_login()
 def detalles():
     return dict(detalles = db(db.detalle).select())
 
 
+@auth.requires_login()
 def producto():
     """ lista de valores de un producto """
     el_producto = db.producto[int(request.args[0])]
@@ -241,6 +244,7 @@ def producto():
     umed_desc = db.umed[el_producto.umed].desc, ds = el_producto.ds, ncm = el_producto.ncm, sec = el_producto.sec, precio = el_producto.precio, iva_aliquota = iva.aliquota, iva_desc = iva.desc)
 
 
+@auth.requires_login()
 def productoporcodigo():
     """ lista de valores de un producto """
     existente = False

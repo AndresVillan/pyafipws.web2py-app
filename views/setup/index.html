@@ -5,6 +5,10 @@
 {{if variables:}}
 <LI>Variables ({{=A('Modificar', _href=URL(r=request, c='setup', f='variables') )}}):{{=variables.as_dict()}}</LI>
 {{pass}}
+{{if variables_usuario:}}
+<LI>Variables de usuario ({{=A('Modificar', _href=URL(r=request, c='setup', f='variables_usuario') )}}):{{=variables_usuario.as_dict()}}</LI>
+{{pass}}
+
 <LI>Idiomas: {{=idiomas}} ({{=A('Crear idiomas', _href=URL(r=request, c='setup', f='crear_idiomas'))}})</LI>
 <LI>IVA(s): {{=ivas}} ({{=A('Crear iva(s)', _href=URL(r=request, c='setup', f='crear_iva'))}})</LI>
 <LI>Monedas: {{=monedas}} ({{=A('Crear monedas', _href=URL(r=request, c='setup', f='crear_monedas'))}})</LI>
@@ -21,5 +25,7 @@ f='crear_umedidas'))}})</LI>
 <LI>Condiciones IVA: {{=condiciones_iva}} ({{=A('Crear condiciones IVA', _href=URL(r=request, c='setup', \
 f='crear_condiciones_iva'))}})</LI>
 <LI>Puntos de venta: {{=puntos_de_venta}}</LI>
+<LI>Roles: {{=roles}} ({{=A('Listar/Asignar por usuario', _href=URL(r=request, c='setup', \
+f='roles_editar'))}})</LI>
 </UL>
 <br />
