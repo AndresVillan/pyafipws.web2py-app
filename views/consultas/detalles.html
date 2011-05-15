@@ -1,15 +1,5 @@
 {{extend 'layout.html'}}
-<h1>Esta es la plantilla consultas/detalles.html</h1>
-{{# numerador = 0}}
-{{# la_tabla = TABLE()}}
-{{# for det in detalles:}}
-{{# numerador += 1}}
-{{# if numerador == 1:}}
-{{# =det.keys()}}
-{{# pass}}
-{{# la_tabla.append(TR([TD(str(campo), _style="width: 6em;") for campo in det.values()])) }}
-{{# pass}}
-{{# =la_tabla}}
+<h1>Detalles de cbtes</h1>
 
 {{=SQLTABLE(detalles, linkto=lambda field, type, ref: URL(c='abm', f='detalleeditar', args=[field,]))}}
 

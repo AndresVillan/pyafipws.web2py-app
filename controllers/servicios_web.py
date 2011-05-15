@@ -3,6 +3,10 @@
 response.title = "Servicios Web AFIP"
 
 import os, os.path, time, datetime
+# Conexión al webservice:
+from gluon.contrib.pysimplesoap.client import SoapClient, SoapFault
+
+from pyafipws import wsaa
 
 # Constantes para homologación:
 
@@ -11,12 +15,29 @@ PRIVATE_PATH = os.path.join(request.env.web2py_path,'applications',request.appli
 # Configuración
 # recuperar registro de variables
 variables = db(db.variables).select().first()
-if not variables: raise Exception("No se configuró el registro variables")
+if not variables: raise HTTP(500, "No se configuró el registro variables")
+variables_usuario = db(db.variables_usuario.usuario == auth.user_id).select().first()
+if not variables_usuario: raise HTTP(500,"No se configuró el registro variables de usuario")
+
 CUIT = variables.cuit
 
 # almacenar los certificados en la carpeta private
 CERTIFICATE = variables.certificate
 PRIVATE_KEY = variables.private_key
+
+
+# detecto webservice en uso (desde URL o desde el formulario)
+if request.args:
+    SERVICE = request.args[0]
+
+elif request.vars:
+    SERVICE = request.vars.get('webservice')
+
+else: 
+    SERVICE = ""
+    TOKEN = SIGN = ''
+    client = None
+
 
 if variables.produccion:
     WSDL, WSAA_URL = None, None
@@ -30,7 +51,8 @@ else:
     }
 
     WSAA_URL = "https://wsaahomo.afip.gov.ar/ws/services/LoginCms"
-    
+   
+
 def ymd2date(vto):
     "Convertir formato AFIP 20101231 a python date(2010,12,31)"
     return datetime.date(int(vto[0:4]), int(vto[4:6]), int(vto[6:8]))
@@ -41,7 +63,6 @@ def _autenticar(service="wsfe", ttl=60*60*5):
 
     # wsfev1 => wsfe!
     # service = {'wsfev1': 'wsfe'}.get(service, service)
-    service = variables.web_service
     
     if service not in ("wsfe","wsfev1","wsmtxca","wsfex","wsbfe"):
         raise HTTP(500,"Servicio %s incorrecto" % service)
@@ -51,13 +72,20 @@ def _autenticar(service="wsfe", ttl=60*60*5):
     ttl = 60*60*5
     if not os.path.exists(TA) or os.path.getmtime(TA)+(ttl)<time.time():
         # solicito una nueva autenticación
-        wsaa = local_import("pyafipws.wsaa")
+        # wsaa = pyafipws.wsaa
         cert = os.path.join(PRIVATE_PATH, CERTIFICATE)
         privatekey = os.path.join(PRIVATE_PATH, PRIVATE_KEY)
         # creo un ticket de requerimiento de acceso
         tra = wsaa.create_tra(service=SERVICE,ttl=ttl)
+
         # firmo el ticket de requerimiento de acceso
         cms = wsaa.sign_tra(str(tra),str(cert),str(privatekey))
+
+        # depuración
+        # db.xml.insert(request = "Depuración tra: " + repr(tra) + " WSAA_URL: " + str(WSAA_URL))
+        # db.commit()
+        # fin de depuración
+
         # llamo al webservice para obtener el ticket de acceso
         ta_string = wsaa.call_wsaa(cms,WSAA_URL,trace=False)
         # guardo el ticket de acceso obtenido:
@@ -71,32 +99,9 @@ def _autenticar(service="wsfe", ttl=60*60*5):
     sign = str(ta.credentials.sign)
     return token, sign
 
-# Conexión al webservice:
-from gluon.contrib.pysimplesoap.client import SoapClient, SoapFault
-
-# detecto webservice en uso (desde URL o desde el formulario)
-if request.args:
-    SERVICE = request.args[0]
-elif request.vars:
-    SERVICE = request.vars.get('webservice')
-else: 
-    SERVICE = ""
-    TOKEN = SIGN = ''
-    client = None
-    
-if SERVICE:        
-    # solicito autenticación
-    if request.controller!="dummy":
-        TOKEN, SIGN = _autenticar(SERVICE)        
-        
-    # conecto al webservice
-    client = SoapClient( 
-            wsdl = WSDL[SERVICE],
-            cache = PRIVATE_PATH,
-            trace = False)
-
 # Funciones expuestas al usuario:
 
+@auth.requires(auth.has_membership('administrador') or auth.has_membership('emisor'))
 def autenticar():
     "Prueba de autenticación"
     response.subtitle = "Prueba de autenticación (%s)" % SERVICE
@@ -104,6 +109,7 @@ def autenticar():
     return dict(token=TOKEN[:10]+"...", sign=SIGN[:10]+"...")
 
 
+@auth.requires(auth.has_membership('administrador') or auth.has_membership('emisor'))
 def dummy():
     "Obtener el estado de los servidores de la AFIP"
     response.subtitle = "DUMMY: Consulta estado de servidores (%s)" % SERVICE
@@ -122,6 +128,7 @@ def dummy():
     return result
 
 
+@auth.requires(auth.has_membership('administrador') or auth.has_membership('emisor'))
 def ultimo_id():
     "Obtener el último ID de transacción AFIP"
     response.subtitle = "Consulta el último ID de transacción utilizado"
@@ -152,7 +159,7 @@ def ultimo_id():
     return {'form': form, 'result': result}
 
 
-# devuelve unicamente id
+
 def f_ultimo_id(comprobante):
     "Obtener el último ID de transacción AFIP (sin formulario)"
     
@@ -176,7 +183,7 @@ def f_ultimo_id(comprobante):
     return result
 
 
-
+@auth.requires(auth.has_membership('administrador') or auth.has_membership('emisor'))
 def ultimo_numero_comprobante():
     "Obtener el último comprobante autorizado por la AFIP"
     response.subtitle = "Consulta el último número de comprobante autorizado"
@@ -253,6 +260,7 @@ def f_ultimo_numero_comprobante(comprobante):
     return result
 
 
+@auth.requires(auth.has_membership('administrador') or auth.has_membership('emisor') or auth.has_membership('auditor'))
 def cotizacion():
     "Obtener cotización de referencia según AFIP"
     response.subtitle = "Consulta cotización de referencia"
@@ -283,12 +291,14 @@ def cotizacion():
     return {'form': form, 'result': result}
 
 
+@auth.requires(auth.has_membership('emisor') or auth.has_membership('administrador'))
 def autorizar():
     "Facturador (Solicitud de Autorización de Factura Electrónica AFIP)"
     response.subtitle = "Solicitud de Autorización - CAE  (%s)" % SERVICE
     
     comprobante_id = request.args[1]
     comprobante = db(db.comprobante.id==comprobante_id).select().first()
+    
     detalles = db(db.detalle.comprobante_id==comprobante_id).select()
 
     # cálculo de cbte para autorización
@@ -362,7 +372,8 @@ def autorizar():
                     impto_liq=result['FedResp'][0]['FEDetalleResponse']['impto_liq'],
                     impto_liq_rni=result['FedResp'][0]['FEDetalleResponse']['impto_liq_rni'],
                     imp_op_ex=result['FedResp'][0]['FEDetalleResponse']['imp_op_ex'],
-                    imp_tot_conc=result['FedResp'][0]['FEDetalleResponse']['imp_tot_conc'],                    
+                    imp_tot_conc=result['FedResp'][0]['FEDetalleResponse']['imp_tot_conc'],
+                    webservice = SERVICE
                     )
         
 
@@ -419,3 +430,21 @@ def calcular_comprobante(comprobante):
     comprobante.impto_liq = liq
 
     return True
+
+    
+if SERVICE:        
+    # solicito autenticación
+    if request.controller!="dummy":
+    
+        # depuración
+        # db.xml.insert(request = "Depuración ws: " + str(SERVICE) + " wsdl: " + str(WSDL[SERVICE]))
+        # db.commit()
+        # fin de depuración
+        
+        TOKEN, SIGN = _autenticar(SERVICE)        
+        
+    # conecto al webservice
+    client = SoapClient( 
+            wsdl = WSDL[SERVICE],
+            cache = PRIVATE_PATH,
+            trace = False)

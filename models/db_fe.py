@@ -132,7 +132,7 @@ db.define_table('localidad',
 # Datos generales del comprobante:
 db.define_table('comprobante',
     Field('id_ws', 'integer', unique = True, writable=False, requires=IS_EMPTY_OR(IS_INT_IN_RANGE(0, 1e7))),
-    Field('webservice', type='string', length=6, default='wsfe', writable = False, 
+    Field('webservice', type='string', length=6, writable = False, 
             requires = IS_IN_SET(WEBSERVICES)),
     Field('fecha_cbte', type='date', default=request.now.date(),
             requires=IS_NOT_EMPTY(), writable = False,
@@ -236,7 +236,6 @@ db.define_table('detalle',
 
 db.detalle.umed.represent=lambda id: db.umed[id].desc
 
-
 # Permisos de exportación (si es requerido):
 db.define_table('permiso',
     Field('id', type='id'),
@@ -275,12 +274,14 @@ db.define_table('cliente', Field('nombre_cliente', type='string', length=200),
 db.define_table('punto_de_venta', Field('numero', 'integer', unique = True), Field('nombre'), Field('domicilio'), Field('localidad', 'reference localidad'), Field('provincia', 'reference provincia'), migrate = migrate, format="%(nombre)s")
 
 # variables generales (único registro)
-db.define_table('variables', Field('punto_de_venta', 'reference punto_de_venta'), Field('cuit', 'integer'), Field('domicilio'), Field('telefono'), Field('localidad', 'reference localidad'), Field('provincia', 'reference provincia'), Field('certificate'), Field('private_key'), Field('produccion', 'boolean', default = False), Field('moneda', 'reference moneda'), Field('web_service', requires = IS_IN_SET(WEBSERVICES), default='wsfe'), Field('tipo_cbte', 'reference tipo_cbte'), Field('venc_pago', 'integer', default=30), Field('forma_pago', requires = IS_IN_SET(FORMASPAGO), default = 'Sin especificar'), migrate = migrate)
+db.define_table('variables', Field('punto_de_venta', 'reference punto_de_venta'), Field('cuit', 'integer'), Field('domicilio'), Field('telefono'), Field('localidad', 'reference localidad'), Field('provincia', 'reference provincia'), Field('certificate'), Field('private_key'), Field('produccion', 'boolean', default = False), Field('moneda', 'reference moneda'), Field('webservice', requires = IS_IN_SET(WEBSERVICES), default='wsfe'), Field('tipo_cbte', 'reference tipo_cbte'), Field('venc_pago', 'integer', default=30), Field('forma_pago', requires = IS_IN_SET(FORMASPAGO), default = 'Sin especificar'), migrate = migrate)
+
+# variables por usuario
+db.define_table('variables_usuario', Field('usuario', 'reference auth_user', unique = True, writable = False), Field('punto_de_venta', 'reference punto_de_venta'), Field('moneda', 'reference moneda'), Field('webservice', requires = IS_IN_SET(WEBSERVICES), default='wsfe'), Field('tipo_cbte', 'reference tipo_cbte'), Field('venc_pago', 'integer', default=30), Field('forma_pago', requires = IS_IN_SET(FORMASPAGO), default = 'Sin especificar'), migrate = migrate)
 
 # Tablas accesorias
 db.define_table('sugerir', Field('sugerir_producto', 'reference producto'), migrate = migrate)
-db.sugerir.sugerir_producto.widget=SQLFORM.widgets.autocomplete(request, db.producto.ds, id_field=db.producto.id, limitby=(0,10), min_length=2)
-
+db.sugerir.sugerir_producto.widget=SQLFORM.widgets.autocomplete(request, db.producto.ds, id_field=db.producto.id, limitby=(0,10), min_length=3)
 
 # Tablas de depuración
 

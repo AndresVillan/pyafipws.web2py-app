@@ -73,3 +73,9 @@ crud.settings.auth = None                      # =auth to enforce authorization 
 ## >>> rows=db(db.mytable.myfield=='value').select(db.mytable.ALL)
 ## >>> for row in rows: print row.id, row.myfield
 #########################################################################
+
+# función que controla el evento de autenticación
+def autenticacion_usuario(form):
+    return None
+    
+auth.settings.login_onaccept = autenticacion_usuario
