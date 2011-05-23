@@ -5,7 +5,7 @@ import datetime
 def comprobante_tabla_clientes():
     """ Muestra una tabla para establecer un cliente """
     los_clientes = db(db.cliente).select()
-    if len(los_clientes) < 1: raise Exception("La tabla de clientes está vacía")
+    if len(los_clientes) < 1: raise HTTP(500, "La tabla de clientes está vacía")
     return dict(clientes = los_clientes)
 
 @auth.requires(auth.has_membership('administrador') or auth.has_membership('emisor'))
@@ -21,8 +21,8 @@ def iniciar():
     fecha = datetime.datetime.now()
     "Crear/modificar datos generales del comprobante"
     # campos a mostrar:
-    campos_generales = ['fecha_cbte','tipo_cbte','punto_vta','cbte_nro', 'concepto',
-    'permiso_existente', 'dst_cmp',
+    campos_generales = ['fecha_cbte','tipo_cbte','punto_vta', 'webservice','cbte_nro', 'concepto', 'tipo_expo',
+    'permiso_existente', 'dst_cmp', 'dst_cuit',
     'nombre_cliente', 'tipo_doc', 'nro_doc', 'domicilio_cliente',
     'telefono_cliente',
     'localidad_cliente', 'provincia_cliente', 'email', 'id_impositivo',
@@ -43,7 +43,7 @@ def iniciar():
     if not session.comprobante_id:    
         variables = db(db.variables).select().first()
         if not variables:
-            raise Exception("No se cargaron las opciones globales para formularios.")
+            raise HTTP(500, "No se cargaron las opciones globales para formularios.")
         variables_usuario = db(db.variables_usuario.usuario == auth.user_id).select().first()
         if not variables_usuario:
             db.variables_usuario.insert(usuario = auth.user_id, \
@@ -122,10 +122,11 @@ def iniciar():
 @auth.requires(auth.has_membership('administrador') or auth.has_membership('emisor'))
 def detallar():
     # creo un formulario para el comprobante (TODO: modificar)
-    campos_encabezado = ['fecha_cbte','tipo_cbte','punto_vta','cbte_nro',  ]
+    campos_encabezado = ['fecha_cbte','tipo_cbte','punto_vta','cbte_nro', 'webservice' ]
     form = SQLFORM(db.comprobante, session.comprobante_id,
                    fields=campos_encabezado, readonly=True)
     comprobante = db(db.comprobante.id==session.comprobante_id).select().first()
+
     try:
         # Trato de obtener un producto especificado
         # para pre-completar campos de detalle
@@ -134,17 +135,27 @@ def detallar():
     except KeyError:
         # no se envió un producto en la solicitud
         el_producto = None
-    
-    return dict(form=form, comprobante=comprobante, producto = el_producto, vprevia = None)
+
+    try:
+        # Trato de obtener un producto especificado
+        # para pre-completar campos de detalle
+        el_cbte_asoc = int(request.vars["cbte_asoc"])
+
+    except KeyError:
+        # no se envió un producto en la solicitud
+        el_cbte_asoc = None
+
+    return dict(form=form, comprobante=comprobante, producto = el_producto, vprevia = None, cbte_asoc = el_cbte_asoc)
 
 
 def calcular_item_detalle(form):
     """ calcula el total del ítem """
-    imp_neto = form.vars.precio * form.vars.qty
+    imp_neto = (form.vars.precio * form.vars.qty) -form.vars.bonif
     valor_iva = db.iva[form.vars.iva_id].aliquota
     form.vars.imp_iva = imp_neto * valor_iva
-    form.vars.imp_total = imp_neto + form.vars.imp_iva - form.vars.bonif
-
+    form.vars.imp_total = imp_neto + form.vars.imp_iva
+    form.vars.base_imp_iva = imp_neto
+    form.vars.base_imp_tributo = imp_neto
 
 
 @auth.requires(auth.has_membership('administrador') or auth.has_membership('emisor'))
@@ -220,8 +231,157 @@ def detalle():
 
 
 @auth.requires(auth.has_membership('administrador') or auth.has_membership('emisor'))
+def detalle_tributo():
+    comprobante = None
+    tributo = None
+    base_imp = None
+    importe = None
+
+    form = SQLFORM(db.tributo_item, keepvalues = True, _class="excluir", _id="formulario_ingreso_detalle_tributo")
+
+    if request.vars.tributo:    
+        form.vars.comprobante = request.vars.comprobante
+        form.vars.tributo = request.vars.tributo
+        form.vars.base_imp = request.vars.base_imp
+        form.vars.importe = request.vars.importe
+        form.vars.comprobante = session.comprobante_id        
+         
+    else:
+        try:
+            form.vars.comprobante = request.vars.comprobante
+            form.vars.tributo = request.vars.tributo
+            form.vars.base_imp = request.vars.base_imp
+            form.vars.importe = request.vars.importe
+            form.vars.comprobante = session.comprobante_id
+        
+        except KeyError:
+             # no se especifica tributo
+            # en el formulario
+            pass
+   
+    db.tributo_item.comprobante.default = session.comprobante_id
+    
+    if form.accepts(request.vars, session, keepvalues = True):
+        response.flash ="Detalle de tributo agregado!"
+
+    elif form.errors:
+        response.flash = "El detalle tiene errores!: " + str(form.errors.keys()) + " " + str(form.errors.values())
+        
+    los_tributos = db(db.tributo_item.comprobante==session.comprobante_id).select()
+    return dict(form=form, tributos=los_tributos)
+
+
+@auth.requires(auth.has_membership('administrador') or auth.has_membership('emisor'))
+def detalle_permiso():
+    comprobante = None
+    id_permiso = None
+    tipo_reg = None
+    dst_merc = None
+
+    form = SQLFORM(db.permiso, keepvalues = True, _class="excluir", _id="formulario_ingreso_detalle_permiso")
+
+    if request.vars.id_permiso:    
+        form.vars.id_permiso = request.vars.id_permiso
+        form.vars.tipo_reg = request.vars.tipo_reg
+        form.vars.dst_merc = request.vars.dst_merc
+        form.vars.comprobante_id = session.comprobante_id
+         
+    else:
+        try:
+            form.vars.id_permiso = request.vars.id_permiso
+            form.vars.tipo_reg = request.vars.tipo_reg
+            form.vars.dst_merc = request.vars.dst_merc
+            form.vars.comprobante_id = session.comprobante_id
+        
+        except KeyError:
+             # no se especifica tributo
+            # en el formulario
+            pass
+   
+    db.permiso.comprobante_id.default = session.comprobante_id
+    
+    if form.accepts(request.vars, session, keepvalues = True):
+        response.flash ="Detalle de permiso agregado!"
+
+    elif form.errors:
+        response.flash = "El detalle tiene errores!: " + str(form.errors.keys()) + " " + str(form.errors.values())
+        
+    los_permisos = db(db.permiso.comprobante_id==session.comprobante_id).select()
+    return dict(form=form, permisos=los_permisos)
+
+
+@auth.requires(auth.has_membership('administrador') or auth.has_membership('emisor'))
+def detalle_asociado():
+    asoc_cbte_nro = None
+    asoc_tipo_cbte = None
+    asoc_punto_vta = None
+
+    form = SQLFORM.factory(
+        Field('asoc_cbte_nro', requires=IS_NOT_EMPTY()),
+        Field('asoc_tipo_cbte', requires=IS_NOT_EMPTY()),
+        Field('asoc_punto_vta', requires=IS_NOT_EMPTY()), \
+        keepvalues = True, _class="excluir", _id="formulario_ingreso_detalle_asociado")
+        
+    # db.comprobante_asociado.comprobante.default = session.comprobante_id
+    
+    if form.accepts(request.vars, session):
+        cbtasoc = None
+        for cbte in db(db.comprobante.cbte_nro == form.vars.asoc_cbte_nro).select():
+            if cbte.tipo_cbte.cod == int(form.vars.asoc_tipo_cbte):
+                if cbte.punto_vta == db.punto_de_venta[form.vars.asoc_punto_vta].numero:
+                    if cbte.webservice == db.comprobante[session.comprobante_id].webservice:
+                        cbtasoc = db.comprobante_asociado.insert(comprobante = int(str(session.comprobante_id)), \
+                        asociado = int(str(cbte.id)))
+                        response.flash ="Cbte asociado agregado!:"
+        if not cbtasoc: response.flash = "El cbte asociado no es válido"
+
+    elif form.errors:
+        response.flash = "El cbte asociado tiene errores!: " + \
+        str(form.errors.keys()) + " " + str(form.errors.values())
+
+    los_asociados = db(db.comprobante_asociado.comprobante==session.comprobante_id).select()
+    return dict(form=form, asociados=los_asociados)
+
+
+@auth.requires(auth.has_membership('administrador') or auth.has_membership('emisor'))
 def editar_detalle():
     form = SQLFORM(db.detalle, request.args[0],deletable=True, onvalidation = calcular_item_detalle)
+    #db(db.detalle.id==request.args[0]).delete()
+    if form.accepts(request.vars, session):
+        session.flash = 'formulario aceptado'
+        redirect(URL("detallar.html"))
+    elif form.errors:
+        response.flash = 'formulario con errores'
+    return dict(form=form)
+
+
+@auth.requires(auth.has_membership('administrador') or auth.has_membership('emisor'))
+def editar_detalle_tributo():
+    form = SQLFORM(db.tributo_item, request.args[0],deletable=True)
+    #db(db.detalle.id==request.args[0]).delete()
+    if form.accepts(request.vars, session):
+        session.flash = 'formulario aceptado'
+        redirect(URL("detallar.html"))
+    elif form.errors:
+        response.flash = 'formulario con errores'
+    return dict(form=form)
+
+
+@auth.requires(auth.has_membership('administrador') or auth.has_membership('emisor'))
+def editar_detalle_asociado():
+    form = SQLFORM(db.comprobante_asociado, request.args[0],deletable=True)
+    #db(db.detalle.id==request.args[0]).delete()
+    if form.accepts(request.vars, session):
+        session.flash = 'formulario aceptado'
+        redirect(URL("detallar.html"))
+    elif form.errors:
+        response.flash = 'formulario con errores'
+    return dict(form=form)
+
+
+@auth.requires(auth.has_membership('administrador') or auth.has_membership('emisor'))
+def editar_detalle_permiso():
+    form = SQLFORM(db.permiso, request.args[0],deletable=True)
     #db(db.detalle.id==request.args[0]).delete()
     if form.accepts(request.vars, session):
         session.flash = 'formulario aceptado'
@@ -240,14 +400,14 @@ def link_cargar_producto(field, type, ref):
 @auth.requires(auth.has_membership('administrador') or auth.has_membership('emisor'))
 def cargar_producto():
     los_productos = db(db.producto.id > 0).select()
-    if len(los_productos) < 1: raise Exception("La tabla productos está vacía.")
+    if len(los_productos) < 1: raise HTTP(500, "La tabla productos está vacía.")
     return dict(productos=los_productos)
 
 
 @auth.requires(auth.has_membership('administrador') or auth.has_membership('emisor'))
 def finalizar():
     campos_encabezado = [
-        'fecha_cbte','tipo_cbte','punto_vta','cbte_nro', 'concepto',
+        'fecha_cbte','tipo_cbte','punto_vta', 'webservice','cbte_nro', 'concepto',
         'permiso_existente', 'dst_cmp',
         'nombre_cliente', 'tipo_doc', 'nro_doc', 'domicilio_cliente',
         'id_impositivo',

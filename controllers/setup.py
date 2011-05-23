@@ -1,4 +1,5 @@
-# coding: utf8
+# -*- coding: utf-8 -*-
+
 # try something like
 
 # get/create variables/variables_usuario en una función
@@ -133,13 +134,14 @@ def index():
     provincias = len(db(db.provincia).select())
     localidades = len(db(db.localidad).select())
     condiciones_iva = len(db(db.condicion_iva).select())
+    cuit_paises = len(db(db.dst_cuit).select())
     return dict(tipos_doc = tipos_doc, tipos_cbte = tipos_cbte, \
                 monedas = monedas, ivas = ivas, idiomas = idiomas, \
                 umedidas = umedidas, paises = paises, \
                 provincias = provincias, localidades = localidades, \
                 puntos_de_venta = puntos_de_venta, variables = variables, \
                 variables_usuario = variables_usuario, \
-                condiciones_iva = condiciones_iva, roles = roles)
+                condiciones_iva = condiciones_iva, roles = roles, cuit_paises = cuit_paises)
 
 
 @auth.requires(auth.has_membership("administrador"))
@@ -169,6 +171,9 @@ def variables_usuario():
     variables_usuario = db(db.variables_usuario.usuario == auth.user_id).select().first()
     
     form = crud.update(db.variables_usuario, variables_usuario)
+    
+    # cancelar cbte actual
+    session.comprobante_id = None
     
     return dict(form = form)
 
@@ -266,6 +271,7 @@ def crear_iva():
             aliquota = float(aliquota)
         except ValueError, e:
             aliquota = None
+        
         db.iva.insert(cod=i, desc=desc, aliquota=aliquota)
     return dict(ret=SQLTABLE(db(db.iva.cod>0).select()), \
                 lista = A('Ver lista', _href=URL(r=request, c='setup', f='index')))

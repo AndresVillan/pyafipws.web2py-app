@@ -8,11 +8,30 @@
 {{=SPAN(A('Cargar producto (listado)', _href=URL(r=request, f='cargar_producto')), form_sugerir[0][0][1])}}
 {{=SPAN(LABEL('Carga por código'), INPUT(_id="carga_por_codigo", _class="valor", _style="width: 10em;"))}}
 
+<br />
+<br />
+{{=H5("Detalle de cbte")}}
 {{if producto:}}
 {{=LOAD('emision','detalle.load',ajax=True, vars={'producto': producto})}}
 {{else:}}
 {{=LOAD('emision','detalle.load',ajax=True)}}
 {{pass}}
+
+<br />
+{{=H5("Detalle de tributos")}}
+
+{{=LOAD('emision','detalle_tributo.load',ajax=True)}}
+
+<br />
+{{=H5("Detalle de permisos")}}
+
+{{=LOAD('emision','detalle_permiso.load',ajax=True)}}
+
+<br />
+{{=H5("Cbtes asociados")}}
+
+{{=LOAD('emision','detalle_asociado.load',ajax=True)}}
+
 
 {{=A("<< Anterior", _href=URL("iniciar"))}}
 -
