@@ -4,7 +4,11 @@ response.title = "Servicios Web AFIP"
 
 import os, os.path, time, datetime
 # Conexión al webservice:
-from gluon.contrib.pysimplesoap.client import SoapClient, SoapFault
+
+# from gluon.contrib.pysimplesoap.client import SoapClient, SoapFault
+
+# agregar librería modificada para etiquetas vacías
+from pysimplesoap.client import SoapClient, SoapFault
 
 from pyafipws import wsaa
 
@@ -26,6 +30,94 @@ CERTIFICATE = variables.certificate
 PRIVATE_KEY = variables.private_key
 
 
+def detalles_bono_fiscal(comprobante):
+    items = []
+    for det in db(db.detalle.comprobante_id == comprobante.id).select():
+        items.append(
+            {
+            "Pro_codigo_ncm": det.ncm or 0,
+            "Pro_codigo_sec": det.sec or 0,
+            "Pro_ds": det.ds,
+            "Pro_qty": det.qty,
+            "Pro_umed": det.umed,
+            "Pro_precio_uni": "%.2f" %  det.precio,
+            "Imp_bonif": "%.2f" % det.bonif,
+            "Imp_total": "%.2f" % det.imp_total,
+            "Iva_id": det.iva_id.cod,
+            }            
+        )  
+    return items
+
+
+def calcular_comprobante(comprobante):
+    """ Cálculo del cbte usando una sección
+    de código de Marcelo como ejemplo para el
+    bucle de consulta a la base de datos"""
+
+    detalles = db(db.detalle.comprobante_id==comprobante.id).select()
+    tipo_cbte = db(db.tipo_cbte.id==comprobante.tipo_cbte).select().first()
+    
+    for p in range(len(detalles)):
+        iva = db(db.iva.id==detalles[p].iva_id).select().first()
+        """
+        if tipo_cbte.discriminar:
+            detalles[p].imp_neto = (detalles[p].qty * detalles[p].precio) -detalles[p].bonif
+            detalles[p].imp_iva = detalles[p].imp_neto * iva.aliquota
+            detalles[p].imp_total = detalles[p].imp_neto + detalles[p].imp_iva
+            
+        else:
+            detalles[p].imp_iva = 0
+            detalles[p].imp_neto = (detalles[p].qty * detalles[p].precio) -detalles[p].bonif
+            detalles[p].imp_total = detalles[p].imp_neto
+         """   
+
+        detalles[p].imp_neto = (detalles[p].qty * detalles[p].precio) -detalles[p].bonif
+        detalles[p].imp_iva = detalles[p].imp_neto * iva.aliquota
+        detalles[p].imp_total = detalles[p].imp_neto + detalles[p].imp_iva
+
+    neto = sum([detalle.imp_neto for detalle in detalles], 0.00)         
+    
+    if not int(comprobante.tipo_cbte) in [11, 12, 13, 15]:
+        liq = sum([detalle.imp_iva for detalle in detalles], 0.00)
+        total = sum([detalle.imp_total for detalle in detalles], 0.00)
+        
+    else:
+        liq = 0.0
+        total = neto
+
+    
+    comprobante.imp_total = total
+    comprobante.imp_neto = neto
+    comprobante.impto_liq = liq
+
+    return True
+
+
+def comprobante_sumar_iva(comprobante_id):
+    """ calcula los totales de iva por item de un cbte. Devuelve un arreglo bidimensional (dict/list) con valores por alícuota. """
+    alicuotas = set()
+    sumas = []
+    
+    detalles = db(db.detalle.comprobante_id == comprobante_id).select()
+    for detalle in detalles:
+        alicuotas.add(detalle.iva_id.cod)
+    for alicuota in alicuotas:
+        cod = ""
+        base_imp = 0
+        importe = 0
+        
+        for detalle in detalles:
+            if detalle.iva_id == alicuota:
+                # sumar iva
+                if not cod: cod = str(detalle.iva_id.cod)
+                base_imp += detalle.base_imp_iva
+                importe += detalle.imp_iva
+
+        if importe > 0:
+            sumas.append(dict(cod = cod, base_imp = base_imp, importe = importe))
+
+    return sumas
+
 # detecto webservice en uso (desde URL o desde el formulario)
 if request.args:
     SERVICE = request.args[0]
@@ -33,7 +125,7 @@ if request.args:
 elif request.vars:
     SERVICE = request.vars.get('webservice')
 
-else: 
+else:
     SERVICE = ""
     TOKEN = SIGN = ''
     client = None
@@ -57,6 +149,20 @@ def ymd2date(vto):
     "Convertir formato AFIP 20101231 a python date(2010,12,31)"
     return datetime.date(int(vto[0:4]), int(vto[4:6]), int(vto[6:8]))
 
+def date2y_m_d(fch):
+    #Convertir de date a AAAA-MM-DD
+    try:
+        fchtmp = fch.strftime("%Y%m%d")
+        return fchtmp[:4] + "-" + fchtmp[4:6] + "-" + fchtmp[6:]
+    except AttributeError:
+        return None
+
+def y_m_d2date(fch):
+    # convertir formato AFIP AAAA-MM-DD a date
+    try:
+        return ymd2date(fch.replace("-", ""))
+    except AttributeError:
+        return None
 
 def _autenticar(service="wsfe", ttl=60*60*5):
     "Obtener el TA"
@@ -76,23 +182,26 @@ def _autenticar(service="wsfe", ttl=60*60*5):
         cert = os.path.join(PRIVATE_PATH, CERTIFICATE)
         privatekey = os.path.join(PRIVATE_PATH, PRIVATE_KEY)
         # creo un ticket de requerimiento de acceso
-        tra = wsaa.create_tra(service=SERVICE,ttl=ttl)
+        # cambiando a wsfe si es wsfe(v_)
+        if "wsfev" in service: service = "wsfe"
+        tra = wsaa.create_tra(service=service,ttl=ttl)
 
         # firmo el ticket de requerimiento de acceso
         cms = wsaa.sign_tra(str(tra),str(cert),str(privatekey))
 
-        # depuración
-        # db.xml.insert(request = "Depuración tra: " + repr(tra) + " WSAA_URL: " + str(WSAA_URL))
-        # db.commit()
-        # fin de depuración
 
         # llamo al webservice para obtener el ticket de acceso
         ta_string = wsaa.call_wsaa(cms,WSAA_URL,trace=False)
         # guardo el ticket de acceso obtenido:
         open(TA,"w").write(ta_string)
-    
+
+
     # procesar el ticket de acceso y extraer TOKEN y SIGN:
-    from gluon.contrib.pysimplesoap.simplexml import SimpleXMLElement
+    # from gluon.contrib.pysimplesoap.simplexml import SimpleXMLElement
+    
+    # agregar librería modificada para aceptar etiquetas vacías
+    from pysimplesoap.simplexml import SimpleXMLElement
+        
     ta_string=open(TA).read()
     ta = SimpleXMLElement(ta_string)
     token = str(ta.credentials.token)
@@ -153,6 +262,8 @@ def ultimo_id():
             result = client.BFEGetLast_ID(
                 Auth={'Token': TOKEN, 'Sign': SIGN, 'Cuit': CUIT,}
                 )['BFEGetLast_IDResult']
+        elif SERVICE=='wsmtxca':
+            pass
         else:
             pass
             
@@ -164,23 +275,34 @@ def f_ultimo_id(comprobante):
     "Obtener el último ID de transacción AFIP (sin formulario)"
     
     result = {}
-    
+    valor = None
     if SERVICE=='wsfe':
         result = client.FEUltNroRequest(
             argAuth = {'Token': TOKEN, 'Sign' : SIGN, 'cuit' : CUIT},
             )['FEUltNroRequestResult']
+        valor = result['nro']['value']
+        
     elif SERVICE=='wsfex':
         result = client.FEXGetLast_ID(
             Auth={'Token': TOKEN, 'Sign': SIGN, 'Cuit': CUIT,}
             )['FEXGetLast_IDResult']
+        valor = result["FEXResultGet"]["Id"]
+            
     elif SERVICE=='wsbfe':
         result = client.BFEGetLast_ID(
             Auth={'Token': TOKEN, 'Sign': SIGN, 'Cuit': CUIT,}
             )['BFEGetLast_IDResult']
+        valor = result["BFEResultGet"]["Id"]
+
+    elif SERVICE=='wsfev1':
+        # último id wsfev1
+        result, valor = None, None
+
     else:
         pass
-            
-    return result
+        
+
+    return (result, valor)
 
 
 @auth.requires(auth.has_membership('administrador') or auth.has_membership('emisor'))
@@ -199,31 +321,52 @@ def ultimo_numero_comprobante():
     
     result = {}
     
-    if form.accepts(request.vars, session, keepvalues=True):                
-        if SERVICE=='wsfe':
-            result = client.FERecuperaLastCMPRequest(
+    if form.accepts(request.vars, session, keepvalues=True):
+      
+        try:
+            if SERVICE=='wsfe':
+                result = client.FERecuperaLastCMPRequest(
                 argAuth = {'Token': TOKEN, 'Sign' : SIGN, 'cuit' : CUIT},
                 argTCMP={'PtoVta' : form.vars.punto_vta, 'TipoCbte' : form.vars.tipo_cbte}
                 )['FERecuperaLastCMPRequestResult']
-        elif SERVICE=='wsfev1':
-            result = client.FECompUltimoAutorizado(
+            elif SERVICE=='wsfev1':
+                result = client.FECompUltimoAutorizado(
                 Auth={'Token': TOKEN, 'Sign': SIGN, 'Cuit': CUIT},
                 PtoVta=form.vars.punto_vta,
                 CbteTipo=form.vars.tipo_cbte,
                 )['FECompUltimoAutorizadoResult']
-        elif SERVICE=='wsfex':
-            result = client.FEXGetLast_CMP(
+            elif SERVICE=='wsfex':
+                result = client.FEXGetLast_CMP(
                 Auth={'Token': TOKEN, 'Sign': SIGN, 'Cuit': CUIT,
-                    "Tipo_cbte": form.vars.punto_vta,
-                    "Pto_venta": form.vars.tipo_cbte,}
+                    "Tipo_cbte": form.vars.tipo_cbte,
+                    "Pto_venta": form.vars.punto_vta,}
                 )['FEXGetLast_CMPResult']
-        elif SERVICE=='wsbfe':
-            pass
-        elif SERVICE=='wsmtxca':
-            pass
-        else:
-            pass
-            
+            elif SERVICE=='wsbfe':
+                result = client.BFEGetLast_CMP(
+            Auth={"Token": TOKEN, "Sign": SIGN, "Cuit": CUIT,
+                  "Tipo_cbte": form.vars.tipo_cbte,
+                  "Pto_venta": form.vars.punto_vta}) 
+
+            elif SERVICE=='wsmtxca':
+            # inicializar_y_capturar_execepciones
+                result = client.consultarUltimoComprobanteAutorizado(\
+                authRequest = {"token": TOKEN, "sign": SIGN, "cuitRepresentada": CUIT}, consultaUltimoComprobanteAutorizadoRequest = {\
+                "codigoTipoComprobante" : form.vars.tipo_cbte, \
+                "numeroPuntoVenta" : form.vars.punto_vta})
+            # nro = ret.get('numeroComprobante')
+            # return nro is not None and str(nro) or 0
+          
+            else:
+                pass
+
+        except SoapFault,sf:
+            db.xml.insert(request = repr(client.xml_request), response = repr(client.xml_response))
+
+            result = {'fault': repr(sf.faultstring), 
+                'xml_request': repr(client.xml_request), 
+                'xml_response': repr(client.xml_response),
+                }
+
     return {'form': form, 'result': result}
 
 
@@ -231,33 +374,159 @@ def ultimo_numero_comprobante():
 def f_ultimo_numero_comprobante(comprobante):
     "Obtener el último comprobante autorizado por la AFIP (sin formulario)"
     
+    valor = None
     result = {}
-    if True:    
+    try:
         if SERVICE=='wsfe':
             result = client.FERecuperaLastCMPRequest(
                 argAuth = {'Token': TOKEN, 'Sign' : SIGN, 'cuit' : CUIT},
                 argTCMP={'PtoVta' : comprobante.punto_vta, 'TipoCbte' : comprobante.tipo_cbte}
                 )['FERecuperaLastCMPRequestResult']
+            valor = result["cbte_nro"]
+
         elif SERVICE=='wsfev1':
             result = client.FECompUltimoAutorizado(
                 Auth={'Token': TOKEN, 'Sign': SIGN, 'Cuit': CUIT},
                 PtoVta=comprobante.punto_vta,
                 CbteTipo=comprobante.tipo_cbte,
                 )['FECompUltimoAutorizadoResult']
+            valor = result["CbteNro"]            
+                
         elif SERVICE=='wsfex':
             result = client.FEXGetLast_CMP(
                 Auth={'Token': TOKEN, 'Sign': SIGN, 'Cuit': CUIT,
-                    "Tipo_cbte": comprobante.punto_vta,
-                    "Pto_venta": comprobante.tipo_cbte,}
+                    "Tipo_cbte": comprobante.tipo_cbte,
+                    "Pto_venta": comprobante.punto_vta,}
                 )['FEXGetLast_CMPResult']
+            valor = result["FEXResult_LastCMP"]["Cbte_nro"]
+
         elif SERVICE=='wsbfe':
-            pass
+            result = client.BFEGetLast_CMP(
+            Auth={"Token": TOKEN, "Sign": SIGN, "Cuit": CUIT,
+                  "Tipo_cbte": comprobante.tipo_cbte,
+                  "Pto_venta": comprobante.punto_vta})
+            valor = result['BFEGetLast_CMPResult']['BFEResult_LastCMP']['Cbte_nro']
+                
         elif SERVICE=='wsmtxca':
-            pass
+            # inicializar_y_capturar_execepciones
+            result = client.consultarUltimoComprobanteAutorizado(\
+                authRequest = {"token": TOKEN, "sign": SIGN, "cuitRepresentada": CUIT}, consultaUltimoComprobanteAutorizadoRequest = {\
+                "codigoTipoComprobante" : comprobante.tipo_cbte, \
+                "numeroPuntoVenta" : comprobante.punto_vta})
+
+            try:
+                if result["arrayErrores"]:
+                    for error in result["arrayErrores"]:
+                        if str(error["codigoDescripcion"]["codigo"]) == "1502":
+                        # no existen cbtes en la base de datos de AFIP
+                            valor = 0
+            except KeyError:
+                valor = None
+                
+            if valor != 0: valor = result["numeroComprobante"]
+
         else:
             pass
-            
-    return result
+
+    except SoapFault,sf:
+        db.xml.insert(request = repr(client.xml_request), response = repr(client.xml_response))
+        
+    return (result, valor)
+
+
+def get_param_dst_cuit():
+    "Recuperador de valores referenciales de CUITs de Paises"
+    response = client.FEXGetPARAM_DST_CUIT(
+        Auth= {"Token": TOKEN, "Sign": SIGN, "Cuit": long(CUIT)}) 
+    
+    # if int(response["FEXGetPARAM_DST_CUITResult"]["FEXErr"]["ErrCode"]) != 0:
+    # raise FEXError(response.FEXGetPARAM_DST_CUITResult.FEXErr)
+    # pass
+
+
+    return dict(resp = response, dic = repr(response))
+
+
+def f_get_param_dst_cuit(variables):
+    "Recuperador de valores referenciales de CUITs de Paises"
+    response = client.FEXGetPARAM_DST_CUIT(
+        Auth= {"Token": TOKEN, "Sign": SIGN, "Cuit": long(CUIT)}) 
+
+    return response
+
+
+def crear_cuit_paises():
+
+    response = f_get_param_dst_cuit(variables)
+    # return dict(resp = response)
+    # si se recuperaron los parámetros eliminar registros y completar la tabla    
+    if int(response["FEXGetPARAM_DST_CUITResult"]["FEXErr"]["ErrCode"]) == 0:
+        db(db.dst_cuit.id > 0).delete()
+        db.dst_cuit.insert(id = 1, ds = "(Sin especificar)", cuit = 33693450239)        
+        for pais in response["FEXGetPARAM_DST_CUITResult"]["FEXResultGet"]:
+            db.dst_cuit.insert(ds = pais["ClsFEXResponse_DST_cuit"]["DST_Ds"], cuit = pais["ClsFEXResponse_DST_cuit"]["DST_CUIT"])
+
+    else: raise HTTP(500, response["FEXErr"]["ErrMsg"])
+    
+    redirect(URL(r=request, c='setup', f='index'))
+
+
+
+def get_param_tipo_expo():
+    "Recuperador de valores referenciales de c�digos de Tipo de exportaci�n"
+    response = client.FEXGetPARAM_Tipo_Expo(
+        auth= {"Token": TOKEN, "Sign": SIGN, "Cuit": CUIT}) 
+    
+    if int(response["FEXGetPARAM_Tipo_ExpoResult"]["FEXErr"]["ErrCode"]) != 0:
+        raise HTTP(500, "Error: " + str(response["FEXGetPARAM_Tipo_ExpoResult"]["FEXErr"]["ErrCode"]) + ". " + response["FEXGetPARAM_Tipo_ExpoResult"]["FEXErr"]["ErrMsg"])
+
+    tipos = [] # tipos de exportaci�n
+    for t in response["FEXGetPARAM_Tipo_ExpoResult"]["FEXResultGet"]["ClsFEXResponse_Tex"]:
+        tipo = {'id': int(t["Tex_Id"]), 'ds': str(t["Tex_Ds"]).decode('utf8'), 
+                'vig_desde': str(t["Tex_vig_desde"]), 
+                'vig_hasta': str(t["Tex_vig_hasta"])}
+        tipos.append(tipo)
+    return dict(tipos = tipos)
+
+
+def get_param_zonas():
+    # client , TOKEN, SIGN, CUIT
+    "Recuperador de valores referenciales de Zonas"
+    response = client.BFEGetPARAM_Zonas(
+        auth= {"Token": TOKEN, "Sign": SIGN, "Cuit": CUIT}) 
+    
+    # if int(response.BFEGetPARAM_ZonasResult.BFEErr.ErrCode) != 0:
+    #   raise BFEError(response.BFEGetPARAM_ZonasResult.BFEErr)
+
+    zonas = [] # unidades de medida
+    """
+    for z in response.BFEGetPARAM_ZonasResult.BFEResultGet.ClsBFEResponse_Zon:
+        zon = {'id': int(z.Zon_Id), 'ds': unicode(z.Zon_Ds), 
+                'vig_desde': str(z.Zon_vig_desde), 
+                'vig_hasta': str(z.Zon_vig_hasta)}
+        zonas.append(zon)
+    """
+    return dict(zonas = str(response))
+
+
+# WSMTXCA
+def consultar_monedas():
+    "Este m�todo permite consultar los tipos de comprobantes habilitados en este WS"
+    ret = client.consultarMonedas(
+        authRequest={'token': TOKEN, 'sign': SIGN, 'cuitRepresentada': CUIT},
+        )
+    return dict(result = ["%(codigo)s: %(descripcion)s" % p['codigoDescripcion']
+             for p in ret['arrayMonedas']])
+
+# WSMTXCA
+def consultar_unidades_medida():
+    "Este m�todo permite consultar los tipos de comprobantes habilitados en este WS"
+    ret = client.consultarUnidadesMedida(
+        authRequest={'token': TOKEN, 'sign': SIGN, 'cuitRepresentada': CUIT},
+        )
+    return dict(result = ["%(codigo)s: %(descripcion)s" % p['codigoDescripcion']
+             for p in ret['arrayUnidadesMedida']])
+
 
 
 @auth.requires(auth.has_membership('administrador') or auth.has_membership('emisor') or auth.has_membership('auditor'))
@@ -301,6 +570,7 @@ def autorizar():
     
     detalles = db(db.detalle.comprobante_id==comprobante_id).select()
 
+       
     # cálculo de cbte para autorización
     calcular_comprobante(comprobante)
         
@@ -309,10 +579,21 @@ def autorizar():
 
     # si el cbte no tiene id_ws o nro => consultar último/s
     if not comprobante.id_ws:
-        comprobante.id_ws = int(f_ultimo_id(comprobante)['nro']['value']) +1
+        try:
+            comprobante.id_ws = int(f_ultimo_id(comprobante)[1]) +1
+        except (AttributeError, ValueError, KeyError, TypeError):
+            comprobante.id_ws = None
 
     if not comprobante.cbte_nro:
-        comprobante.cbte_nro = int(f_ultimo_numero_comprobante(comprobante)['cbte_nro']) +1
+        try:
+            consulta_cbte = f_ultimo_numero_comprobante(comprobante) 
+            cbte_nro = int(consulta_cbte[1])
+            comprobante.cbte_nro = cbte_nro +1
+            db.xml.insert(request = str(cbte_nro), response = "Nro consultado: ")
+
+        except (AttributeError, KeyError, ValueError, TypeError), e:
+            comprobante.cbte_nro = None
+            db.xml.insert(request = str(e), response = "Error")
 
     try:
         
@@ -330,10 +611,10 @@ def autorizar():
                         'punto_vta': comprobante.punto_vta,
                         'cbt_desde': comprobante.cbte_nro,
                         'cbt_hasta': comprobante.cbte_nro,
-                        'imp_total': comprobante.imp_total,
+                        'imp_total': "%.2f" % comprobante.imp_total,
                         'imp_tot_conc': comprobante.imp_tot_conc or 0.00,
-                        'imp_neto': comprobante.imp_neto,
-                        'impto_liq': comprobante.impto_liq,
+                        'imp_neto': "%.2f" % comprobante.imp_neto,
+                        'impto_liq': "%.2f" % comprobante.impto_liq,
                         'impto_liq_rni': 0.00,
                         'imp_op_ex': comprobante.imp_op_ex or 0.00,
                         'fecha_cbte': comprobante.fecha_cbte.strftime("%Y%m%d"),
@@ -353,11 +634,12 @@ def autorizar():
                 if result['FecResp']['resultado'] == "A":
                     session.comprobante_id = None
                     
-                try:
-                    la_fecha_vto = ymd2date(result['FedResp'][0]['FEDetalleResponse']['fecha_vto'])
-                except ValueError:
-                    la_fecha_vto = None    
-                actualizar = dict(
+                    try:
+                        la_fecha_vto = ymd2date(result['FedResp'][0]['FEDetalleResponse']['fecha_vto'])
+                    except ValueError:
+                        la_fecha_vto = None    
+
+                    actualizar = dict(
                     # Resultado: Aceptado o Rechazado
                     resultado=result['FecResp']['resultado'],
                     # Motivo general/del detalle:
@@ -375,20 +657,326 @@ def autorizar():
                     imp_tot_conc=result['FedResp'][0]['FEDetalleResponse']['imp_tot_conc'],
                     webservice = SERVICE
                     )
-        
-
+                elif result['FecResp']['resultado'] == "R":
+                    actualizar = dict(resultado = "R")
+                    
         elif SERVICE=='wsfev1':
-            pass
+            # campos período de servicio: borrar si es tipo 1
+            if comprobante.concepto == 1:
+                comprobante.fecha_serv_desde = ""
+                comprobante.fecha_serv_hasta = ""
+                comprobante.fecha_venc_pago = ""      
+
+            if comprobante.tipo_cbte in [11, 12, 13, 15]:
+                items_iva = []
+            else:
+                items_iva =  [{'AlicIva': {
+                            'Id': det["cod"],
+                            'BaseImp': "%.2f" % det["base_imp"],
+                            'Importe': "%.2f" % det["importe"],
+                            }}
+                for det in comprobante_sumar_iva(comprobante_id)]
+
+                
+            result = client.FECAESolicitar(\
+            Auth={'Token': TOKEN, 'Sign': SIGN, 'Cuit': CUIT},
+            FeCAEReq={
+                'FeCabReq': {'CantReg': 1, 
+                    'PtoVta': comprobante.punto_vta, 
+                    'CbteTipo': comprobante.tipo_cbte},
+                'FeDetReq': [{'FECAEDetRequest': {
+                    'Concepto': comprobante.concepto,
+                    'DocTipo': comprobante.tipo_doc,
+                    'DocNro': comprobante.nro_doc.replace("-",""),
+                    'CbteDesde': comprobante.cbte_nro,
+                    'CbteHasta': comprobante.cbte_nro,
+                    'CbteFch': comprobante.fecha_cbte.strftime("%Y%m%d"),
+                    'ImpTotal': "%.2f" % comprobante.imp_total,
+                    'ImpTotConc': comprobante.imp_tot_conc or 0.00,
+                    'ImpNeto': "%.2f" % comprobante.imp_neto,
+                    'ImpOpEx': comprobante.imp_op_ex or 0.00,
+                    'ImpTrib': comprobante.imp_iibb or 0.00,
+                    'ImpIVA': "%.2f" % comprobante.impto_liq,
+                    # Fechas solo se informan si Concepto in (2,3)
+                    'FchServDesde': comprobante.fecha_serv_desde and comprobante.fecha_serv_desde.strftime("%Y%m%d"),
+                    'FchServHasta': comprobante.fecha_serv_hasta and comprobante.fecha_serv_hasta.strftime("%Y%m%d"),
+                    'FchVtoPago': comprobante.fecha_venc_pago and comprobante.fecha_venc_pago.strftime("%Y%m%d"),
+                    'MonId': comprobante.moneda_id.cod,
+                    'MonCotiz': comprobante.moneda_ctz,                
+                    'CbtesAsoc': [
+                        {'CbteAsoc': {
+                            'Tipo': cbte_asoc.asociado.tipo_cbte,
+                            'PtoVta': cbte_asoc.asociado.punto_vta, 
+                            'Nro': cbte_asoc.asociado.cbte_nro}}
+                        for cbte_asoc in db(db.comprobante_asociado.comprobante == comprobante_id).select()],
+                    'Tributos': [
+                        {'Tributo': {
+                            'Id': tributo.tributo.cod, 
+                            'Desc': tributo.tributo.desc,
+                            'BaseImp': None,
+                            'Alic': tributo.tributo.aliquota,
+                            'Importe': tributo.importe,
+                            }}
+                        for tributo in db(db.lista_tributo.comprobante == comprobante_id).select()],
+                    'Iva': items_iva,
+                    }
+                }]
+            })['FECAESolicitarResult']
+
+            if 'FeCabResp' in result:
+                fecabresp = result['FeCabResp']
+                fedetresp = result['FeDetResp'][0]['FECAEDetResponse']
+
+                if fedetresp["Resultado"] == "A":
+                    session.comprobante_id = None                
+                    # aprobado
+                    obstmp = []
+                    for obs in fedetresp.get('Observaciones', []):
+                        obstmp.append("%(Code)s: %(Msg)s" % (obs['Obs']))                
+                    
+                    actualizar = dict(
+                    obs = obstmp,
+                    resultado=fecabresp['Resultado'],
+                    cae=fedetresp['CAE'] and str(fedetresp['CAE']) or "",
+                    fecha_cbte = ymd2date(fedetresp['CbteFch']),
+                    cbte_nro = fedetresp['CbteHasta'],
+                    fecha_vto = ymd2date(fedetresp['CAEFchVto']),
+                    punto_vta = fecabresp['PtoVta'],
+                    webservice = SERVICE 
+                    )
+                    
+                else:
+                    # rechazado
+                    actualizar = dict(resultado = "R", cbte_nro = None)
+
+                    
+                if ('Errors' in result or 'Observaciones' in fedetresp):
+                    # almacenar el informe de errores u observaciones
+                    db.xml.insert(request = client.xml_request, response = client.xml_response)
+                    
+
         elif SERVICE=='wsfex':
-            pass
+
+            result = client.FEXAuthorize(Auth={'Token': TOKEN, 'Sign': SIGN, 'Cuit': CUIT},
+            Cmp = {\
+                # str(db.pais_dst[comprobante.dst_cmp].cuit).replace("-", "")\
+                'Id': comprobante.id_ws,
+                'Fecha_cbte': comprobante.fecha_cbte.strftime("%Y%m%d"),
+                'Tipo_cbte': comprobante.tipo_cbte, 
+                'Punto_vta': comprobante.punto_vta, 
+                'Cbte_nro': comprobante.cbte_nro,
+                'Tipo_expo': comprobante.tipo_expo or 1,
+                'Permiso_existente': comprobante.permiso_existente,
+                'Dst_cmp': comprobante.dst_cmp,
+                'Cliente': comprobante.nombre_cliente,
+                'Cuit_pais_cliente': comprobante.dst_cuit.cuit, 
+                'Domicilio_cliente': comprobante.domicilio_cliente,
+                'Id_impositivo': comprobante.id_impositivo,
+                'Moneda_Id': comprobante.moneda_id.cod,
+                'Moneda_ctz': comprobante.moneda_ctz,
+                'Obs_comerciales': comprobante.obs_comerciales,
+                'Imp_total': comprobante.imp_total,
+                'Obs': comprobante.obs,
+                'Forma_pago': comprobante.forma_pago,
+                'Incoterms': comprobante.incoterms,
+                'Incoterms_ds': comprobante.incoterms_ds,
+                'Idioma_cbte': comprobante.idioma_cbte,
+
+                # listas
+                'Items': [{ 'Item': {
+                'Pro_codigo': detalle.codigo, 'Pro_ds': detalle.ds, 'Pro_qty': detalle.qty, 'Pro_umed': detalle.umed, 'Pro_precio_uni': detalle.precio,
+                'Pro_total_item': (detalle.imp_total)
+                }} for detalle in db(db.detalle.comprobante_id == comprobante_id).select()],
+                'Permisos': [{ 'Permiso': { 'Id_permiso': permiso.id_permiso, 'Dst_merc': permiso.dst_merc
+                }} for permiso in db(db.permiso.comprobante_id == comprobante_id).select()],
+                'Cmps_asoc': [{ 'Cmp_asoc': {
+                'Cbte_tipo': comprobante_asociado.asociado.tipo_cbte, 'Cbte_punto': comprobante_asociado.asociado.punto_vta, 'Cbte_numero': comprobante_asociado.asociado.cbte_nro 
+                }} for comprobante_asociado in db(db.comprobante_asociado.comprobante == comprobante_id).select()], 
+            })['FEXAuthorizeResult']
+                    
+            if 'FEXResultAuth' in result:        
+                if result["FEXResultAuth"]["Resultado"] == "A":
+                    session.comprobante_id = None                
+                    # aprobado
+                    actualizar = dict(
+                    obs = result["FEXResultAuth"]["Motivos_Obs"],
+                    resultado=result["FEXResultAuth"]['Resultado'],
+                    cae=result["FEXResultAuth"]["Cae"],
+                    fecha_cbte = ymd2date(result["FEXResultAuth"]["Fch_cbte"]),
+                    cbte_nro = result["FEXResultAuth"]["Cbte_nro"],
+                    fecha_vto = ymd2date(result["FEXResultAuth"]["Fch_venc_Cae"]),
+                    punto_vta = result["FEXResultAuth"]["Punto_vta"],
+                    reproceso = result["FEXResultAuth"]["Reproceso"],
+                    id_ws = result["FEXResultAuth"]["Id"],
+                    webservice = SERVICE
+                    )
+                    
+                else:
+                    # rechazado
+                    actualizar = dict(
+                    obs = result["FEXResultAuth"]["Motivos_Obs"],
+                    resultado=result["FEXResultAuth"]['Resultado'],
+                    id_ws = result["FEXResultAuth"]["Id"],
+                    err_code = result["FEXErr"]["ErrCode"],
+                    err_msg = result["FEXErr"]["ErrMsg"],                    
+                    webservice = SERVICE
+                    )
+                    db.xml.insert(request = client.xml_request, response = client.xml_response)
+                    
+                if  result["FEXErr"]["ErrCode"] or result["FEXResultAuth"]["Motivos_Obs"]:
+                    # almacenar el informe de errores u observaciones
+                    db.xml.insert(request = client.xml_request, response = client.xml_response)
+        
+          
         elif SERVICE=='wsbfe':
-            pass
+
+            result = client.BFEAuthorize(\
+            Auth={'Token': TOKEN, 'Sign': SIGN, 'Cuit': long(CUIT)},
+            Cmp={'Id': comprobante.id_ws,
+            'Tipo_doc': comprobante.tipo_doc, 
+            'Nro_doc': str(comprobante.nro_doc).replace("-", ""),
+            'Zona': 1,
+            'Tipo_cbte': comprobante.tipo_cbte,
+            'Fecha_cbte': comprobante.fecha_cbte.strftime("%Y%m%d"),
+            'Punto_vta': comprobante.punto_vta,
+            'Cbte_nro': comprobante.cbte_nro,
+            'Imp_total': "%.2f" % comprobante.imp_total,
+            'Imp_tot_conc': comprobante.imp_tot_conc or 0.00,
+            'Imp_neto': "%.2f" % comprobante.imp_neto,
+            'Impto_liq': "%.2f" % comprobante.impto_liq,
+            'Impto_liq_rni': comprobante.impto_liq_rni or 0.00,
+            'Imp_op_ex': comprobante.imp_op_ex or 0.00,
+            'Imp_perc':  comprobante.impto_perc or 0.00,
+            'Imp_iibb':  comprobante.imp_iibb or 0.00, 
+            'Imp_perc_mun':  comprobante.impto_perc_mun or 0.00,
+            'Imp_internos':  comprobante.imp_internos or 0.00,
+            'Imp_moneda_Id': comprobante.moneda_id.cod,
+            'Imp_moneda_ctz': comprobante.moneda_ctz,
+            'Items': [{'Item': item} for item in detalles_bono_fiscal(comprobante)],
+            }
+            )
+
+            if int(result["BFEAuthorizeResult"]["BFEErr"]["ErrCode"]) != 0:
+                # hubo error?              
+                errortmp = result["BFEAuthorizeResult"]["BFEErr"]
+                actualizar = dict(err_code = unicode(errortmp["ErrCode"]), 
+                err_msg = unicode(errortmp["ErrMsg"]), resultado = "R")
+
+            else:
+                # extraigo la respuesta (auth y eventos)            
+                restmp = result["BFEAuthorizeResult"]["BFEResultAuth"]            
+                
+                actualizar = dict(
+                id_ws=int(restmp["Id"]), 
+                cae=str(restmp["Cae"]),
+                fecha_cbte=ymd2date(restmp["Fch_cbte"]),
+                resultado=str(restmp["Resultado"]),
+                fecha_vto=ymd2date(restmp["Fch_venc_Cae"]),
+                reproceso=str(restmp["Reproceso"]), 
+                obs=str(restmp["Obs"])            
+                )
+                
+                session.comprobante_id = None
+
+
         elif SERVICE=='wsmtxca':
-            pass
+            # campos período de servicio: borrar si es tipo 1
+            if comprobante.concepto == 1:
+                comprobante.fecha_serv_desde = None
+                comprobante.fecha_serv_hasta = None
+                comprobante.fecha_venc_pago = None
+
+            fact = {
+            'codigoTipoDocumento': comprobante.tipo_doc, 
+            'numeroDocumento':comprobante.nro_doc.replace("-", ""), 
+            'codigoTipoComprobante': comprobante.tipo_cbte, 
+            'numeroPuntoVenta': comprobante.punto_vta, 
+            'numeroComprobante': comprobante.cbte_nro, 
+            'importeTotal': comprobante.imp_total, 
+            'importeNoGravado': comprobante.imp_tot_conc or "0.00",
+            'importeGravado': comprobante.imp_neto, 
+            'importeSubtotal': comprobante.imp_subtotal or comprobante.imp_neto, # 'imp_iva': imp_iva,
+            'importeOtrosTributos': comprobante.imp_trib or None, 
+            'importeExento': comprobante.imp_op_ex or "0.00", 
+            'fechaEmision': date2y_m_d(comprobante.fecha_cbte) or None,
+            'codigoMoneda': comprobante.moneda_id.cod, 
+            'cotizacionMoneda': comprobante.moneda_ctz,
+            'codigoConcepto': comprobante.concepto,
+            'observaciones': comprobante.obs_comerciales,
+            'fechaVencimientoPago': date2y_m_d(comprobante.fecha_venc_pago) or None,
+            'fechaServicioDesde': date2y_m_d(comprobante.fecha_serv_desde) or None,
+            'fechaServicioHasta': date2y_m_d(comprobante.fecha_serv_hasta) or None,
+            'arrayComprobantesAsociados': [{'comprobanteAsociado': {
+                'codigoTipoComprobante': cbte_asoc.asociado.tipo_cbte, 
+                'numeroPuntoVenta': cbte_asoc.asociado.punto_vta, 
+                'numeroComprobante': cbte_asoc.asociado.cbte_nro }} for cbte_asoc in db(db.comprobante_asociado.comprobante == comprobante).select()],
+            'arrayOtrosTributos': [ {'otroTributo': {
+                'codigo': tributo.tributo.cod, 
+                'descripcion': tributo.tributo.ds, 
+                'baseImponible': tributo.base_imp, 
+                'importe': tributo.importe }} for tributo in db(db.tributo_item.comprobante == comprobante).select()],
+            'arraySubtotalesIVA': [{'subtotalIVA': { 
+                'codigo': iva["cod"], 
+                'importe': iva["importe"],
+                }} for iva in comprobante_sumar_iva(comprobante)],
+            'arrayItems': [{'item':{
+                'unidadesMtx': it.umed,
+                'codigoMtx': it.cod_mtx or "0000000000000",
+                'codigo': it.codigo,                
+                'descripcion': it.ds,
+                'cantidad': it.qty,
+                'codigoUnidadMedida': it.umed,
+                'precioUnitario': it.precio,
+                'importeBonificacion': it.bonif or "0.00",
+                'codigoCondicionIVA': it.iva_id,
+                'importeIVA': it.imp_iva or "0.00",
+                'importeItem': it.imp_total or "0.00"}} for it in db(db.detalle.comprobante_id == comprobante).select()]
+            }
+            # db.xml.insert(request = "Subtotal", response = fact["importeSubtotal"])
+            result = client.autorizarComprobante(
+            authRequest={'token': TOKEN, 'sign': SIGN, 'cuitRepresentada': CUIT},
+            comprobanteCAERequest = fact,
+            )
+        
+            resultado = result['resultado'] # u'A'
+            actualizar = {"obs": ""}
+            # actualizar = dict()
+            obs = []
+            if result['resultado'] in ("A", "O"):
+                cbteresp = result['comprobanteResponse']              
+                fecha_cbte = cbteresp['fechaEmision'],
+                # actualizar["cbte_nro"] = comprobante.cbte_nro, # 1L cbteresp['numeroComprobante'] # no actualizar el campo (error de db)
+                # actualizar["punto_vta"] = comprobante.punto_vta, # 4000 cbteresp['numeroPuntoVenta'] # no actualizar el campo (error de db)
+                fecha_vto = cbteresp['fechaVencimientoCAE'],
+                actualizar["cae"] = cbteresp['CAE'], # 60423794871430L,
+
+                if resultado == u"A":
+                    session.comprobante_id = None
+                else:
+                    actualizar["obs"] += "" # observaciones de cbte
+                    response.flash = "El cbte tiene observaciones"
+                    session.comprobante_id = None
+                    
+            elif result['resultado'] == "R":
+                session.comprobante_id = None
+                errorestmp = []
+                for error in result["arrayErrores"]:
+                   actualizar["obs"] += "Error: " + str(error["codigoDescripcion"]["codigo"]) \
+                   + " " + unicode(error["codigoDescripcion"]["descripcion"]) + ". "
+                
+            for error in result.get('arrayObservaciones', []):
+               obs.append("%(codigo)s: %(descripcion)s" % (error['codigoDescripcion']))
+                    
+            actualizar["obs"] += str(obs)
+            actualizar["resultado"] = result['resultado']
+    
         else:
             pass
 
+
     except SoapFault,sf:
+        db.xml.insert(request = client.xml_request, response = client.xml_response)
+
         return {'fault': sf.faultstring, 
                 'xml_request': client.xml_request, 
                 'xml_response': client.xml_response,
@@ -396,55 +984,31 @@ def autorizar():
     
     # actualizo el registro del comprobante con el resultado:
     if actualizar:
-        db(db.comprobante.id==comprobante_id).update(**actualizar)
-
-    return result
-
-
-def calcular_comprobante(comprobante):
-    """ Cálculo del cbte usando una sección
-    de código de Marcelo como ejemplo para el
-    bucle de consulta a la base de datos"""
-
-    detalles = db(db.detalle.comprobante_id==comprobante.id).select()
-    tipo_cbte = db(db.tipo_cbte.id==comprobante.tipo_cbte).select().first()
-    
-    for p in range(len(detalles)):
-        iva = db(db.iva.id==detalles[p].iva_id).select().first()
-        if tipo_cbte.discriminar:
-            detalles[p].imp_iva = detalles[p].qty * detalles[p].precio * iva.aliquota
-            detalles[p].imp_neto = detalles[p].qty * detalles[p].precio
-            detalles[p].imp_total = detalles[p].imp_neto + detalles[p].imp_iva
-
-        else:
-            detalles[p].imp_iva = 0
-            detalles[p].imp_neto = detalles[p].qty * detalles[p].precio
-            detalles[p].imp_total = detalles[p].imp_neto
+        cbttmp = comprobante.as_dict()
+        # raise HTTP(500, str(result) + "<br /><br />" + str(actualizar)) #  str(comprobante.as_dict()) + "-------------" + 
+        # db.xml.insert(request = str(comprobante.as_dict()))
+        for k, v in actualizar.iteritems(): cbttmp[k] = v
+        db(db.comprobante.id==comprobante_id).update(**cbttmp)
         
-    liq = sum([detalle.imp_iva for detalle in detalles], 0.00)
-    neto = sum([detalle.imp_neto for detalle in detalles], 0.00)
-    total = sum([detalle.imp_total for detalle in detalles], 0.00)
-    
-    comprobante.imp_total = total
-    comprobante.imp_neto = neto
-    comprobante.impto_liq = liq
-
-    return True
+    return result
 
     
 if SERVICE:        
     # solicito autenticación
     if request.controller!="dummy":
     
-        # depuración
-        # db.xml.insert(request = "Depuración ws: " + str(SERVICE) + " wsdl: " + str(WSDL[SERVICE]))
-        # db.commit()
-        # fin de depuración
-        
         TOKEN, SIGN = _autenticar(SERVICE)        
         
     # conecto al webservice
-    client = SoapClient( 
-            wsdl = WSDL[SERVICE],
-            cache = PRIVATE_PATH,
-            trace = False)
+    if SERVICE == "wsmtxca":
+        client = SoapClient( 
+                    wsdl = WSDL[SERVICE],
+                    cache = PRIVATE_PATH,
+                    ns = "ser",
+                    trace = False)
+    else:
+        client = SoapClient( 
+                    wsdl = WSDL[SERVICE],
+                    cache = PRIVATE_PATH,
+                    trace = False)
+

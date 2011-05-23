@@ -24,6 +24,8 @@ f='crear_tipos_doc'))}})</LI>
 f='crear_umedidas'))}})</LI>
 <LI>Condiciones IVA: {{=condiciones_iva}} ({{=A('Crear condiciones IVA', _href=URL(r=request, c='setup', \
 f='crear_condiciones_iva'))}})</LI>
+<LI>CUIT de Países: {{=cuit_paises}} ({{=A('Crear CUIT de Países', _href=URL(r=request, c='servicios_web', \
+f='crear_cuit_paises', args=['wsfex',]))}})</LI>
 <LI>Puntos de venta: {{=puntos_de_venta}}</LI>
 <LI>Roles: {{=roles}} ({{=A('Listar/Asignar por usuario', _href=URL(r=request, c='setup', \
 f='roles_editar'))}})</LI>

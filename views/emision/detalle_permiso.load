@@ -1,0 +1,79 @@
+{{tabla_detalle_permiso=SQLTABLE(permisos, 
+        columns=['permiso.tipo_reg','permiso.id_permiso','permiso.dst_merc', 'permiso.id'],
+        headers={'permiso.tipo_reg': "Tipo reg.", 'permiso.id_permiso': 'Id permiso', 'permiso.dst_merc': 'Dst merc.', 'permiso.id': 'Editar'},
+        linkto=lambda field, type, ref: URL("editar_detalle_permiso.html",args=[field]),
+         _class="tabla_detalle" )}}
+
+{{  # select con tributos (id: ds)
+opciones_dst_merc = [OPTION(dst.desc, _value=dst.cod) for dst in db(db.pais_dst).select()]
+previo_dst_merc = SELECT(opciones_dst_merc, _id="previo_dst_merc")
+}}
+
+
+{{
+detalles_previos_permiso=TR(TD(INPUT(_id="previo_tipo_reg", _class="valor")), \
+TD(INPUT(_id="previo_id_permiso", _class="valor")), \
+TD(previo_dst_merc), \
+TD(INPUT(_type="button", \
+_value="Ingresar", _id="boton_ingresar_detalle_permiso")), _class="detalles_previos")
+}}
+
+{{tabla_detalle_permiso.append(detalles_previos_permiso)}}
+{{=tabla_detalle_permiso}}
+{{pass}}
+
+{{if not permisos:}}
+Sin permisos ingresados
+{{pass}}
+
+{{=form}}
+
+<SCRIPT TYPE="text/javascript" _id="script_pre_carga_permiso">
+// autocalcular al descargar el formulario
+// (para carga de productos desde la base de datos)
+
+$(document).ready(function(){
+  try{
+    var tipoReg = "{{=form.vars.tipo_reg or ''}}";
+    var idPermiso = "{{=form.vars.id_permiso or ''}}";
+    var dstMerc = "{{=form.vars.dst_merc or ''}}";
+  }
+  catch(e){
+  /* error al descargar variables */
+  }
+  
+
+  function actualizarPermiso(){
+    // (antes del ingreso a la base de datos)
+    if (idPermiso != ""){
+      // completar formulario de ingreso de detalle
+
+      /* Importante: ¡Estos elementos cambian
+      con las modificaciones del model y los form en web2py! */
+
+      /* Actualizar el form */
+      $("#formulario_ingreso_detalle_permiso [name=id_permiso]").val(idPermiso);
+      $("#formulario_ingreso_detalle_permiso [name=tipo_reg]").val(tipoReg);
+      $("#formulario_ingreso_detalle_permiso [name=dst_merc]").val(dstMerc);
+
+      /* window.alert($("#formulario_ingreso_detalle_tributo [name=tributo]").val() +  " " + $("#formulario_ingreso_detalle_tributo [name=base_imp]").val() + " " + $("#formulario_ingreso_detalle_tributo [name=importe]").val()); */
+
+      // actualizar previsualización
+      $("#previo_id_permiso").val(idPermiso);
+      $("#previo_tipo_reg").val(tipoReg);
+      $("#previo_dstMerc").val(dstMerc);
+    }
+  }
+
+  // cargar el ítem si se presionó el botón ingresar
+  $('#boton_ingresar_detalle_permiso').bind('click', function(event){
+    // actualizar los valores de qty y bonif
+    dstMerc = $("#previo_dst_merc").val();
+    idPermiso = $("#previo_id_permiso").val();
+    tipoReg = $("#previo_tipo_reg").val();
+    actualizarPermiso();
+    $('#formulario_ingreso_detalle_permiso').submit();
+  });
+  /* actualizarPermiso(); */
+});
+</SCRIPT>
