@@ -1,0 +1,12 @@
+{{extend 'layout.html'}}
+<h1>Edición de roles</h1>
+<div id="tabs">
+    <ul>
+        <li><a href="#tabs-1">Usuarios</a></li>
+    </ul>
+    <div id="tabs-1">
+    {{if tabla:}}
+        {{=tabla}}
+    {{pass}}
+    </div>
+</div>

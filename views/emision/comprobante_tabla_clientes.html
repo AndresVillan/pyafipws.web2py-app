@@ -4,4 +4,16 @@
 {{for cliente in clientes:}}
 {{ body.append( TR( TD(cliente.id), TD(A(cliente.nombre_cliente, _href=URL(r=request, c='emision', f='comprobante_seleccionar_cliente', args=['cliente', cliente.id]))), TD(db.tipo_doc[cliente.tipo_doc].desc), TD(cliente.nro_doc), TD(cliente.condicion_iva.desc), TD(cliente.email)) ) }}
 {{pass}}
-{{=TABLE(THEAD(TR(TH("ID"), TH("Seleccionar"), TH('Tipo Doc.'), TH('Nro. Doc.'), TH('Condición IVA'), TH('Email'))), body)}}
+
+<div id="tabs">
+    <ul>
+        <li><a href="#tabs-1">Lista de clientes</a></li>
+    </ul>
+    <div id="tabs-1">
+        {{=TABLE(THEAD(TR(TH("ID"), TH("Seleccionar"), TH('Tipo Doc.'), TH('Nro. Doc.'), TH('Condición IVA'), TH('Email'))), body)}}
+    </div>
+</div>
+
+
+
+

@@ -49,3 +49,12 @@ def call():
     """
     session.forget()
     return service()
+
+
+
+def mensaje():
+    mensaje = session.mensaje or None
+    session.mensaje = None
+    return dict(mensaje = mensaje)
+    
+

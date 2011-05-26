@@ -32,9 +32,10 @@ auth = Auth(globals(),db)                      # authentication/authorization
 crud = Crud(globals(),db)                      # for CRUD helpers using auth
 service = Service(globals())                   # for json, xml, jsonrpc, xmlrpc, amfrpc
 
-mail.settings.server = 'logging' or 'smtp.gmail.com:587'  # your SMTP server
-mail.settings.sender = 'you@gmail.com'         # your email
-mail.settings.login = 'username:password'      # your credentials or None
+# mail.settings.server = 'logging' or 'smtp.gmail.com:587'  # your SMTP server
+mail.settings.server = 'smtp.gmail.com:587'  # your SMTP server
+mail.settings.sender = 'spametki@gmail.com'         # your email
+mail.settings.login = 'spametki:0l%Rb.ivq'      # your credentials or None
 
 auth.settings.hmac_key = 'sha512:47d8493b-63b7-4bce-b08c-4b467074acc4'   # before define_tables()
 auth.define_tables()                           # creates all needed tables

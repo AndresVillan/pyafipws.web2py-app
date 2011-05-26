@@ -4,4 +4,11 @@
 {{for producto in productos:}}
 {{ body.append( TR( TD(producto.id), TD(A(producto.ds, _href=URL(r=request, f='detallar', vars={'producto': producto.id}))), TD(producto.codigo), TD(producto.precio), TD(db.iva[producto.iva_id].desc), TD(producto.sec), TD(producto.ncm), TD(producto.umed.desc) ) ) }}
 {{pass}}
+<div id="tabs">
+    <ul>
+        <li><a href="#tabs-1">Lista de productos</a></li>
+    </ul>
+    <div id="tabs-1">
 {{=TABLE(THEAD(TR(TH("ID"), TH("Seleccionar"), TH('Código'), TH('Precio'), TH('IVA'), TH('Sec'), TH('NCM'), TH('U.Medida'))), body)}}
+    </div>
+</div>

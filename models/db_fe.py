@@ -195,7 +195,7 @@ db.define_table('comprobante',
             comment="Fecha de emisión"),
     Field('tipo_cbte', type=db.tipo_cbte,),
     Field('punto_vta', type='integer', 
-            comment="Prefijo Habilitado", default=1,
+            comment="Prefijo Habilitado",
             requires=IS_NOT_EMPTY(), writable = False),
     Field('cbte_nro', type='integer',
             comment="Número", writable=False,
@@ -355,7 +355,14 @@ db.define_table('cliente', Field('nombre_cliente', type='string', length=200),
 db.define_table('punto_de_venta', Field('numero', 'integer', unique = True), Field('nombre'), Field('domicilio'), Field('localidad', 'reference localidad'), Field('provincia', 'reference provincia'), migrate = migrate, format="%(nombre)s")
 
 # variables generales (único registro)
-db.define_table('variables', Field('punto_de_venta', 'reference punto_de_venta'), Field('cuit', 'integer'), Field('domicilio'), Field('telefono'), Field('localidad', 'reference localidad'), Field('provincia', 'reference provincia'), Field('certificate'), Field('private_key'), Field('produccion', 'boolean', default = False), Field('moneda', 'reference moneda'), Field('webservice', requires = IS_IN_SET(WEBSERVICES), default='wsfe'), Field('tipo_cbte', 'reference tipo_cbte'), Field('venc_pago', 'integer', default=30), Field('forma_pago', requires = IS_IN_SET(FORMASPAGO), default = 'Sin especificar'), migrate = migrate)
+
+# Nota: el texto aviso y asunto de cbte se puede adaptar usando las siguientes etiquetas:
+# {{=empresa}} {{=cliente}} {{=tipo_cbte}} {{=cbte_nro}} {{=fecha_cbte}} {{=fecha_vto}}
+
+db.define_table('variables', Field('punto_de_venta', 'reference punto_de_venta'), Field('cuit', 'integer'), Field('domicilio'), Field('telefono'), Field('localidad', 'reference localidad'), Field('provincia', 'reference provincia'), Field('certificate'), Field('private_key'), Field('produccion', 'boolean', default = False), Field('moneda', 'reference moneda'), Field('webservice', requires = IS_IN_SET(WEBSERVICES), default='wsfe'), Field('tipo_cbte', 'reference tipo_cbte'), Field('venc_pago', 'integer', default=30),  Field('forma_pago', requires = IS_IN_SET(FORMASPAGO), default = 'Sin especificar'), Field("empresa"), Field("url", comment="Ubicación de la App (por ejemplo http://localhost:8000/facturalibre)"), Field("aviso_de_cbte_texto", "text", comment = "Cuerpo del correo con el aviso de comprobante", \
+default = "Estimado/s {{=cliente}}. Nos comunicamos para informar que se ha emitido el documento {{=tipo_cbte}} {{=punto_vta}}-{{=cbte_nro}}, con fecha {{=fecha_cbte}}.\nPuede descargar el comprobante en formato pdf desde la siguiente dirección: {{=url_descarga}}.\n{{=empresa}}\n. Mensaje generado por la app FacturaLibre: www.sistemasagiles.com.ar/fe"), \
+Field("aviso_de_cbte_asunto", comment = "Asunto del correo con el aviso de comprobante", \
+default="{{=tipo_cbte}} {{=cbte_nro}}"), migrate = migrate)
 
 # comprobantes asociados (tabla intermedia)
 db.define_table('comprobante_asociado', Field('comprobante', type=db.comprobante), Field('asociado', type=db.comprobante), migrate = migrate)
@@ -382,7 +389,7 @@ db.comprobante_asociado.comprobante.represent=cbte_asociado_comprobante_represen
 db.define_table('lista_tributo', Field('comprobante', 'reference comprobante'), Field('tributo', 'reference tributo'), Field('importe', 'double'), migrate = migrate)
 
 # variables por usuario
-db.define_table('variables_usuario', Field('usuario', 'reference auth_user', unique = True, writable = False), Field('punto_de_venta', 'reference punto_de_venta'), Field('moneda', 'reference moneda'), Field('webservice', requires = IS_IN_SET(WEBSERVICES), default='wsfe'), Field('tipo_cbte', 'reference tipo_cbte'), Field('venc_pago', 'integer', default=30), Field('forma_pago', requires = IS_IN_SET(FORMASPAGO), default = 'Sin especificar'), migrate = migrate)
+db.define_table('variables_usuario', Field('usuario', 'reference auth_user', unique = True, writable = False), Field('punto_de_venta', 'reference punto_de_venta', represent = lambda id: db.punto_de_venta[id].numero), Field('moneda', 'reference moneda'), Field('webservice', requires = IS_IN_SET(WEBSERVICES), default='wsfe'), Field('tipo_cbte', 'reference tipo_cbte'), Field('venc_pago', 'integer', default=30), Field('forma_pago', requires = IS_IN_SET(FORMASPAGO), default = 'Sin especificar'), migrate = migrate)
 
 # Tablas accesorias
 db.define_table('sugerir', Field('sugerir_producto', 'reference producto'), migrate = migrate)

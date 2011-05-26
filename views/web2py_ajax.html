@@ -2,6 +2,10 @@
 response.files.insert(0,URL('static','js/jquery.js'))
 response.files.insert(1,URL('static','css/calendar.css'))
 response.files.insert(2,URL('static','js/calendar.js'))
+# jQuery UI (FacturaLibre)
+response.files.insert(3,URL('static','css/jquery-ui-1.8.13.custom.css'))
+response.files.insert(4,URL('static','js/jquery-ui-1.8.13.custom.min.js'))
+
 
 for _item in response.meta or []:}}
      <meta name="{{=_item}}" content="{{=response.meta[_item]}}" />{{
@@ -65,7 +69,11 @@ jQuery(document).ready(function() {
    flash.hide();
    if(flash.html()) flash.slideDown();
    web2py_ajax_init();
+   /* FacturaLibre */ 
+   $("#tabs").tabs();
+   /* FacturaLibre */
 });
+
 function web2py_trap_form(action,target) {
    jQuery('#'+target+' form').each(function(i){
       var form=jQuery(this);
