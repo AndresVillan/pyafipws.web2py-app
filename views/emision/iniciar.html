@@ -5,5 +5,43 @@
 {{else:}}
 {{nombre_cliente = " "}}
 {{pass}}
-{{=A("Seleccionar cliente (" + nombre_cliente + ")", _href=URL(r=request, c='emision', f='comprobante_tabla_clientes'))}}
-{{=form}}
+
+<!--script type="text/javascript">
+   /* FacturaLibre 
+   //window.alert("web2py static-ajax");
+   $(document).ready(function(){$("#tabs").tabs();})
+   //window.alert("Fin de static-ajax-tabs");
+   FacturaLibre */
+</script-->
+
+{{ if not form.vars.webservice:}}
+{{ webservice = variables_usuario.webservice }}
+{{ else: }}
+{{ webservice = form.vars.webservice }}
+{{ pass }}
+
+{{ if not form.vars.punto_vta:}}
+{{ punto_vta = variables_usuario.punto_de_venta }}
+{{ else: }}
+{{ punto_vta = form.vars.punto_vta }}
+{{ pass }}
+
+<div id="tabs">
+    <ul>
+        <li><a href="#tabs-1">Carga de datos</a></li>
+        <li><a href="#tabs-2">Datos del cliente</a></li>
+        <li><a href="#tabs-3">Cbte Nº {{=form.vars.cbte_nro or "(nuevo)"}}</a></li>
+    </ul>
+    <div id="tabs-1">
+        {{=A("Seleccionar cliente (" + nombre_cliente + ")", _href=URL(r=request, c='emision', f='comprobante_tabla_clientes'))}}
+        {{=form}}
+    </div>
+    <div id="tabs-2">
+    {{if cliente:}}
+        {{=BEAUTIFY(cliente.as_dict())}}
+    {{pass}}
+    </div>
+    <div id="tabs-3">
+    {{=UL(LI("Punto de venta: " + str(punto_vta)), LI("Webservice: " + str(webservice)))}}
+    </div>
+</div>

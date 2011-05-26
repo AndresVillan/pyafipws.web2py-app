@@ -1,0 +1,11 @@
+{{extend 'layout.html'}}
+<div id="tabs">
+    <ul>
+        <li><a href="#tabs-1">Mensaje</a></li>
+    </ul>
+    <div id="tabs-1">
+    {{if mensaje:}}
+        {{=mensaje}}
+    {{pass}}
+    </div>
+</div>

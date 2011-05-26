@@ -18,16 +18,18 @@ def comprobante_seleccionar_cliente():
 
 @auth.requires(auth.has_membership('administrador') or auth.has_membership('emisor'))
 def iniciar():
+    variables = None
+    webservice = None
+    punto_de_venta = None
+    cliente = None
+    variables_usuario = None
+    
     fecha = datetime.datetime.now()
     "Crear/modificar datos generales del comprobante"
     # campos a mostrar:
-    campos_generales = ['fecha_cbte','tipo_cbte','punto_vta', 'webservice','cbte_nro', 'concepto', 'tipo_expo',
-    'permiso_existente', 'dst_cmp', 'dst_cuit',
-    'nombre_cliente', 'tipo_doc', 'nro_doc', 'domicilio_cliente',
-    'telefono_cliente',
-    'localidad_cliente', 'provincia_cliente', 'email', 'id_impositivo',
-    'moneda_id', 'moneda_ctz', 'obs_comerciales', 'obs', 'forma_pago',
-    'incoterms', 'incoterms_ds', 'idioma_cbte',
+    campos_generales = ['fecha_cbte','tipo_cbte', 'concepto', 'tipo_expo', 'permiso_existente', 'dst_cmp', \
+    'dst_cuit', 'moneda_id', 'moneda_ctz','imp_iibb', 'obs_comerciales', \
+    'obs', 'forma_pago', 'incoterms', 'incoterms_ds', 'idioma_cbte', \
     'fecha_venc_pago', 'fecha_serv_desde', 'fecha_serv_hasta', ]
 
     try:
@@ -39,34 +41,34 @@ def iniciar():
     form = SQLFORM(db.comprobante, session.comprobante_id,
                    fields=campos_generales)
 
+    variables = db(db.variables).select().first()
+    if not variables:
+        raise HTTP(500, "No se cargaron las opciones globales para formularios.")
+    variables_usuario = db(db.variables_usuario.usuario == auth.user_id).select().first()
+    if not variables_usuario:
+        db.variables_usuario.insert(usuario = auth.user_id, \
+            punto_de_venta = variables.punto_de_venta, \
+            moneda = variables.moneda, \
+            webservice = variables.webservice, \
+            tipo_cbte = variables.tipo_cbte, \
+            venc_pago = variables.venc_pago, \
+            forma_pago = variables.forma_pago
+        )
+        response.flash = "Se generó el registro de variables para formularios del usuario."
+
     # si el cbte es nuevo pre cargar el formulario
     if not session.comprobante_id:    
-        variables = db(db.variables).select().first()
-        if not variables:
-            raise HTTP(500, "No se cargaron las opciones globales para formularios.")
-        variables_usuario = db(db.variables_usuario.usuario == auth.user_id).select().first()
-        if not variables_usuario:
-            db.variables_usuario.insert(usuario = auth.user_id, \
-                punto_de_venta = variables.punto_de_venta, \
-                moneda = variables.moneda, \
-                webservice = variables.webservice, \
-                tipo_cbte = variables.tipo_cbte, \
-                venc_pago = variables.venc_pago, \
-                forma_pago = variables.forma_pago
-            )
-            response.flash = "Se generó el registro de variables para formularios del usuario."
-        else:
-            # Recupero opciones del registro global de variables
-            form.vars.webservice = variables_usuario.webservice
-            form.vars.tipo_cbte = variables_usuario.tipo_cbte
-            form.vars.punto_vta = variables_usuario.punto_de_venta.numero
-            form.vars.moneda_id = variables_usuario.moneda
-            form.vars.forma_pago = variables_usuario.forma_pago
-           
-            form.vars.fecha_venc_pago = str(fecha + datetime.timedelta(variables_usuario.venc_pago))[0:10]
-            form.vars.fecha_vto = str(fecha + datetime.timedelta(variables_usuario.venc_pago))[0:10]
-            form.vars.fecha_serv_desde = str(fecha)[0:10]
-            form.vars.fecha_serv_hasta = str(fecha)[0:10]
+        # Recupero opciones del registro global de variables
+        form.vars.webservice = variables_usuario.webservice
+        form.vars.tipo_cbte = variables_usuario.tipo_cbte
+        form.vars.punto_vta = variables_usuario.punto_de_venta.numero
+        form.vars.moneda_id = variables_usuario.moneda
+        form.vars.forma_pago = variables_usuario.forma_pago
+       
+        form.vars.fecha_venc_pago = str(fecha + datetime.timedelta(variables_usuario.venc_pago))[0:10]
+        form.vars.fecha_vto = str(fecha + datetime.timedelta(variables_usuario.venc_pago))[0:10]
+        form.vars.fecha_serv_desde = str(fecha)[0:10]
+        form.vars.fecha_serv_hasta = str(fecha)[0:10]
                         
     # Si se seleccionó un cliente cargar datos
     try:
@@ -115,8 +117,8 @@ def iniciar():
         redirect(URL("detallar"))
     elif form.errors:
        response.flash = '¡Hay errores en el formulario!'
-   
-    return dict(form=form)
+
+    return dict(form=form, cliente = cliente, variables_usuario = variables_usuario)
 
 
 @auth.requires(auth.has_membership('administrador') or auth.has_membership('emisor'))
@@ -150,12 +152,16 @@ def detallar():
 
 def calcular_item_detalle(form):
     """ calcula el total del ítem """
-    imp_neto = (form.vars.precio * form.vars.qty) -form.vars.bonif
-    valor_iva = db.iva[form.vars.iva_id].aliquota
-    form.vars.imp_iva = imp_neto * valor_iva
-    form.vars.imp_total = imp_neto + form.vars.imp_iva
-    form.vars.base_imp_iva = imp_neto
-    form.vars.base_imp_tributo = imp_neto
+    try:
+        imp_neto = (form.vars.precio * form.vars.qty) -form.vars.bonif
+        valor_iva = db.iva[form.vars.iva_id].aliquota
+        if not valor_iva: valor_iva = 0.00
+        form.vars.imp_iva = imp_neto * valor_iva
+        form.vars.imp_total = imp_neto + form.vars.imp_iva
+        form.vars.base_imp_iva = imp_neto
+        form.vars.base_imp_tributo = imp_neto
+    except (ValueError, KeyError, AttributeError), e:
+        db.xml.insert(request = "Error al calcular el ítem", response = str(e))
 
 
 @auth.requires(auth.has_membership('administrador') or auth.has_membership('emisor'))
@@ -221,10 +227,15 @@ def detalle():
     tipo_cbte = db(db.tipo_cbte.id==comprobante.tipo_cbte).select().first()
     for p in range(len(detalles)):
         iva = db(db.iva.id==detalles[p].iva_id).select().first()
-        if tipo_cbte.discriminar:
-            detalles[p].imp_iva = detalles[p].qty * detalles[p].precio * iva.aliquota
-        else:
-            detalles[p].imp_iva = detalles[p].qty * detalles[p].precio * (1+iva.aliquota)
+        try:
+            if tipo_cbte.discriminar:
+                detalles[p].imp_iva = detalles[p].qty * detalles[p].precio * iva.aliquota
+                
+            else:
+                detalles[p].imp_iva = detalles[p].qty * detalles[p].precio * (1+iva.aliquota)
+        except (ValueError, KeyError, AttributeError, TypeError):
+            detalles[p].imp_iva = 0.00
+            
     # fin marcelo
     return dict(form=form, total=total,
                 detalles=detalles, iva_desc = iva_texto, umed_desc = umed_texto, iva_aliquota = iva_valor)

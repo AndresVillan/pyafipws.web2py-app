@@ -1,10 +1,18 @@
 {{extend 'layout.html'}}
-
 <h1>¡Bienvenido!</h1>
+<div id="tabs">
+    <ul>
+        <li><a href="#tabs-1">Bienvenido!</a></li>
+        <li><a href="#tabs-2">Webservices</a></li>
+        <li><a href="#tabs-3">Sujetos</a></li>
+        <li><a href="#tabs-4">Uso</a></li>
+        <li><a href="#tabs-5">Contacto</a></li>
+    </ul>
+    <div id="tabs-1">
 
 Estamos desarrollando este sitio para brindar soluciones alternativas respecto a facturación electrónica, para las empresas y profesionales que necesiten una alternativa al sistema "Comprobantes Online" de AFIP.
 
-Luego de varios años de experiencia desarrollando interfaces y herramientas para Factura Electrónica, completamos nuestros productos con esta aplicación web con las siguientes características:
+Luego de varios años de experiencia desarrollando interfaces y herramientas para Factura Electrónica, completamos nuestros productos con esta aplicación web con las siguientes características
 
 <h3>Funcionalidades</h3>
 <ul>
@@ -15,6 +23,8 @@ Luego de varios años de experiencia desarrollando interfaces y herramientas par
     <li>Reportes avanzados: Libro IVA Ventas, detalles de artículos facturados, resúmenes varios, almacenamiento de duplicados electrónicos (RG1361)</li>
 </ul>
 
+    </div>
+    <div id="tabs-2">
 <h3>Webservices de AFIP contemplados</h3>
 <ul>
     <li>Factura Electrónica Nacional (versión 0 y versión 1, con y sin detalle) (RG2485 y RG2904)</li>
@@ -22,14 +32,16 @@ Luego de varios años de experiencia desarrollando interfaces y herramientas par
     <li>Factura Electrónica Bono Fiscal (RG2557)</li>
     <li>Factura Electrónica Importadores (RG2975), Turismo (RG2959) y Proveedores del Estado (RG2853)</li>
 </ul>
-
+    </div>
+    <div id="tabs-3">
 <h3>Sujetos Alcanzados</h3>
 <ul>
     <li>Régimen Obligatorio (RECE)</li>
     <li>Régimen Optativo (RECE)</li>
     <li>Contributentes Notificados</li>
 </ul>
-
+    </div>
+    <div id="tabs-4">
 <h3>Modo de uso</h3>
 Basicamente la operatoria es la siguiente:
 <ul>
@@ -40,9 +52,13 @@ Basicamente la operatoria es la siguiente:
 
 El sitio también contempla la funcionalidad de {{=A("Consultas",_href=URL(r=request,c="consultas",f="index"))}} para revisar las facturas electrónicas (no implementado aún).
 
+    </div>
+    <div id="tabs-5">
 <h3>Contacto</h3>
 Los interesados pueden contactarse con:
 <a href="mailto:facturalibre@sistemasagiles.com.ar">facturalibre@sistemasagiles.com.ar</a>
 <br/>
 Este sitio esta desarrollado con Software Libre de código abierto, más información en:
 <a href="http://code.google.com/p/pyafipws/">http://code.google.com/p/pyafipws/</a>
+    </div>
+</div>

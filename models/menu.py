@@ -16,7 +16,7 @@ response.menu = [
     (T('Inicio'), False, URL(request.application,'default','index'), []),
     
     (T('Emisión'), False, URL(request.application,'emision','iniciar'), []),
-    (T('Consultas'), False, URL(request.application,'consultas','index'), \
+    (T('Consultas'), False, False, \
      [(T('Comprobantes'), False, URL(request.application,'consultas', 'comprobantes', vars={"nueva": "true"})),(T('Detalles'), False, URL(request.application,'consultas', 'detalles'))]),    
 
     (T('Servicios Web'), False, None , [

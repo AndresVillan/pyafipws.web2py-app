@@ -2,6 +2,9 @@
 
 response.title = "Servicios Web AFIP"
 
+from xml.parsers.expat import ExpatError
+from urllib2 import HTTPError
+
 import os, os.path, time, datetime
 # Conexión al webservice:
 
@@ -72,7 +75,10 @@ def calcular_comprobante(comprobante):
          """   
 
         detalles[p].imp_neto = (detalles[p].qty * detalles[p].precio) -detalles[p].bonif
-        detalles[p].imp_iva = detalles[p].imp_neto * iva.aliquota
+        try:
+            detalles[p].imp_iva = detalles[p].imp_neto * iva.aliquota
+        except TypeError:
+            detalles[p].imp_iva = 0.00            
         detalles[p].imp_total = detalles[p].imp_neto + detalles[p].imp_iva
 
     neto = sum([detalle.imp_neto for detalle in detalles], 0.00)         
@@ -222,18 +228,29 @@ def autenticar():
 def dummy():
     "Obtener el estado de los servidores de la AFIP"
     response.subtitle = "DUMMY: Consulta estado de servidores (%s)" % SERVICE
-    if SERVICE=='wsfe':
-        result = client.FEDummy()['FEDummyResult']
-    elif SERVICE=='wsfev1':
-        result = client.FEDummy()['FEDummyResult']
-    elif SERVICE=='wsbfe':
-        result = client.BFEDummy()['BFEDummyResult']
-    elif SERVICE=='wsfex':
-        result = client.FEXDummy()['FEXDummyResult']
-    elif SERVICE=='wsmtxca':
-        result = client.dummy()
-    else:
-        result = {}
+    try:
+        if SERVICE=='wsfe':
+            result = client.FEDummy()['FEDummyResult']
+        elif SERVICE=='wsfev1':
+            result = client.FEDummy()['FEDummyResult']
+        elif SERVICE=='wsbfe':
+            result = client.BFEDummy()['BFEDummyResult']
+        elif SERVICE=='wsfex':
+            result = client.FEXDummy()['FEXDummyResult']
+        elif SERVICE=='wsmtxca':
+            result = client.dummy()
+        else:
+            result = {}
+        
+    except SoapFault,sf:
+        db.xml.insert(request = repr(client.xml_request), response = repr(client.xml_response))
+        result = {'fault': repr(sf.faultstring), 
+            'xml_request': repr(client.xml_request), 
+            'xml_response': repr(client.xml_response),
+            }
+    except ExpatError, ee:
+        result = {"resultado" :"Error en el Cliente SOAP. Formato de respuesta inválido."}
+      
     return result
 
 
@@ -367,6 +384,10 @@ def ultimo_numero_comprobante():
                 'xml_response': repr(client.xml_response),
                 }
 
+        except ExpatError, ee:
+            result = "Error en el Cliente SOAP. Formato de respuesta inválido."
+
+
     return {'form': form, 'result': result}
 
 
@@ -430,7 +451,11 @@ def f_ultimo_numero_comprobante(comprobante):
 
     except SoapFault,sf:
         db.xml.insert(request = repr(client.xml_request), response = repr(client.xml_response))
-        
+
+    except ExpatError, ee:
+        result = "Error en el Cliente SOAP. Formato de respuesta inválido."
+
+
     return (result, valor)
 
 
@@ -976,12 +1001,15 @@ def autorizar():
 
     except SoapFault,sf:
         db.xml.insert(request = client.xml_request, response = client.xml_response)
-
-        return {'fault': sf.faultstring, 
+        return dict( resultado = {'fault': sf.faultstring, 
                 'xml_request': client.xml_request, 
                 'xml_response': client.xml_response,
-                } 
-    
+        }, pdf = None)
+
+    except ExpatError, ee:
+        return dict(resultado = "Error en el Cliente SOAP. Formato de respuesta inválido.", pdf = None)
+
+
     # actualizo el registro del comprobante con el resultado:
     if actualizar:
         cbttmp = comprobante.as_dict()
@@ -990,25 +1018,30 @@ def autorizar():
         for k, v in actualizar.iteritems(): cbttmp[k] = v
         db(db.comprobante.id==comprobante_id).update(**cbttmp)
         
-    return result
+    return dict(resultado = result, pdf = A('Guardar el comprobante en formato PDF', _href=URL(r = request, c="salida", f="guardar_comprobante", args=[comprobante_id,])))
 
     
-if SERVICE:        
-    # solicito autenticación
-    if request.controller!="dummy":
+if SERVICE:
+
+    try:
+        # solicito autenticación
+        if request.controller!="dummy":
     
-        TOKEN, SIGN = _autenticar(SERVICE)        
+            TOKEN, SIGN = _autenticar(SERVICE)        
         
-    # conecto al webservice
-    if SERVICE == "wsmtxca":
-        client = SoapClient( 
+        # conecto al webservice
+        if SERVICE == "wsmtxca":
+            client = SoapClient( 
                     wsdl = WSDL[SERVICE],
                     cache = PRIVATE_PATH,
                     ns = "ser",
                     trace = False)
-    else:
-        client = SoapClient( 
+        else:
+            client = SoapClient( 
                     wsdl = WSDL[SERVICE],
                     cache = PRIVATE_PATH,
                     trace = False)
 
+    except HTTPError, e:
+        session.mensaje = "Error al solicitar el ticket de acceso: %s" % str(e)
+        redirect(URL(c="default", f="mensaje"))

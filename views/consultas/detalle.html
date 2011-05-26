@@ -1,8 +1,20 @@
 {{extend 'layout.html'}}
 <h1>Detalle de comprobante</h1>
-{{if comprobante:}}
-    {{=comprobante}}
+<div id="tabs">
+    <ul>
+        <li><a href="#tabs-1">Datos del comprobante</a></li>
+        <li><a href="#tabs-2">Detalle</a></li>
+    </ul>
+    <div id="tabs-1">
+    {{if comprobante:}}
+        <span>{{=email}}&nbsp;</span>
+        <span>{{=A("Descargar PDF", _href=URL(r = request, c="salida", f="comprobante", extension = "pdf", args = [comprobante.id,]))}}</span>
+        <span>{{=BEAUTIFY(comprobante.as_dict())}}</span>
+    {{pass}}
+    </div>
+    <div id="tabs-2">
     {{if detalle:}}
         {{=detalle}}
     {{pass}}
-{{pass}}
+    </div>
+</div>

@@ -1,10 +1,12 @@
 {{extend 'layout.html'}}
-<h1>Editar Detalle</h1>
+<h1>Crear Producto</h1>
 <div id="tabs">
     <ul>
-        <li><a href="#tabs-1">Detalle</a></li>
+        <li><a href="#tabs-1">Producto</a></li>
     </ul>
     <div id="tabs-1">
+    {{if form:}}
         {{=form}}
+    {{pass}}
     </div>
 </div>

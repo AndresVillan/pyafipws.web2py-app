@@ -1,0 +1,12 @@
+{{ extend 'layout.html' }}
+<h1>Envío de email</h1>
+<div id="tabs">
+    <ul>
+        <li><a href="#tabs-1">Email</a></li>
+    </ul>
+    <div id="tabs-1">
+        {{=UL(LI(mensaje), LI(asunto), LI(texto))}}
+    </div>
+</div>
+
+

@@ -1,4 +1,8 @@
 /* Hoja de estilo para pyafipws-web2py-app */
+table{
+overflow: scroll;
+}
+
 input, select{
 height: 1.5em;
 }

@@ -1,0 +1,14 @@
+{{extend 'layout.html'}}
+<div id="tabs">
+    <ul>
+        <li><a href="#tabs-1">Resultado</a></li>
+    </ul>
+    <div id="tabs-1">
+    {{if resultado:}}
+        {{if pdf:}}
+            {{=pdf}}
+        {{pass}}
+        {{=BEAUTIFY(resultado)}}
+    {{pass}}
+    </div>
+</div>

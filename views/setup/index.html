@@ -1,14 +1,16 @@
 {{extend 'layout.html'}}
 <h1>Setup: panel de control</h1>
 
+<div id="tabs">
+    <ul>
+        <li><a href="#tabs-1">Inicial</a></li>
+        <li><a href="#tabs-2">Variables Grales</a></li>
+        <li><a href="#tabs-3">Variables Usuario</a></li>
+        <li><a href="#tabs-4">Roles</a></li>
+        <li><a href="#tabs-5">ABM</a></li>
+    </ul>
+    <div id="tabs-1">
 <UL>
-{{if variables:}}
-<LI>Variables ({{=A('Modificar', _href=URL(r=request, c='setup', f='variables') )}}):{{=variables.as_dict()}}</LI>
-{{pass}}
-{{if variables_usuario:}}
-<LI>Variables de usuario ({{=A('Modificar', _href=URL(r=request, c='setup', f='variables_usuario') )}}):{{=variables_usuario.as_dict()}}</LI>
-{{pass}}
-
 <LI>Idiomas: {{=idiomas}} ({{=A('Crear idiomas', _href=URL(r=request, c='setup', f='crear_idiomas'))}})</LI>
 <LI>IVA(s): {{=ivas}} ({{=A('Crear iva(s)', _href=URL(r=request, c='setup', f='crear_iva'))}})</LI>
 <LI>Monedas: {{=monedas}} ({{=A('Crear monedas', _href=URL(r=request, c='setup', f='crear_monedas'))}})</LI>
@@ -26,8 +28,39 @@ f='crear_umedidas'))}})</LI>
 f='crear_condiciones_iva'))}})</LI>
 <LI>CUIT de Países: {{=cuit_paises}} ({{=A('Crear CUIT de Países', _href=URL(r=request, c='servicios_web', \
 f='crear_cuit_paises', args=['wsfex',]))}})</LI>
-<LI>Puntos de venta: {{=puntos_de_venta}}</LI>
-<LI>Roles: {{=roles}} ({{=A('Listar/Asignar por usuario', _href=URL(r=request, c='setup', \
+</UL>
+    </div>
+    <div id="tabs-2">
+<UL>
+{{if variables:}}
+<LI>Variables ({{=A('Modificar', _href=URL(r=request, c='setup', f='variables') )}}):{{=BEAUTIFY(variables.as_dict())}}</LI>
+{{pass}}
+</UL>
+    </div>
+    <div id="tabs-5">
+{{=A("Modificar registros", _href=URL(f="modificar"))}}
+<UL>
+<LI>Clientes: {{=clientes}} ({{=A('Crear cliente', _href=URL(r=request, c='setup', \
+f='crear_cliente'))}})</LI>
+<LI>Tributos: {{=tributos}} ({{=A('Crear tributo', _href=URL(r=request, c='setup', \
+f='crear_tributo'))}})</LI>
+<LI>Productos: {{=productos}} ({{=A('Crear producto', _href=URL(r=request, c='setup', \
+f='crear_producto'))}})</LI>
+<LI>Puntos de venta: {{=puntos_de_venta}} ({{=A('Crear punto de venta', _href=URL(r=request, c='setup', \
+f='crear_punto_de_venta'))}})</LI>
+</UL>
+    </div>
+    <div id="tabs-3">
+<UL>
+{{if variables_usuario:}}
+<LI>Variables de usuario ({{=A('Modificar', _href=URL(r=request, c='setup', f='variables_usuario') )}}):{{=BEAUTIFY(variables_usuario.as_dict())}}</LI>
+{{pass}}
+</UL>
+    </div>
+    <div id="tabs-4">
+<UL>
+<LI>Roles: {{=BEAUTIFY(roles)}} ({{=A('Listar/Asignar por usuario', _href=URL(r=request, c='setup', \
 f='roles_editar'))}})</LI>
 </UL>
-<br />
+    </div>
+</div>

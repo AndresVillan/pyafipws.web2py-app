@@ -135,13 +135,18 @@ def index():
     localidades = len(db(db.localidad).select())
     condiciones_iva = len(db(db.condicion_iva).select())
     cuit_paises = len(db(db.dst_cuit).select())
+    clientes = len(db(db.cliente).select())
+    tributos = len(db(db.tributo).select())
+    productos = len(db(db.producto).select())
     return dict(tipos_doc = tipos_doc, tipos_cbte = tipos_cbte, \
                 monedas = monedas, ivas = ivas, idiomas = idiomas, \
                 umedidas = umedidas, paises = paises, \
                 provincias = provincias, localidades = localidades, \
                 puntos_de_venta = puntos_de_venta, variables = variables, \
                 variables_usuario = variables_usuario, \
-                condiciones_iva = condiciones_iva, roles = roles, cuit_paises = cuit_paises)
+                condiciones_iva = condiciones_iva, roles = roles, \
+                cuit_paises = cuit_paises, clientes = clientes, \
+                productos = productos, tributos = tributos)
 
 
 @auth.requires(auth.has_membership("administrador"))
@@ -367,3 +372,38 @@ def crear_condiciones_iva():
         db.condicion_iva.insert(codigo=v, desc=k)
     return dict(ret=SQLTABLE(db(db.condicion_iva.id>-1).select()), \
                 lista = A('Ver lista', _href=URL(r=request, c='setup', f='index')))
+
+
+def modificar():
+    """ Listas de objetos de la base de datos """
+
+    clientes = SQLTABLE(db(db.cliente).select(), linkto = URL(f="modificar_objeto"), columns=["cliente.id", "cliente.nombre_cliente", "cliente.email", "cliente.domicilio_cliente", "cliente.nro_doc"], headers = {"cliente.id": "Editar"})
+
+    productos = SQLTABLE(db(db.producto).select(), linkto = URL(f="modificar_objeto"), columns = ["producto.id", "producto.codigo", "producto.ds", "producto.precio" ], headers = {"producto.id": "Editar"})
+
+    tributos = SQLTABLE(db(db.tributo).select(), linkto = URL(f="modificar_objeto"), columns = ["tributo.id", "tributo.desc", "tributo.aliquota"], headers = {"tributo.id": "Editar"})
+
+    puntos_de_venta = SQLTABLE(db(db.punto_de_venta).select(), linkto = URL(f="modificar_objeto"), columns = ["punto_de_venta.id", "punto_de_venta.numero", "punto_de_venta.nombre"], headers = {"punto_de_venta.id": "Editar"})
+
+    return dict(clientes = clientes, tributos = tributos, productos = productos, puntos_de_venta = puntos_de_venta)
+
+
+def modificar_objeto():
+    return dict(form = crud.update(request.args[0], request.args[1], next = URL(f="modificar")), nombre = str(request.args[0]).replace("_", " "))
+
+def crear_cliente():
+    form = crud.create(db.cliente, next = URL(r = request, f="index"))
+    return dict(form = form)
+
+def crear_tributo():
+    form = crud.create(db.tributo, next = URL(r = request, f="index"))
+    return dict(form = form)
+
+def crear_producto():
+    form = crud.create(db.producto, next = URL(r = request, f="index"))
+    return dict(form = form)
+
+def crear_punto_de_venta():
+    form = crud.create(db.punto_de_venta, next = URL(r = request, f="index"))
+    return dict(form = form)
+

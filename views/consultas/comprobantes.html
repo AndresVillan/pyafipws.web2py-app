@@ -1,6 +1,17 @@
 {{extend 'layout.html'}}
 <h1>Comprobantes</h1>
+<div id="tabs">
+    <ul>
+        {{if consulta:}}
+        <li><a href="#tabs-2">Lista</a></li>
+        {{pass}}
+        <li><a href="#tabs-1">Consulta</a></li>
+    </ul>
+    <div id="tabs-1">
 {{=form}}
+    </div>
+{{if consulta:}}
+    <div id="tabs-2">
 {{if los_comprobantes:}}
 
 {{if registros:}}
@@ -41,3 +52,6 @@ Secciones ({{=laseccion}}):
 {{=H3("No hay registros")}}
 {{pass}}
 {{pass}}
+    </div>
+{{pass}}
+</div>
