@@ -2,7 +2,7 @@
 
 # try something like
 
-# get/create variables/variables_usuario en una función
+# get/create variables/variablesusuario en una función
 
 # ubicación de archivo de localidades
 # archivo csv con encabezado y columnas
@@ -32,7 +32,12 @@ invitado_group_id = db(db.auth_group.role == "invitado").select().first()
 emisor_group_id = db(db.auth_group.role == "emisor").select().first()
 auditor_group_id = db(db.auth_group.role == "auditor").select().first()
 administrador_group_id = db(db.auth_group.role == "administrador").select().first()
-          
+
+
+def nuevo_administrador():
+    return dict(mensaje = "Se configuró la cuenta administrador@localhost con las opciones por defecto.")
+
+
 if emisor_group_id == None:
     emisor_group_id = db.auth_group.insert(role = "emisor", description = "Autorización de cbtes y consultas")
 
@@ -58,6 +63,10 @@ if len(db(db.auth_membership.group_id == administrador_group_id).select()) < 1:
     id_administrador = db(db.auth_user.email == "administrador@localhost").select().first().id
     db.auth_membership.insert(group_id = administrador_group_id, user_id = id_administrador)
     session.configuracion_administrador = True
+    redirect(URL(f="nuevo_administrador"))
+
+
+    
 
 @auth.requires(auth.has_membership("administrador"))
 def rol_cambiar():
@@ -67,7 +76,7 @@ def rol_cambiar():
         form = None
         response.flash = "Rol de sistema / no editable"
     else:
-        form = crud.update(db.auth_membership, request.args[1])
+        form = crud.update(db.auth_membership, request.args[1], deletable = False)
 
     return dict(form = form)
 
@@ -84,6 +93,7 @@ def roles_editar():
     return dict(tabla = tabla)
 
 
+@auth.requires(auth.has_membership("administrador"))
 def index():
     """ panel de control del setup """
     mensajes = ""
@@ -93,22 +103,22 @@ def index():
         
     puntos_de_venta = 0
     variables = db(db.variables).select().first()
-    variables_usuario = db(db.variables_usuario.usuario == auth.user_id).select().first()
-    pdvs = db(db.punto_de_venta).select()
+    variablesusuario = db(db.variablesusuario.usuario == auth.user_id).select().first()
+    pdvs = db(db.puntodeventa).select()
     if not pdvs.first():
-        id_pdv = db.punto_de_venta.insert(numero = 1, nombre = "Punto de venta 1")
+        id_pdv = db.puntodeventa.insert(numero = 1, nombre = "Punto de venta 1")
         mensajes += "Nuevo punto de venta (1). "
         puntos_de_venta += 1
     if not variables:
-        id_variables = db.variables.insert(punto_de_venta = db(db.punto_de_venta).select().first())
+        id_variables = db.variables.insert(puntodeventa = db(db.puntodeventa).select().first())
         variables = db(db.variables).select().first()        
         mensajes += "Se creó el registro de variables. "
-    if not variables_usuario:
-        id_variables_usuario = db.variables_usuario.insert(usuario = auth.user_id, \
-        punto_de_venta = variables.punto_de_venta, \
+    if not variablesusuario:
+        id_variablesusuario = db.variablesusuario.insert(usuario = auth.user_id, \
+        puntodeventa = variables.puntodeventa, \
         moneda = variables.moneda, \
         webservice = variables.webservice, \
-        tipo_cbte = variables.tipo_cbte, \
+        tipocbte = variables.tipocbte, \
         venc_pago = variables.venc_pago, \
         forma_pago = variables.forma_pago)
         
@@ -124,26 +134,27 @@ def index():
         roles = ["No se han creado roles para usuarios",]
         
     puntos_de_venta += len(pdvs)
-    tipos_doc = len(db(db.tipo_doc).select())
-    tipos_cbte = len(db(db.tipo_cbte).select())
+    tipos_doc = len(db(db.tipodoc).select())
+    tipos_cbte = len(db(db.tipocbte).select())
     monedas = len(db(db.moneda).select())   
     ivas = len(db(db.iva).select())
     idiomas = len(db(db.idioma).select())
     umedidas = len(db(db.umed).select())
-    paises = len(db(db.pais_dst).select())
+    paises = len(db(db.paisdst).select())
     provincias = len(db(db.provincia).select())
     localidades = len(db(db.localidad).select())
-    condiciones_iva = len(db(db.condicion_iva).select())
-    cuit_paises = len(db(db.dst_cuit).select())
+    condiciones_iva = len(db(db.condicioniva).select())
+    cuit_paises = len(db(db.dstcuit).select())
     clientes = len(db(db.cliente).select())
     tributos = len(db(db.tributo).select())
     productos = len(db(db.producto).select())
+    
     return dict(tipos_doc = tipos_doc, tipos_cbte = tipos_cbte, \
                 monedas = monedas, ivas = ivas, idiomas = idiomas, \
                 umedidas = umedidas, paises = paises, \
                 provincias = provincias, localidades = localidades, \
                 puntos_de_venta = puntos_de_venta, variables = variables, \
-                variables_usuario = variables_usuario, \
+                variablesusuario = variablesusuario, \
                 condiciones_iva = condiciones_iva, roles = roles, \
                 cuit_paises = cuit_paises, clientes = clientes, \
                 productos = productos, tributos = tributos)
@@ -155,17 +166,17 @@ def variables():
     return dict(form = form)
 
 @auth.requires(auth.has_membership("administrador") or auth.has_membership("emisor"))
-def variables_usuario():
-    variables_usuario = db(db.variables_usuario.usuario == auth.user_id).select().first()
-    if not variables_usuario:
-        id = db.variables_usuario.insert(usuario = auth.user_id)
+def variablesusuario():
+    variablesusuario = db(db.variablesusuario.usuario == auth.user_id).select().first()
+    if not variablesusuario:
+        id = db.variablesusuario.insert(usuario = auth.user_id)
         try:
             variables = db(db.variables).select().first()
-            db.variables_usuario[id].update(\
-                punto_de_venta = variables.punto_de_venta, \
+            db.variablesusuario[id].update(\
+                puntodeventa = variables.puntodeventa, \
                 moneda = variables.moneda, \
                 webservice = variables.webservice, \
-                tipo_cbte = variables.tipo_cbte, \
+                tipocbte = variables.tipocbte, \
                 venc_pago = variables.venc_pago, \
                 forma_pago = variables.forma_pago
             )
@@ -173,12 +184,12 @@ def variables_usuario():
             response.flash = "No se configuraron las variables de facturación"
             pass
         
-    variables_usuario = db(db.variables_usuario.usuario == auth.user_id).select().first()
+    variablesusuario = db(db.variablesusuario.usuario == auth.user_id).select().first()
     
-    form = crud.update(db.variables_usuario, variables_usuario)
+    form = crud.update(db.variablesusuario, variablesusuario, deletable = False)
     
     # cancelar cbte actual
-    session.comprobante_id = None
+    session.comprobante = None
     
     return dict(form = form)
 
@@ -196,12 +207,12 @@ def crear_tipos_doc():
 96 - DNI
 94 - Pasaporte
 99 - Consumidor Final"""
-    db(db.tipo_doc.cod>0).delete()
+    db(db.tipodoc.id>0).delete()
     l = []
     for d in data.split("\n"):
-        i, desc = d.split(" - ")
-        db.tipo_doc.insert(cod=i, desc=desc)
-    return dict(ret=SQLTABLE(db(db.tipo_doc.cod>0).select()), \
+        i, ds = d.split(" - ")
+        db.tipodoc.insert(cod=i, ds=ds)
+    return dict(ret=SQLTABLE(db(db.tipodoc.id>0).select()), \
                 lista = A('Ver lista', _href=URL(r=request, c='setup', f='index')))
 
 @auth.requires(auth.has_membership("administrador"))
@@ -227,17 +238,17 @@ def crear_tipos_cbte():
 52 - Nota de Débito M - False
 53 - Nota de Crédito M - False
 54 - Recibo M - False"""
-    db(db.tipo_cbte.cod>0).delete()
+    db(db.tipocbte.id>0).delete()
     l = []
     for d in data.split("\n"):
-        i, desc, discriminar = d.split(" - ")
+        i, ds, discriminar = d.split(" - ")
 
         if discriminar == "False": discriminar = False
         elif discriminar == "True": discriminar = True
         else: discriminar = None
 
-        db.tipo_cbte.insert(cod=i, desc=desc, discriminar=discriminar)
-    return dict(ret=SQLTABLE(db(db.tipo_cbte.cod>0).select()),\
+        db.tipocbte.insert(cod=i, ds=ds, discriminar=discriminar)
+    return dict(ret=SQLTABLE(db(db.tipocbte.id>0).select()),\
                 lista = A('Ver lista', _href=URL(r=request, c='setup', f='index')))
 
 @auth.requires(auth.has_membership("administrador"))
@@ -252,8 +263,8 @@ DOL - Dólar Estadounidense
     db(db.moneda.id>0).delete()
     l = []
     for d in data.split("\n"):
-        i, desc = d.split(" - ")
-        db.moneda.insert(cod=i, desc=desc)
+        i, ds = d.split(" - ")
+        db.moneda.insert(cod=i, ds=ds)
     return dict(ret=SQLTABLE(db(db.moneda.id>0).select()), \
                 lista = A('Ver lista', _href=URL(r=request, c='setup', f='index')))
 
@@ -268,17 +279,17 @@ def crear_iva():
 4 - 10.5% - 0.105
 5 - 21% - 0.210
 6 - 27% - 0.270"""
-    db(db.iva.cod>0).delete()
+    db(db.iva.id>0).delete()
     l = []
     for d in data.split("\n"):
-        i, desc, aliquota = d.split(" - ")
+        i, ds, aliquota = d.split(" - ")
         try:
             aliquota = float(aliquota)
         except ValueError, e:
             aliquota = None
         
-        db.iva.insert(cod=i, desc=desc, aliquota=aliquota)
-    return dict(ret=SQLTABLE(db(db.iva.cod>0).select()), \
+        db.iva.insert(cod=i, ds=ds, aliquota=aliquota)
+    return dict(ret=SQLTABLE(db(db.iva.id>0).select()), \
                 lista = A('Ver lista', _href=URL(r=request, c='setup', f='index')))
 
 @auth.requires(auth.has_membership("administrador"))
@@ -291,8 +302,8 @@ def crear_idiomas():
     db(db.idioma.id>0).delete()
     l = []
     for d in data.split("\n"):
-        i, desc = d.split(" - ")
-        db.idioma.insert(cod=int(i), desc=desc)
+        i, ds = d.split(" - ")
+        db.idioma.insert(cod=int(i), ds=ds)
     return dict(ret=SQLTABLE(db(db.idioma.id>0).select()), \
                 lista = A('Ver lista', _href=URL(r=request, c='setup', f='index')))
 
@@ -307,21 +318,21 @@ def crear_umedidas():
 4 - metros cúbicos
 0 -  """
 
-    db(db.umed.cod>=0).delete()
+    db(db.umed.id>=0).delete()
     l = []
     for d in data.split("\n"):
-        i, desc = d.split(" - ")
-        db.umed.insert(cod=i, desc=desc)
+        i, ds = d.split(" - ")
+        db.umed.insert(cod=i, ds=ds)
     return dict(ret=SQLTABLE(db(db.umed.id>0).select()), \
                 lista = A('Ver lista', _href=URL(r=request, c='setup', f='index')))
 
 @auth.requires(auth.has_membership("administrador"))
 def crear_paises():
     data = {200: u'ARGENTINA', 202: u'BOLIVIA', 203: u'BRASIL', 204: u'CANADA', 205: u'COLOMBIA', 206: u'COSTA RICA', 207: u'CUBA', 208: u'CHILE', 210: u'ECUADOR', 211: u'EL SALVADOR', 212: u'ESTADOS UNIDOS',  218: u'MEXICO', 221: u'PARAGUAY', 222: u'PERU', 225: u'URUGUAY', 226: u'VENEZUELA', 250: u'AAE Tierra del Fuego - ARGENTINA', 251: u'ZF La Plata - ARGENTINA', 252: u'ZF Justo Daract - ARGENTINA', 253: u'ZF R\xedo Gallegos - ARGENTINA', 254: u'Islas Malvinas - ARGENTINA', 255: u'ZF Tucum\xe1n - ARGENTINA', 256: u'ZF C\xf3rdoba - ARGENTINA', 257: u'ZF Mendoza - ARGENTINA', 258: u'ZF General Pico - ARGENTINA', 259: u'ZF Comodoro Rivadavia - ARGENTINA', 260: u'ZF Iquique', 261: u'ZF Punta Arenas', 262: u'ZF Salta - ARGENTINA', 263: u'ZF Paso de los Libres - ARGENTINA', 264: u'ZF Puerto Iguaz\xfa - ARGENTINA', 265: u'SECTOR ANTARTICO ARG.', 270: u'ZF Col\xf3n - REP\xdaBLICA DE PANAM\xc1', 271: u'ZF Winner (Sta. C. de la Sierra) - BOLIVIA', 280: u'ZF Colonia - URUGUAY', 281: u'ZF Florida - URUGUAY', 282: u'ZF Libertad - URUGUAY', 283: u'ZF Zonamerica - URUGUAY', 284: u'ZF Nueva Helvecia - URUGUAY', 285: u'ZF Nueva Palmira - URUGUAY', 286: u'ZF R\xedo Negro - URUGUAY', 287: u'ZF Rivera - URUGUAY', 288: u'ZF San Jos\xe9 - URUGUAY', 291: u'ZF Manaos - BRASIL', }
-    db(db.pais_dst.cod>=0).delete()
+    db(db.paisdst.id>=0).delete()
     for k,v in data.items():
-        db.pais_dst.insert(cod=k, desc=v)
-    return dict(ret=SQLTABLE(db(db.pais_dst.id>0).select()), \
+        db.paisdst.insert(cod=k, ds=v)
+    return dict(ret=SQLTABLE(db(db.paisdst.id>0).select()), \
                 lista = A('Ver lista', _href=URL(r=request, c='setup', f='index')))
 
 @auth.requires(auth.has_membership("administrador"))
@@ -331,49 +342,66 @@ u"Jujuy", 7: u"Mendoza", 8: u"La Rioja", 9: u"Salta", 10: u"San Juan", 11:
 u"San Luis", 12: u"Santa Fe", 13: u"Santiago del Estero", 14:
 u"Tucuman", 16: u"Chaco", 17: u"Chubut", 18: u"Formosa", 19: u"Misiones", 20:
 u"Neuquen", 21: u"La Pampa", 22: u"Río Negro", 23: u"Santa Cruz", 24: u"Tierra del Fuego"}
-    db(db.provincia.cod>=0).delete()
+    db(db.provincia.id>=0).delete()
     for k,v in data.items():
-        db.provincia.insert(cod=k, desc=v)
-    return dict(ret=SQLTABLE(db(db.provincia.id>-1).select()), \
+        db.provincia.insert(cod=k, ds=v)
+    return dict(ret=SQLTABLE(db(db.provincia.id>0).select()), \
                 lista = A('Ver lista', _href=URL(r=request, c='setup', f='index')))
 
 @auth.requires(auth.has_membership("administrador"))
 def crear_localidades():
     """ crea localidades en la base de datos
     """
+
     provincias = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,16,17,18,19,20,21,22,23,24]
-    # 1) abrir csv con módulo intérprete
-    spamReader = csv.reader(open(fuente_localidades, "r"))
-    # 2) para cada registro de csv crear un registro de la base
-    # utilizando código de localidad y de provincia (referencia)
-    errores = list()
+    errores = 0
     registros = 0
     db(db.localidad.id > -1).delete()
-    db.commit()
     contador = 0
+
+    """
+    # 1) para cada registro de csv crear un registro de la base
+    # utilizando código de localidad y de provincia (referencia)
+    
+    # 2) abrir csv con módulo intérprete
+    spamReader = csv.reader(open(fuente_localidades, "r"))
+    
+    db.commit()
+    # No usar sin sqlite: no sirve para bases de datos remotas (consulta extensa)
     for linea in spamReader:
         contador +=1
         try:
             if (int(linea[0]) and (len(linea[1]) > 0) and (int(linea[2]) in provincias)):
                 # modificar (una consulta por registro)
-                la_provincia = db(db.provincia.cod == linea[2]).select().first().id            
-                db.localidad.insert(cod=str(int(linea[0])), desc=linea[1], provincia=la_provincia)
+                la_provincia = db(db.provincia.cod == linea[2]).select().first().id
+                db.localidad.insert(cod=str(int(linea[0])), ds=linea[1], provincia=la_provincia)
                 registros += 1
         except (ValueError, AttributeError, TypeError), e:
-            errores.append(str(e) + " (Fila %s)" % contador)
+            errores += 1
+    """
+    
+    try:
+        caba = db(db.provincia.cod == 0).select().first().id
+    except (ValueError, TypeError, KeyError, AttributeError):
+        raise HTTP(500, "Se deben crear los registros de provincias.")
+        
+    db.localidad.insert(cod=0, ds="Ciudad Autónoma de Buenos Aires", provincia=caba)
+    registros +=1
+
     return dict(registros = registros, errores = errores, \
                 lista = A('Ver lista', _href=URL(r=request, c='setup', f='index')))
+
 
 @auth.requires(auth.has_membership("administrador"))
 def crear_condiciones_iva():
     data = {'IVA Responsable Inscripto': 1, 'IVA Responsable no Inscripto': 2, 'IVA no Responsable': 3,'IVA Sujeto Exento': 4,'Consumidor Final': 5, 'Responsable Monotributo': 6, 'Sujeto no Categorizado': 7, 'Importador del Exterior': 8, 'Cliente del Exterior': 9, 'IVA Liberado - Ley Nº 19.640': 10, 'IVA Responsable Inscripto - Agente de Percepción': 11}
-    db(db.condicion_iva.codigo>=0).delete()
+    db(db.condicioniva.codigo>=0).delete()
     for k,v in data.items():
-        db.condicion_iva.insert(codigo=v, desc=k)
-    return dict(ret=SQLTABLE(db(db.condicion_iva.id>-1).select()), \
+        db.condicioniva.insert(codigo=v, ds=k)
+    return dict(ret=SQLTABLE(db(db.condicioniva.id>-1).select()), \
                 lista = A('Ver lista', _href=URL(r=request, c='setup', f='index')))
 
-
+@auth.requires(auth.has_membership("administrador"))
 def modificar():
     """ Listas de objetos de la base de datos """
 
@@ -381,29 +409,32 @@ def modificar():
 
     productos = SQLTABLE(db(db.producto).select(), linkto = URL(f="modificar_objeto"), columns = ["producto.id", "producto.codigo", "producto.ds", "producto.precio" ], headers = {"producto.id": "Editar"})
 
-    tributos = SQLTABLE(db(db.tributo).select(), linkto = URL(f="modificar_objeto"), columns = ["tributo.id", "tributo.desc", "tributo.aliquota"], headers = {"tributo.id": "Editar"})
+    tributos = SQLTABLE(db(db.tributo).select(), linkto = URL(f="modificar_objeto"), columns = ["tributo.id", "tributo.ds", "tributo.aliquota"], headers = {"tributo.id": "Editar"})
 
-    puntos_de_venta = SQLTABLE(db(db.punto_de_venta).select(), linkto = URL(f="modificar_objeto"), columns = ["punto_de_venta.id", "punto_de_venta.numero", "punto_de_venta.nombre"], headers = {"punto_de_venta.id": "Editar"})
+    puntos_de_venta = SQLTABLE(db(db.puntodeventa).select(), linkto = URL(f="modificar_objeto"), columns = ["puntodeventa.id", "puntodeventa.numero", "puntodeventa.nombre"], headers = {"puntodeventa.id": "Editar"})
 
     return dict(clientes = clientes, tributos = tributos, productos = productos, puntos_de_venta = puntos_de_venta)
 
-
+@auth.requires(auth.has_membership("administrador"))
 def modificar_objeto():
     return dict(form = crud.update(request.args[0], request.args[1], next = URL(f="modificar")), nombre = str(request.args[0]).replace("_", " "))
 
+@auth.requires(auth.has_membership("administrador"))
 def crear_cliente():
     form = crud.create(db.cliente, next = URL(r = request, f="index"))
     return dict(form = form)
 
+@auth.requires(auth.has_membership("administrador"))
 def crear_tributo():
     form = crud.create(db.tributo, next = URL(r = request, f="index"))
     return dict(form = form)
 
+@auth.requires(auth.has_membership("administrador"))
 def crear_producto():
     form = crud.create(db.producto, next = URL(r = request, f="index"))
     return dict(form = form)
 
-def crear_punto_de_venta():
-    form = crud.create(db.punto_de_venta, next = URL(r = request, f="index"))
+@auth.requires(auth.has_membership("administrador"))
+def crear_puntodeventa():
+    form = crud.create(db.puntodeventa, next = URL(r = request, f="index"))
     return dict(form = form)
-

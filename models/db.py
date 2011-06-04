@@ -13,6 +13,7 @@ if request.env.web2py_runtime_gae:            # if running on Google App Engine
     # session.connect(request, response, db = MEMDB(Client()))
 else:                                         # else use a normal relational database
     db = DAL('sqlite://storage.sqlite')       # if not, use SQLite or other DB
+
 ## if no need for session
 # session.forget()
 
@@ -33,9 +34,9 @@ crud = Crud(globals(),db)                      # for CRUD helpers using auth
 service = Service(globals())                   # for json, xml, jsonrpc, xmlrpc, amfrpc
 
 # mail.settings.server = 'logging' or 'smtp.gmail.com:587'  # your SMTP server
-mail.settings.server = 'smtp.gmail.com:587'  # your SMTP server
-mail.settings.sender = 'spametki@gmail.com'         # your email
-mail.settings.login = 'spametki:0l%Rb.ivq'      # your credentials or None
+mail.settings.server = 'smtp.example.com:587'  # your SMTP server
+mail.settings.sender = 'usuario@example.com'         # your email
+mail.settings.login = 'usuario:contraseña'      # your credentials or None
 
 auth.settings.hmac_key = 'sha512:47d8493b-63b7-4bce-b08c-4b467074acc4'   # before define_tables()
 auth.define_tables()                           # creates all needed tables
@@ -77,6 +78,30 @@ crud.settings.auth = None                      # =auth to enforce authorization 
 
 # función que controla el evento de autenticación
 def autenticacion_usuario(form):
+    try:
+        user_id = db(db.auth_user.email == form.vars.email).select().first().id
+    except (AttributeError, KeyError, ValueError):
+        user_id = None
+
+    if user_id != None:
+        # si es un usuario nuevo crear variables y asociar como invitado
+        if db(db.variablesusuario.usuario == user_id).select().first() == None:
+            variables = db(db.variables).select().first()
+            if variables != None:
+                db.variablesusuario.insert(\
+                usuario = user_id, puntodeventa = variables.puntodeventa, \
+                moneda = variables.moneda, webservice = variables.webservice, \
+                tipocbte = variables.tipocbte \
+                )
+        
+        grupos_usuario = db(db.auth_membership.user_id == user_id).select()
+        if len(grupos_usuario) < 2:
+            # no se asoció el usuario a grupos de facturalibre
+            grupo_inv = db(db.auth_group.role == "invitado").select().first()
+            if grupo_inv != None:
+                db.auth_membership.insert(user_id = user_id, group_id = grupo_inv.id)
+        
     return None
     
 auth.settings.login_onaccept = autenticacion_usuario
+auth.settings.register_onaccept = autenticacion_usuario

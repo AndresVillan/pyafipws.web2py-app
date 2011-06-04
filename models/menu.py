@@ -15,7 +15,10 @@ response.subtitle = ""
 response.menu = [
     (T('Inicio'), False, URL(request.application,'default','index'), []),
     
-    (T('Emisión'), False, URL(request.application,'emision','iniciar'), []),
+    (T('Emisión'), False, None, [\
+(T('Secuencial'), False, URL(request.application,'emision','iniciar'), []), \
+(T('Asíncrona'), False, URL(request.application,'ialt','index'), []), \
+    ]),
     (T('Consultas'), False, False, \
      [(T('Comprobantes'), False, URL(request.application,'consultas', 'comprobantes', vars={"nueva": "true"})),(T('Detalles'), False, URL(request.application,'consultas', 'detalles'))]),    
 

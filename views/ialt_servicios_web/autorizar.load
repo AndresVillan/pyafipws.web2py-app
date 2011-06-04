@@ -1,0 +1,17 @@
+{{if pdf:}}
+{{=pdf}}
+{{pass}}
+{{if au_form:}}
+{{=au_form}}
+{{pass}}
+{{if resultado:}}
+
+{{if "fault" in resultado:}}
+<h3>Error:</h3>
+<p>{{=resultado["fault"]}}</p>
+{{else:}}
+<h3>Resultado:</h3>
+{{=BEAUTIFY(resultado)}}
+{{pass}}
+
+{{pass}}

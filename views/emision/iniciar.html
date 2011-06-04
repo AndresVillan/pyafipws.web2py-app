@@ -6,22 +6,34 @@
 {{nombre_cliente = " "}}
 {{pass}}
 
-<!--script type="text/javascript">
+<!-- script type="text/javascript">
    /* FacturaLibre 
    //window.alert("web2py static-ajax");
    $(document).ready(function(){$("#tabs").tabs();})
    //window.alert("Fin de static-ajax-tabs");
    FacturaLibre */
-</script-->
+</script -->
 
 {{ if not form.vars.webservice:}}
-{{ webservice = variables_usuario.webservice }}
+
+{{try:}}
+{{ webservice = variablesusuario.webservice }}
+{{except:}}
+{{ webservice = '' }}
+{{pass}}
+
 {{ else: }}
 {{ webservice = form.vars.webservice }}
 {{ pass }}
 
 {{ if not form.vars.punto_vta:}}
-{{ punto_vta = variables_usuario.punto_de_venta }}
+
+{{try:}}
+{{ punto_vta = variablesusuario.puntodeventa }}
+{{except:}}
+{{ punto_vta = '' }}
+{{pass}}
+
 {{ else: }}
 {{ punto_vta = form.vars.punto_vta }}
 {{ pass }}
@@ -33,12 +45,16 @@
         <li><a href="#tabs-3">Cbte Nº {{=form.vars.cbte_nro or "(nuevo)"}}</a></li>
     </ul>
     <div id="tabs-1">
+        <div class="formulario_largo">
         {{=A("Seleccionar cliente (" + nombre_cliente + ")", _href=URL(r=request, c='emision', f='comprobante_tabla_clientes'))}}
-        {{=form}}
+            <div class="form_comprobante">
+                {{=form}}
+            </div>
+        </div>
     </div>
     <div id="tabs-2">
-    {{if cliente:}}
-        {{=BEAUTIFY(cliente.as_dict())}}
+    {{if cliente:}}        
+        {{=SQLFORM(db.cliente, cliente.id, readonly=True)}}
     {{pass}}
     </div>
     <div id="tabs-3">

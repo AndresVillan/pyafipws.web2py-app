@@ -14,29 +14,38 @@
 {{form_sugerir=SQLFORM(db.sugerir, _id="formulario_sugerir")}}
 {{=SPAN(A('Cargar producto (lista)', _href=URL(r=request, f='cargar_producto')), form_sugerir[0][0][1])}}
 {{=SPAN(LABEL('Carga por código'), INPUT(_id="carga_por_codigo", _class="valor", _style="width: 10em;"))}}
+      <div class="form_comprobante">
 {{if producto:}}
 {{=LOAD('emision','detalle.load',ajax=True, vars={'producto': producto})}}
 {{else:}}
 {{=LOAD('emision','detalle.load',ajax=True)}}
 {{pass}}
+      </div>
     </div>
     <div id="tabs-2">
-{{=H5("Detalle de tributos")}}
-{{=LOAD('emision','detalle_tributo.load',ajax=True)}}
+      <div class="form_comprobante">
+        {{=H5("Detalle de tributos")}}
+        {{=LOAD('emision','detalle_tributo.load',ajax=True)}}
+      </div>  
     </div>
     <div id="tabs-3">
-{{=H5("Detalle de permisos")}}
-{{=LOAD('emision','detalle_permiso.load',ajax=True)}}
+          <div class="form_comprobante">
+        {{=H5("Detalle de permisos")}}
+        {{=LOAD('emision','detalle_permiso.load',ajax=True)}}
+        </div>
     </div>
     <div id="tabs-4">
-{{=H5("Cbtes asociados")}}
-{{=LOAD('emision','detalle_asociado.load',ajax=True)}}
+        <div class="form_comprobante">
+        {{=H5("Cbtes asociados")}}
+        {{=LOAD('emision','detalle_asociado.load',ajax=True)}}
+        </div>
     </div>
     <div id="tabs-5">
-{{=SPAN(form)}}
+      <div class="form_comprobante">
+        {{=SPAN(form)}}
+      </div>
     </div>
 </div>
 {{=A("<< Anterior", _href=URL("iniciar"))}}
 -
 {{=A("Siguiente >>", _href=URL("finalizar"))}}
-

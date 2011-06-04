@@ -1,27 +1,26 @@
 {{# =H1(cantidad_asociados)}}
 
 {{tabla_detalle_asociado=SQLTABLE(asociados, 
-        columns=['comprobante_asociado.asociado', 'comprobante_asociado.id'],
-        headers={'comprobante_asociado.asociado': 'Comprobante asociado', 'comprobante_asociado.id':'Editar'},
+        columns=['comprobanteasociado.asociado', 'comprobanteasociado.id'],
+        headers={'comprobanteasociado.asociado': 'Comprobante asociado', 'comprobanteasociado.id':'Editar'},
         linkto=lambda field, type, ref: URL("editar_detalle_asociado.html",args=[field]),
          _class="tabla_detalle" )}}
 
 {{  # select con (id: ds)
-opciones_tipo_cbte = [OPTION(tipo.desc, _value=tipo.cod) for tipo in db(db.tipo_cbte).select()]
-previo_asoc_tipo_cbte = SELECT(opciones_tipo_cbte, _id="previo_asoc_tipo_cbte")
+opciones_tipocbte = [OPTION(tipo.ds, _value=tipo.id) for tipo in db(db.tipocbte).select()]
+previo_asoc_tipocbte = SELECT(opciones_tipocbte, _id="previo_asoc_tipocbte")
 }}
 
 {{  # select con (id: ds)
-opciones_punto_vta = [OPTION(pdv.nombre, _value=pdv.numero) for pdv in db(db.punto_de_venta).select()]
+opciones_punto_vta = [OPTION(pdv.nombre, _value=pdv.numero) for pdv in db(db.puntodeventa).select()]
 previo_asoc_punto_vta = SELECT(opciones_punto_vta, _id="previo_asoc_punto_vta")
 }}
 
-{{ detalles_previos_asociado=TR(TD(INPUT(_id="previo_asoc_cbte_nro", _class="valor", _style="width: 8em;"), previo_asoc_tipo_cbte, previo_asoc_punto_vta), \
-TD(INPUT(_type="button", \
-_value="Ingresar", _id="boton_ingresar_detalle_asociado")), _class="detalles_previos")
+{{ =DIV(SPAN(LABEL("Nro. cbte."), BR(), INPUT(_id="previo_asoc_cbte_nro", _class="valor", _style="width: 8em;")), SPAN(LABEL("Tipo cbte."), BR(), previo_asoc_tipocbte), SPAN(LABEL("Punto de vta."), BR(), previo_asoc_punto_vta), SPAN(BR(), INPUT(_type="button", _value="Ingresar cbte.", _id="boton_ingresar_detalle_asociado")), _class="detalles_previos")
 }}
 
-{{tabla_detalle_asociado.append(detalles_previos_asociado)}}
+<br />
+
 {{=tabla_detalle_asociado}}
 {{pass}}
 
@@ -37,7 +36,7 @@ Sin comprobantes asociados
 
 $(document).ready(function(){
   try{
-    var asocTipoCbte = "{{=form.vars.asoc_tipo_cbte or ''}}";
+    var asocTipoCbte = "{{=form.vars.asoc_tipocbte or ''}}";
     var asocCbteNro = "{{=form.vars.asoc_cbte_nro or ''}}";
     var asocPuntoVta = "{{=form.vars.asoc_punto_vta or ''}}";
   }
@@ -55,12 +54,12 @@ $(document).ready(function(){
       con las modificaciones del model y los form en web2py! */
 
       /* Actualizar el form */
-      $("#formulario_ingreso_detalle_asociado [name=asoc_tipo_cbte]").val(asocTipoCbte);
+      $("#formulario_ingreso_detalle_asociado [name=asoc_tipocbte]").val(asocTipoCbte);
       $("#formulario_ingreso_detalle_asociado [name=asoc_cbte_nro]").val(asocCbteNro);
       $("#formulario_ingreso_detalle_asociado [name=asoc_punto_vta]").val(asocPuntoVta);
 
       /* window.alert(
-      $("#formulario_ingreso_detalle_asociado [name=asoc_tipo_cbte]").val() + " " +
+      $("#formulario_ingreso_detalle_asociado [name=asoc_tipocbte]").val() + " " +
       $("#formulario_ingreso_detalle_asociado [name=asoc_cbte_nro]").val() + " " +
       $("#formulario_ingreso_detalle_asociado [name=asoc_punto_vta]").val()); */
 
@@ -68,7 +67,7 @@ $(document).ready(function(){
       // actualizar previsualización
       $("#previo_asoc_cbte_nro").val(asocCbteNro);
       $("#previo_asoc_punto_vta").val(asocPuntoVta);
-      $("#previo_asoc_tipo_cbte").val(asocTipoCbte);
+      $("#previo_asoc_tipocbte").val(asocTipoCbte);
     }
   }
 
@@ -77,7 +76,7 @@ $(document).ready(function(){
     // actualizar los valores de qty y bonif
     asocCbteNro = $("#previo_asoc_cbte_nro").val();
     asocPuntoVta = $("#previo_asoc_punto_vta").val();
-    asocTipoCbte = $("#previo_asoc_tipo_cbte").val();
+    asocTipoCbte = $("#previo_asoc_tipocbte").val();
     actualizarAsociado();
     $('#formulario_ingreso_detalle_asociado').submit();
   });

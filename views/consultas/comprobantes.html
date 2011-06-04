@@ -8,7 +8,9 @@
         <li><a href="#tabs-1">Consulta</a></li>
     </ul>
     <div id="tabs-1">
+      <div class="form_comprobante">
 {{=form}}
+      </div>
     </div>
 {{if consulta:}}
     <div id="tabs-2">
@@ -45,7 +47,14 @@ Secciones ({{=laseccion}}):
 
 
 <!-- El sqltable con los registros-->
-{{=los_comprobantes}}
+<div class="extenso">
+{{if los_comprobantes != None:}}
+{{ headers = 'fieldname:capitalize' }}
+{{ columns = ['comprobante.id', 'comprobante.id_ws', 'comprobante.tipocbte', 'comprobante.cbte_nro', 'comprobante.webservice', 'comprobante.punto_vta', 'comprobante.fecha_cbte', 'comprobante.nombre_cliente' ] }}
+{{=DIV(SQLTABLE(los_comprobantes, headers = headers, columns = columns, linkto=URL(\
+        r=request, c='consultas', f='detalle')))}}
+{{pass}}
+</div>
 
 {{else:}}
 {{if consulta:}}

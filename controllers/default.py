@@ -28,6 +28,18 @@ def user():
     to decorate functions that need access control
     """
     
+    # Redirigir autenticación a protocolo https
+
+    """
+    # redirigir autenticación a https (autenticación por httpd genera una excepción en sqlite)
+    try:
+        if request.env.server_port == "80":
+            redirect("https://" + str(request.env.http_host) + str(request.url))
+            response.flash = "La autenticación requiere una conexión segura."
+    except (AttributeError, KeyError, ValueError):
+        response.flash = "La autenticación requiere una conexión segura."
+    """
+    
     form=auth()
     return dict(form=form)
 
@@ -56,5 +68,3 @@ def mensaje():
     mensaje = session.mensaje or None
     session.mensaje = None
     return dict(mensaje = mensaje)
-    
-
