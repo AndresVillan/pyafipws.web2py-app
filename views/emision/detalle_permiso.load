@@ -5,22 +5,17 @@
          _class="tabla_detalle" )}}
 
 {{  # select con tributos (id: ds)
-opciones_dst_merc = [OPTION(dst.desc, _value=dst.cod) for dst in db(db.pais_dst).select()]
+opciones_dst_merc = [OPTION(dst.ds, _value=dst.id) for dst in db(db.paisdst).select()]
 previo_dst_merc = SELECT(opciones_dst_merc, _id="previo_dst_merc")
 }}
 
 
 {{
-detalles_previos_permiso=TR(TD(INPUT(_id="previo_tipo_reg", _class="valor")), \
-TD(INPUT(_id="previo_id_permiso", _class="valor")), \
-TD(previo_dst_merc), \
-TD(INPUT(_type="button", \
-_value="Ingresar", _id="boton_ingresar_detalle_permiso")), _class="detalles_previos")
+=DIV(SPAN(LABEL("Tipo reg."), BR(), INPUT(_id="previo_tipo_reg", _class="valor")), SPAN(LABEL("ID permiso"), BR(), INPUT(_id="previo_id_permiso", _class="valor")), SPAN(LABEL("Dst. merc."), BR(), previo_dst_merc), \
+SPAN(BR(), INPUT(_type="button", _value="Ingresar permiso", _id="boton_ingresar_detalle_permiso")), _class="detalles_previos")
 }}
 
-{{tabla_detalle_permiso.append(detalles_previos_permiso)}}
 {{=tabla_detalle_permiso}}
-{{pass}}
 
 {{if not permisos:}}
 Sin permisos ingresados

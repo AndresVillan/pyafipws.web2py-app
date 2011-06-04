@@ -2,7 +2,7 @@
 <h1>Seleccione un producto</h1>
 {{body = TBODY()}}
 {{for producto in productos:}}
-{{ body.append( TR( TD(producto.id), TD(A(producto.ds, _href=URL(r=request, f='detallar', vars={'producto': producto.id}))), TD(producto.codigo), TD(producto.precio), TD(db.iva[producto.iva_id].desc), TD(producto.sec), TD(producto.ncm), TD(producto.umed.desc) ) ) }}
+{{ body.append( TR( TD(producto.id), TD(A(producto.ds, _href=URL(r=request, f='detallar', vars={'producto': producto.id}))), TD(producto.codigo), TD(producto.precio), TD(db.iva[producto.iva].ds), TD(producto.sec), TD(producto.ncm), TD(producto.umed.ds) ) ) }}
 {{pass}}
 <div id="tabs">
     <ul>

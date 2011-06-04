@@ -9,7 +9,7 @@ def detalle():
     comprobante, detalle = None, None
     el_id = int(request.args[1])
     comprobante = db(db.comprobante.id == el_id).select().first()
-    detalle = db(db.detalle.comprobante_id == el_id).select()
+    detalle = db(db.detalle.comprobante == el_id).select()
     if len(detalle) > 0:
         detalle = SQLTABLE(detalle, columns = ['detalle.id', 'detalle.codigo', 'detalle.ds', 'detalle.qty', 'detalle.precio'])
         
@@ -24,8 +24,8 @@ def comprobantes():
     form = SQLFORM.factory(Field('periodo', 'integer', \
     requires = IS_IN_SET([y for y in range(1900, 2020)]), \
     default=datetime.datetime.now().year), Field('tipo', \
-    requires = IS_NULL_OR(IS_IN_DB(db, db.tipo_cbte.cod, \
-    '%(desc)s')) \
+    requires = IS_NULL_OR(IS_IN_DB(db, db.tipocbte.id, \
+    '%(ds)s')) \
     ), Field('cliente', \
     requires = IS_NULL_OR(IS_IN_DB(db, db.cliente.nombre_cliente, \
     '%(nombre_cliente)s')) \
@@ -120,7 +120,7 @@ def comprobantes():
         if form_enviado:
             if "tipo" in request.vars.keys():
                 if request.vars["tipo"] != "":
-                    el_set = el_set(db.comprobante.tipo_cbte == request.vars["tipo"])
+                    el_set = el_set(db.comprobante.tipocbte == request.vars["tipo"])
 
             if "cliente" in request.vars.keys():
                 if request.vars["cliente"] != "":
@@ -145,6 +145,9 @@ def comprobantes():
         if (filtro_campo and filtro_valor):
             el_set = el_set(filtro_campo + "==" + filtro_valor)
 
+        # filtrar comprobantes no autorizados
+        el_set = el_set(db.comprobante.resultado != None)
+
         # acá da error la consulta si los parámetros son cadenas vacías
         if not ordenar_campo: ordenar_campo = "id"
         if not ordenar_sentido: ordenar_sentido = "asc"
@@ -156,7 +159,7 @@ def comprobantes():
         nro_seccion = -1
         for cbt in comprobantes:
             contador +=1
-            if (contador > (int(registros))) or (nro_seccion == -1):
+            if (contador >= (int(registros))) or (nro_seccion == -1):
                 contador = 0
                 session.consulta_comprobante.append(list())   
                 nro_seccion += 1
@@ -220,11 +223,6 @@ def comprobantes():
         else:
             posterior = None
 
-    if los_comprobantes != None:
-        los_comprobantes = DIV(SQLTABLE(los_comprobantes, linkto=URL(\
-        r=request, c='consultas', f='detalle')), _style="overflow: auto;")
-    
-
     return dict(los_comprobantes = los_comprobantes, \
     los_link = los_link, anterior = anterior, \
     posterior = posterior, seccion = seccion, laseccion = la_seccion, \
@@ -234,16 +232,17 @@ def comprobantes():
 
 @auth.requires_login()
 def detalles():
-    return dict(detalles = db(db.detalle).select())
+    los_detalles = db(db.detalle).select()
+    return dict(detalles = los_detalles)
 
 
 @auth.requires_login()
 def producto():
     """ lista de valores de un producto """
     el_producto = db.producto[int(request.args[0])]
-    iva = db.iva[el_producto.iva_id]
-    return dict(codigo = el_producto.codigo, iva = iva.cod, umed = el_producto.umed, \
-    umed_desc = db.umed[el_producto.umed].desc, ds = el_producto.ds, ncm = el_producto.ncm, sec = el_producto.sec, precio = el_producto.precio, iva_aliquota = iva.aliquota, iva_desc = iva.desc)
+    iva = db.iva[el_producto.iva]
+    return dict(codigo = el_producto.codigo, iva = iva.id, umed = el_producto.umed, \
+    umed_ds = db.umed[el_producto.umed].ds, ds = el_producto.ds, ncm = el_producto.ncm, sec = el_producto.sec, precio = el_producto.precio, iva_aliquota = iva.aliquota, iva_ds = iva.ds)
 
 
 @auth.requires_login()

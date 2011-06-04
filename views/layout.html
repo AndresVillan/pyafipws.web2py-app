@@ -40,6 +40,7 @@
     {{#------  require CSS and JS files for this page (read info in base.css) ------}}
     {{ response.files.append(URL('static','css/base.css'))}}
     {{ response.files.append(URL('static','css/superfish.css'))}}
+    {{ response.files.append(URL('static','css/superfish-navbar.css'))}}
 
     {{#------ pyafipws-web2py-app hojas de estilo------}}
     {{ response.files.append(URL('static','css/pyafipws-web2py-app.css'))}}
@@ -87,7 +88,7 @@
       <div style="clear: both;"></div><!-- Clear the divs -->
       {{end}}                                     
     </div><!-- header  -->
-    
+
     <div id="statusbar"><!-- statusbar is menu zone -->
       {{block statusbar}} <!-- this is default statusbar -->
       {{#------ superfish menu ------}}
@@ -116,7 +117,7 @@
         <h2>{{=response.subtitle}}</h2>
         {{pass}}
         <h3 style="color: red">Servicio Experimental en desarrollo (DEMO en Homologación)</h3>
-        {{include}} 
+            {{include}} 
       </div>
       <!-- content -->
 

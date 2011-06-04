@@ -1,14 +1,14 @@
 {{extend 'layout.html'}}
 <h1>Detalles de cbtes</h1>
-{{# comprobante_id en columns genera un error en .xml()}}
-{{# columns=['detalle.comprobante_id', 'detalle.id', 'detalle.ds', 'detalle.imp_total']}}
+{{# comprobante en columns genera un error en .xml()}}
+{{# columns=['detalle.comprobante', 'detalle.id', 'detalle.ds', 'detalle.imp_total']}}
 <div id="tabs">
     <ul>
         <li><a href="#tabs-1">Detalles</a></li>
     </ul>
     <div id="tabs-1">
-        {{=SQLTABLE(detalles, columns=['detalle.comprobante_id', 'detalle.id', 'detalle.ds', 'detalle.imp_total'], \
-headers={'detalle.comprobante_id':'ID Comprobante', 'detalle.id':'ID Detalle', 'detalle.ds':'Descripción', 'detalle.imp_total':'Importe Total'}, \
+        {{=SQLTABLE(detalles, columns=['detalle.comprobante', 'detalle.id', 'detalle.ds', 'detalle.imp_total'], \
+headers={'detalle.comprobante':'ID Comprobante', 'detalle.id':'ID Detalle', 'detalle.ds':'Descripción', 'detalle.imp_total':'Importe Total'}, \
 linkto=lambda field, type, ref: URL(c='abm', f='detalleeditar', args=[field,]), _style="overflow: auto;")}}
     </div>
 </div>

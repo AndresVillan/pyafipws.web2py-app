@@ -2,7 +2,7 @@
 <h1>Clientes</h1>
 {{body = TBODY()}}
 {{for cliente in clientes:}}
-{{ body.append( TR( TD(cliente.id), TD(A(cliente.nombre_cliente, _href=URL(r=request, c='emision', f='comprobante_seleccionar_cliente', args=['cliente', cliente.id]))), TD(db.tipo_doc[cliente.tipo_doc].desc), TD(cliente.nro_doc), TD(cliente.condicion_iva.desc), TD(cliente.email)) ) }}
+{{ body.append( TR( TD(cliente.id), TD(A(cliente.nombre_cliente, _href=URL(r=request, c='emision', f='comprobante_seleccionar_cliente', args=['cliente', cliente.id]))), TD(db.tipodoc[cliente.tipodoc].ds), TD(cliente.nro_doc), TD(cliente.condicioniva.ds), TD(cliente.email)) ) }}
 {{pass}}
 
 <div id="tabs">

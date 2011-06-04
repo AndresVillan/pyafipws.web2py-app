@@ -1,33 +1,21 @@
+{{ =DIV(SPAN(LABEL("Código"), BR(), INPUT(value=form.vars.codigo, _id="previo_codigo", _readonly="readonly", _class="codigo")), SPAN(LABEL("Cantidad"),BR(), INPUT(_id="previo_qty", _class="valor")), SPAN(LABEL("Unidad"), BR(), INPUT(_id="previo_umed_ds", _class="umed", _readonly="readonly")), SPAN(LABEL("Desc."), BR(), INPUT(_id="previo_ds", _class="texto", _readonly="readonly")), SPAN(LABEL("Precio"), BR(), INPUT(_id="previo_precio", _class="valor", _readonly="readonly")), SPAN(LABEL("Imp. total"), BR(), INPUT(_id="previo_imp_total", _class="valor", _readonly="readonly")), SPAN(LABEL("IVA"), BR(), INPUT(_id="previo_iva_ds", _class="valor", _readonly="readonly")), SPAN(LABEL("Imp. IVA"), BR(), INPUT(_id="previo_imp_iva", _class="valor", _readonly="readonly")), SPAN(LABEL("Bonif."), BR(), INPUT(_id="previo_bonif", _class="valor")), SPAN(BR(), INPUT(_type="button", _value="Ingresar detalle", _id="boton_ingresar_detalle")), _class="detalles_previos")
+}}
+
 {{tabla_detalle=SQLTABLE(detalles, 
         columns=['detalle.codigo','detalle.qty','detalle.umed',
-                 'detalle.ds', 'detalle.ncm', 'detalle.sec', 
-                 'detalle.precio','detalle.imp_total', 'detalle.iva_id',
+                 'detalle.ds', 
+                 'detalle.precio','detalle.imp_total', 'detalle.iva',
                  'detalle.imp_iva',
                  'detalle.bonif', 
                  'detalle.id'],
         headers={'detalle.codigo':'Codigo','detalle.qty':'Cant.','detalle.umed':'U.Med',
                  'detalle.precio':'Precio','detalle.imp_total':'Imp.Total',
-                 'detalle.iva_id':'IVA','detalle.ds':'Descripción', 
+                 'detalle.iva':'IVA','detalle.ds':'Descripción',
                  'detalle.imp_iva':'IVA IMP', 
-                 'detalle.ncm':'NCM', 'detalle.sec':'SEC', 'detalle.bonif':'Bonif.', 'detalle.id': 'ID (Editar)'},
+                 'detalle.bonif':'Bonif.', 'detalle.id': 'ID (Editar)'},
         linkto=lambda field, type, ref: URL("editar_detalle.html",args=[field]), _class="tabla_detalle" )}}
-{{
-detalles_previos=TR(TD(INPUT(value=form.vars.codigo, _id="previo_codigo", _readonly="readonly", _class="codigo")), \
-TD(INPUT(_id="previo_qty", _class="valor")), \
-TD(INPUT(_id="previo_umed_desc", _class="valor", _readonly="readonly")), \
-TD(INPUT(_id="previo_ds", _class="texto", _readonly="readonly")), \
-TD(INPUT(_id="previo_ncm", _class="valor", _readonly="readonly")), \
-TD(INPUT(_id="previo_sec", _class="valor", _readonly="readonly")), \
-TD(INPUT(_id="previo_precio", _class="valor", _readonly="readonly")), \
-TD(INPUT(_id="previo_imp_total", _class="valor", _readonly="readonly")), \
-TD(INPUT(_id="previo_iva_desc", _class="valor", _readonly="readonly")), \
-TD(INPUT(_id="previo_imp_iva", _class="valor", _readonly="readonly")), \
-TD(INPUT(_id="previo_bonif", _class="valor")), TD(INPUT(_type="button", \
-_value="Ingresar", _id="boton_ingresar_detalle")), _class="detalles_previos")
-}}
-{{tabla_detalle.append(detalles_previos)}}
+
 {{=tabla_detalle}}
-{{pass}}
 
 {{if not detalles:}}
 Sin artículos ingresados
@@ -51,7 +39,7 @@ $(document).ready(function(){
     var umed = "{{=form.vars.umed or ''}}"; // id de umed
     var ncm = "{{=form.vars.ncm or ''}}";
     var sec = "{{=form.vars.sec or ''}}";
-    var iva = "{{=form.vars.iva_id or ''}}"; // id del iva
+    var iva = "{{=form.vars.iva or ''}}"; // id del iva
     var bonif = "{{=form.vars.bonif or 0}}";
     var qty = "{{=form.vars.qty or 0}}";
     var ds = "{{=form.vars.ds or ''}}";
@@ -63,8 +51,8 @@ $(document).ready(function(){
     var ivaAliquota = "{{=iva_aliquota or 0}}"; // alicuota
     var sugerido;
 
-    var ivaDesc = "{{=iva_desc or ''}}";
-    var umedDesc = "{{=umed_desc or ''}}";
+    var ivaDs = "{{=iva_ds or ''}}";
+    var umedDs = "{{=umed_ds or ''}}";
     
     var cargaPorCodigo;
   }
@@ -91,7 +79,7 @@ $(document).ready(function(){
 
       $("input[name=codigo]").val(codigo);
       $("textarea[name=ds]").val(ds);
-      $("select[name=iva_id]").val(iva);
+      $("select[name=iva]").val(iva);
       $("input[name=precio]").val(precio);
       $("select[name=umed]").val(umed);
       $("input[name=ncm]").val(ncm);
@@ -104,8 +92,8 @@ $(document).ready(function(){
       $("#previo_imp_iva").val(formatoMoneda(impIva));
       $("#previo_qty").val(qty);
       $("#previo_codigo").val(codigo);
-      $("#previo_iva_desc").val(ivaDesc);
-      $("#previo_umed_desc").val(umedDesc);
+      $("#previo_iva_ds").val(ivaDs);
+      $("#previo_umed_ds").val(umedDs);
       $("#previo_ds").val(ds);
       $("#previo_ncm").val(ncm);
       $("#previo_sec").val(sec);
@@ -150,8 +138,8 @@ $(document).ready(function(){
     qty = 1;
     ds = data.ds;
 
-    umedDesc = data.umed_desc;
-    ivaDesc = data.iva_desc;
+    umedDs = data.umed_ds;
+    ivaDs = data.iva_ds;
     ivaAliquota = data.iva_aliquota;
 
     neto = 0;

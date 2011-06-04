@@ -8,7 +8,7 @@
     <div id="tabs-1">
     {{if comprobante:}}
         <span>{{=email}}&nbsp;</span>
-        <span>{{=A("Descargar PDF", _href=URL(r = request, c="salida", f="comprobante", extension = "pdf", args = [comprobante.id,]))}}</span>
+        <span>{{=A("Descargar PDF", _href=URL(r = request, c="salida", f="comprobante", extension = "pdf", vars = {"cbte": comprobante.id})) }}</span>
         <span>{{=BEAUTIFY(comprobante.as_dict())}}</span>
     {{pass}}
     </div>

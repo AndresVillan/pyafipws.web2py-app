@@ -5,13 +5,15 @@
         <li><a href="#tabs-1">Datos del comprobante</a></li>
     </ul>
     <div id="tabs-1">
-{{=form}}
+        <div class="formulario_largo">
+            {{=form}}
+        </div>
     </div>
 </div>
 
 
 {{=A("Autorizar", _href=URL(c="servicios_web",f="autorizar",args=[comprobante.webservice, comprobante.id]))}}
 
-{{=A("Vista Previa", _href=URL(c="salida",f="comprobante",args=[comprobante.id,], extension = "pdf"))}}
+{{=A("Vista Previa", _href=URL(c="salida",f="comprobante",vars={"cbte": comprobante.id}, extension = "pdf"))}}
 
 {{=A("<< Anterior", _href=URL("detallar"))}}

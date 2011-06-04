@@ -1,26 +1,20 @@
 {{tabla_detalle_tributo=SQLTABLE(tributos, 
-        columns=['tributo_item.tributo','tributo_item.base_imp','tributo_item.importe', 'tributo_item.id'],
-        headers={'tributo_item.tributo': "Tributo", 'tributo_item.base_imp': 'Base imponible', 'tributo_item.importe': 'Importe', 'tributo_item.id': 'Editar'},
+        columns=['detalletributo.tributo','detalletributo.base_imp','detalletributo.importe', 'detalletributo.id'],
+        headers={'detalletributo.tributo': "Tributo", 'detalletributo.base_imp': 'Base imponible', 'detalletributo.importe': 'Importe', 'detalletributo.id': 'Editar'},
         linkto=lambda field, type, ref: URL("editar_detalle_tributo.html",args=[field]),
          _class="tabla_detalle" )}}
 
 {{  # select con tributos (id: ds)
-opciones_tributo = [OPTION(trib.desc, _value=trib.id) for trib in db(db.tributo).select()]
+opciones_tributo = [OPTION(trib.ds, _value=trib.id) for trib in db(db.tributo).select()]
 previo_tributo = SELECT(opciones_tributo, _id="previo_tributo")
 }}
 
 {{ # comprobante, tributo, base_imp, importe
-detalles_previos=TR(TD(previo_tributo), \
-TD(INPUT(_id="previo_tributo_base_imp", _class="valor")), \
-# TD(INPUT(_id="previo_tributo_comprobante", _class="valor", _readonly="readonly")), \
-TD(INPUT(_id="previo_tributo_importe", _class="valor")), \
-TD(INPUT(_type="button", \
-_value="Ingresar", _id="boton_ingresar_detalle_tributo")), _class="detalles_previos")
-}}
+=DIV(SPAN(LABEL("Tributo"), BR(), previo_tributo), SPAN(LABEL("Base imponible"), BR(), INPUT(_id="previo_tributo_base_imp", _class="valor")), SPAN(LABEL("Importe"), BR(), INPUT(_id="previo_tributo_importe", _class="valor")), SPAN(BR(), INPUT(_type="button",_value="Ingresar tributo", _id="boton_ingresar_detalle_tributo")), _class="detalles_previos") }}
 
-{{tabla_detalle_tributo.append(detalles_previos)}}
+{{# TD(INPUT(_id="previo_tributo_comprobante", _class="valor", _readonly="readonly"))}}
+
 {{=tabla_detalle_tributo}}
-{{pass}}
 
 {{if not tributos:}}
 Sin tributos ingresados
