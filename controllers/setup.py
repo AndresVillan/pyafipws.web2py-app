@@ -17,7 +17,7 @@ import os, csv
 
 fuente_localidades = os.path.join(\
 request.env.web2py_path,'applications',\
-request.application,'static') + '/localidades.csv'
+request.application,'private') + '/localidades.csv'
 
 
 """ roles: emisor, auditor, invitado:
@@ -93,7 +93,7 @@ def roles_editar():
     return dict(tabla = tabla)
 
 
-@auth.requires(auth.has_membership("administrador"))
+@auth.requires_login()
 def index():
     """ panel de control del setup """
     mensajes = ""
@@ -102,7 +102,11 @@ def index():
         session.configuracion_administrador = False
         
     puntos_de_venta = 0
+
+    # proteger visualización de variables (restringir a administrador)
     variables = db(db.variables).select().first()
+
+    
     variablesusuario = db(db.variablesusuario.usuario == auth.user_id).select().first()
     pdvs = db(db.puntodeventa).select()
     if not pdvs.first():
@@ -148,7 +152,10 @@ def index():
     clientes = len(db(db.cliente).select())
     tributos = len(db(db.tributo).select())
     productos = len(db(db.producto).select())
-    
+    plantilla_base = db(db.pdftemplate).select().first()
+
+    esadmin = auth.has_membership("administrador")
+    if not esadmin: variables = None
     return dict(tipos_doc = tipos_doc, tipos_cbte = tipos_cbte, \
                 monedas = monedas, ivas = ivas, idiomas = idiomas, \
                 umedidas = umedidas, paises = paises, \
@@ -157,7 +164,7 @@ def index():
                 variablesusuario = variablesusuario, \
                 condiciones_iva = condiciones_iva, roles = roles, \
                 cuit_paises = cuit_paises, clientes = clientes, \
-                productos = productos, tributos = tributos)
+                productos = productos, tributos = tributos, plantilla_base = plantilla_base)
 
 
 @auth.requires(auth.has_membership("administrador"))
@@ -165,7 +172,7 @@ def variables():
     form = crud.update(db.variables, db(db.variables).select().first())
     return dict(form = form)
 
-@auth.requires(auth.has_membership("administrador") or auth.has_membership("emisor"))
+@auth.requires_login()
 def variablesusuario():
     variablesusuario = db(db.variablesusuario.usuario == auth.user_id).select().first()
     if not variablesusuario:

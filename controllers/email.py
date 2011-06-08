@@ -22,7 +22,7 @@ def enviar_comprobante():
         cbte_nro = str(comprobante.cbte_nro)
         fecha_vto = str(comprobante.fecha_venc_pago)
         fecha_cbte = str(comprobante.fecha_cbte)
-        url_descarga = variables.url + "/salida/comprobante.pdf" + "?cbte=" +  str(comprobante.id)
+        url_descarga = variables.url + "/salida/invoice/comprobante/" + str(comprobante.id)
         mail.settings.server = variables.mail_server
         mail.settings.sender = variables.mail_sender
         mail.settings.login = variables.mail_login

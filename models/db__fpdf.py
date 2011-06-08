@@ -1,13 +1,14 @@
-# coding: utf8
+# -*- coding: utf-8 -*-
 
-db.define_table("pdf_template",
-    Field("pdf_template_id","id"),
+migrate = True
+
+db.define_table("pdftemplate",
     Field("title"),
     Field("format", requires=IS_IN_SET(["A4","legal","letter"])),
-)
+    migrate = migrate)
 
-db.define_table("pdf_element",
-    Field("pdf_template_id", db.pdf_template, requires=IS_IN_DB(db,'pdf_template.pdf_template_id', 'pdf_template.title')),
+db.define_table("pdfelement",
+    Field("pdftemplate", type=db.pdftemplate, represent = lambda id: db.pdftemplate[id].title),
     Field("name", requires=IS_NOT_EMPTY()),
     Field("type", length=2, requires=IS_IN_SET(['T', 'L', 'I', 'B', 'BC'])),
     Field("x1", "double", requires=IS_NOT_EMPTY()),
@@ -24,4 +25,4 @@ db.define_table("pdf_element",
     Field("align", "string", length=1, default="L", requires=IS_IN_SET(['L', 'R', 'C', 'J'])),
     Field("text", "text", comment="Default text"),
     Field("priority", "integer", default=0, comment="Z-Order"),
-    )
+    migrate = migrate)
