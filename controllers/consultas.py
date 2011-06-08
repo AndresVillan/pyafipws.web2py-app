@@ -11,7 +11,8 @@ def detalle():
     comprobante = db(db.comprobante.id == el_id).select().first()
     detalle = db(db.detalle.comprobante == el_id).select()
     if len(detalle) > 0:
-        detalle = SQLTABLE(detalle, columns = ['detalle.id', 'detalle.codigo', 'detalle.ds', 'detalle.qty', 'detalle.precio'])
+        detalle = SQLTABLE(detalle, columns = ['detalle.id', 'detalle.codigo', 'detalle.ds', 'detalle.qty', 'detalle.precio'], 
+headers={'detalle.id':'ID Detalle', 'detalle.ds':'Descripción', 'detalle.qty':'Cantidad', 'detalle.codigo': 'Codigo', 'detalle.precio': 'Precio'})
         
     return dict(comprobante = comprobante, detalle = detalle, email = A("Enviar mail", _href=URL(r=request, c="email", f="enviar_comprobante", args=[el_id,])))
 

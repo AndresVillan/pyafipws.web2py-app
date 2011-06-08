@@ -3,7 +3,7 @@
 migrate = True
 
 # Constantes (para la aplicación)
-
+THEMES = ['smoothness', 'exite-bike', 'lefrog', 'trontastic']
 WEBSERVICES = ['wsfe','wsbfe','wsfex','wsfev1', 'wsmtxca']
 INCOTERMS = ['EXW','FCA','FAS','FOB','CFR','CIF','CPT','CIP','DAF','DES','DEQ','DDU','DDP']
 CONCEPTOS = {'1': 'Productos', '2': 'Servicios', '3': 'Otros/ambos'}
@@ -367,7 +367,7 @@ db.define_table('puntodeventa', Field('numero', 'integer', unique = True), Field
 db.define_table('variables', Field('puntodeventa', 'reference puntodeventa'), Field('cuit'), Field('domicilio'), Field('telefono'), Field('localidad', 'reference localidad'), Field('provincia', 'reference provincia'), Field('certificate'), Field('private_key'), Field('produccion', 'boolean', default = False), Field('moneda', 'reference moneda'), Field('webservice', requires = IS_IN_SET(WEBSERVICES), default='wsfe'), Field('tipocbte', 'reference tipocbte'), Field('venc_pago', 'integer', default=30),  Field('forma_pago', requires = IS_IN_SET(FORMASPAGO), default = '(Sin especificar)'), Field('empresa'), Field('url', comment='Ubicación de la App (por ejemplo http://localhost:8000/facturalibre)'), Field('aviso_de_cbte_texto', 'text', comment = 'Cuerpo del correo con el aviso de comprobante', \
 default = 'Estimado/s {{=cliente}}. Nos comunicamos para informar que se ha emitido el documento {{=tipocbte}} {{=punto_vta}}-{{=cbte_nro}}, con fecha {{=fecha_cbte}}.\nPuede descargar el comprobante en formato pdf desde la siguiente dirección: {{=url_descarga}}.\n{{=empresa}}\n. Mensaje generado por la app FacturaLibre: www.sistemasagiles.com.ar/fe'), \
 Field('aviso_de_cbte_asunto', comment = 'Asunto del correo con el aviso de comprobante', \
-default='{{=tipocbte}} {{=cbte_nro}}'), Field('mail_servidor', comment='smtp.example.com:puerto'), Field('mail_sender', comment='usuario@example.com'), Field('mail_login', comment='usuario:password'), migrate = migrate)
+default='{{=tipocbte}} {{=cbte_nro}}'), Field('mail_servidor', comment='smtp.example.com:puerto'), Field('mail_sender', comment='usuario@example.com'), Field('mail_login', comment='usuario:password'), Field('logo', 'upload'), migrate = migrate)
 
 db.variables.moneda.represent = lambda id: db.moneda[id].ds
 
@@ -398,7 +398,7 @@ db.define_table('detalletributo', Field('comprobante', 'reference comprobante'),
 """
 
 # variables por usuario
-db.define_table('variablesusuario', Field('usuario', 'reference auth_user', unique = True, writable = False), Field('puntodeventa', 'reference puntodeventa', represent = lambda id: db.puntodeventa[id].numero), Field('moneda', 'reference moneda'), Field('webservice', requires = IS_IN_SET(WEBSERVICES), default='wsfe'), Field('tipocbte', 'reference tipocbte'), Field('venc_pago', 'integer', default=30), Field('forma_pago', requires = IS_IN_SET(FORMASPAGO), default = '(Sin especificar)'), migrate = migrate)
+db.define_table('variablesusuario', Field('usuario', 'reference auth_user', unique = True, writable = False), Field('puntodeventa', 'reference puntodeventa', represent = lambda id: db.puntodeventa[id].numero), Field('moneda', 'reference moneda'), Field('webservice', requires = IS_IN_SET(WEBSERVICES), default='wsfe'), Field('tipocbte', 'reference tipocbte'), Field('venc_pago', 'integer', default=30), Field('forma_pago', requires = IS_IN_SET(FORMASPAGO), default = '(Sin especificar)'), Field('theme', requires = IS_IN_SET(THEMES), default = 'smoothness'), migrate = migrate)
 
 # Tablas accesorias
 db.define_table('sugerir', Field('sugerir_producto', 'reference producto'), migrate = migrate)

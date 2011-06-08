@@ -67,7 +67,15 @@ def index():
 def form_cbte():
     if not session.comprobante: return dict(form = None)
 
-    campos_generales = ['id_ws', 'webservice', 'fecha_cbte', 'tipocbte', 'punto_vta', 'cbte_nro', 'concepto', 'permiso_existente', 'dst_cmp', 'dstcuit', 'id_impositivo', 'imp_total', 'imp_tot_conc', 'imp_neto', 'impto_liq', 'impto_liq_rni', 'imp_op_ex', 'impto_perc', 'imp_iibb', 'imp_subtotal', 'imp_trib', 'impto_perc_mun', 'imp_internos', 'moneda_id', 'moneda_ctz', 'obs_comerciales', 'obs', 'forma_pago', 'incoterms', 'incoterms_ds', 'idioma_cbte', 'zona', 'fecha_venc_pago', 'fecha_serv_desde', 'fecha_serv_hasta', 'formato_id', 'tipo_expo']
+    variables = db(db.variablesusuario.usuario == auth.user_id).select().first()
+    if variables: 
+        webservice = variables.webservice
+    else:
+        webservice = 'wsfev1'
+
+    campos_generales = ['id_ws', 'webservice',  'fecha_cbte', 'tipocbte', 'punto_vta', 'cbte_nro', 'concepto', 'id_impositivo', 'imp_total', 'imp_tot_conc', 'imp_neto', 'impto_liq', 'impto_liq_rni', 'imp_op_ex', 'impto_perc', 'imp_iibb', 'imp_subtotal', 'imp_trib', 'impto_perc_mun', 'imp_internos', 'moneda_id', 'moneda_ctz', 'obs_comerciales', 'obs', 'forma_pago', 'zona', 'fecha_venc_pago', 'fecha_serv_desde', 'fecha_serv_hasta', 'formato_id']
+    if webservice == "wsfex": campos_generales += ['permiso_existente', 'dst_cmp', 'dstcuit', 'incoterms', 'incoterms_ds', 'idioma_cbte', 'tipo_expo']
+    
     cbte_update_form = SQLFORM(db.comprobante, session.comprobante, \
     fields = campos_generales, keepvalues = True, _id="formulario_comprobante")
 
@@ -75,6 +83,8 @@ def form_cbte():
         response.flash = "Se registraron los cambios!"
     elif cbte_update_form.errors:
         response.flash = "Hay errores en el formulario!"
+    else:
+        cbte_update_form.vars.webservice = webservice
     
     return dict(cbte_update_form = cbte_update_form)
 

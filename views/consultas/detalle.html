@@ -8,8 +8,8 @@
     <div id="tabs-1">
     {{if comprobante:}}
         <span>{{=email}}&nbsp;</span>
-        <span>{{=A("Descargar PDF", _href=URL(r = request, c="salida", f="comprobante", extension = "pdf", vars = {"cbte": comprobante.id})) }}</span>
-        <span>{{=BEAUTIFY(comprobante.as_dict())}}</span>
+        <span>{{=A("Descargar PDF", _href=URL(r = request, c="salida", f="invoice", args = ["comprobante", comprobante.id])) }}</span>
+        <span>{{=SQLFORM(db.comprobante, comprobante.id, readonly = True)}}</span>
     {{pass}}
     </div>
     <div id="tabs-2">

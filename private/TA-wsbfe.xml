@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<loginTicketResponse version="1">
+    <header>
+        <source>CN=wsaahomo, O=AFIP, C=AR, SERIALNUMBER=CUIT 33693450239</source>
+        <destination>C=ar, O=etkinalan, SERIALNUMBER=CUIT 20251303534, CN=localhost</destination>
+        <uniqueId>3433603302</uniqueId>
+        <generationTime>2011-06-07T08:24:59.061-03:00</generationTime>
+        <expirationTime>2011-06-07T20:24:59.061-03:00</expirationTime>
+    </header>
+    <credentials>
+        <token>PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9InllcyI/Pgo8c3NvIHZlcnNpb249IjIuMCI+CiAgICA8aWQgdW5pcXVlX2lkPSIxNzcyMjAzMDI1IiBzcmM9IkNOPXdzYWFob21vLCBPPUFGSVAsIEM9QVIsIFNFUklBTE5VTUJFUj1DVUlUIDMzNjkzNDUwMjM5IiBnZW5fdGltZT0iMTMwNzQ0NTgzOSIgZXhwX3RpbWU9IjEzMDc0ODkwOTkiIGRzdD0iQ049d3NiZmUsIE89QUZJUCwgQz1BUiIvPgogICAgPG9wZXJhdGlvbiB2YWx1ZT0iZ3JhbnRlZCIgdHlwZT0ibG9naW4iPgogICAgICAgIDxsb2dpbiB1aWQ9IkM9YXIsIE89ZXRraW5hbGFuLCBTRVJJQUxOVU1CRVI9Q1VJVCAyMDI1MTMwMzUzNCwgQ049bG9jYWxob3N0IiBzZXJ2aWNlPSJ3c2JmZSIgcmVnbWV0aG9kPSIyMiIgZW50aXR5PSIzMzY5MzQ1MDIzOSIgYXV0aG1ldGhvZD0iY21zIj4KICAgICAgICAgICAgPHJlbGF0aW9ucz4KICAgICAgICAgICAgICAgIDxyZWxhdGlvbiByZWx0eXBlPSI0IiBrZXk9IjIwMjUxMzAzNTM0Ii8+CiAgICAgICAgICAgIDwvcmVsYXRpb25zPgogICAgICAgIDwvbG9naW4+CiAgICA8L29wZXJhdGlvbj4KPC9zc28+Cgo=</token>
+        <sign>q7zDuLuzx+qUThKQeCTfXxHjANWm5g1NcRqejsrCMqYOKeW86IdaJ9mn9vneMau3TwZyeYnVdw23vLPnHu6+jyC//nnDMyofg8c9qFhLj7yQo8nKsSZguUb3eWHnprtbDoY/cHstX0BqVUlI2HPvqhnJC8F1rvscLj9rNtfuRno=</sign>
+    </credentials>
+</loginTicketResponse>
+

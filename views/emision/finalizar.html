@@ -14,6 +14,6 @@
 
 {{=A("Autorizar", _href=URL(c="servicios_web",f="autorizar",args=[comprobante.webservice, comprobante.id]))}}
 
-{{=A("Vista Previa", _href=URL(c="salida",f="comprobante",vars={"cbte": comprobante.id}, extension = "pdf"))}}
+{{=A("Vista Previa", _href=URL(c="salida",f="invoice",args=["comprobante", comprobante.id]))}}
 
 {{=A("<< Anterior", _href=URL("detallar"))}}

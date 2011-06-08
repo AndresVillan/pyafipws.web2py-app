@@ -1,0 +1,13 @@
+{{extend 'layout.html'}}
+<h1>Crear factura base (pdf)</h1>
+<div id="tabs">
+    <ul>
+        <li><a href="#tabs-1">Template</a></li>
+    </ul>
+    <div id="tabs-1">
+    {{ if mensaje:}}
+        {{ =P(mensaje) }}
+    {{ pass }}
+    {{=A("Configuración", _href=URL(r=request, c="setup", f="index"))}}
+    </div>
+</div>

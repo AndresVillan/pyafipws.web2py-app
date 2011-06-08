@@ -25,21 +25,11 @@ def iniciar():
     variablesusuario = None
     
     fecha = datetime.datetime.now()
-    "Crear/modificar datos generales del comprobante"
-    # campos a mostrar:
-    campos_generales = ['fecha_cbte','tipocbte', 'concepto', 'tipo_expo', 'permiso_existente', 'dst_cmp', \
-    'dstcuit', 'moneda_id', 'moneda_ctz','imp_iibb', 'obs_comerciales', \
-    'obs', 'forma_pago', 'incoterms', 'incoterms_ds', 'idioma_cbte', \
-    'fecha_venc_pago', 'fecha_serv_desde', 'fecha_serv_hasta', ]
 
     try:
-        getattr(session, 'comporbante_id')
+        getattr(session, 'comprobante')
     except AttributeError:
         session.comprobante = None
-
-    # creo un formulario para el comprobante (TODO: modificar)
-    form = SQLFORM(db.comprobante, session.comprobante,
-                   fields=campos_generales)
 
     variables = db(db.variables).select().first()
     if not variables:
@@ -55,6 +45,20 @@ def iniciar():
             forma_pago = variables.forma_pago
         )
         response.flash = "Se generó el registro de variables para formularios del usuario."
+
+
+    "Crear/modificar datos generales del comprobante"
+    # campos a mostrar:
+    campos_generales = ['fecha_cbte','tipocbte', 'concepto', \
+    'moneda_id', 'moneda_ctz','imp_iibb', 'obs_comerciales', \
+    'obs', 'forma_pago', 'fecha_venc_pago', 'fecha_serv_desde', 'fecha_serv_hasta']
+
+    if 'wsfex' == variables.webservice:
+        campos_generales += ['dst_cmp', 'dstcuit', 'incoterms', 'incoterms_ds', 'idioma_cbte', 'tipo_expo', 'permiso_existente']
+
+    # creo un formulario para el comprobante (TODO: modificar)
+    form = SQLFORM(db.comprobante, session.comprobante,
+                   fields=campos_generales)
 
     # si el cbte es nuevo pre cargar el formulario
     if not session.comprobante:
