@@ -1,186 +1,8 @@
 {{extend 'layout.html'}}
 <h1>Nuevo comprobante</h1>
 
-<script type="text/javascript">
-
-{{try:}}
-    var el_cbte = {{=comprobante.id or ''}};
-{{except:}}
-    var el_cbte = null;
-{{pass}}
-
-function agregarPermiso(){
-agregarItem("permiso", null, el_cbte);
-}
-
-function actualizarTotal(){
-$.ajax({
-type: "GET",
-url: 'call/json/calcular_total',
-data: {cbte: el_cbte},
-success: totalCallback
-});
-}
-
-function totalCallback(data, status){
-if (data == null){data = "---";}
-$("#total").text(data);
-
-}
-
-function agregarItem(tipo, id, cbte){
-var los_datos;
-
-// recuperar datos de registro
-
-if(tipo == 'producto'){
-los_datos = jQuery('#tabla_productos').jqGrid('getRowData',id);
-}
-
-if(tipo == 'tributo'){
-los_datos = jQuery('#tabla_tributos').jqGrid('getRowData',id);
-}
-
-if(tipo == 'comprobanteasociado'){
-los_datos = jQuery('#tabla_cbtesasoc').jqGrid('getRowData',id);
-}
-
-if(tipo == 'permiso'){
-los_datos = {id: null};
-}
-
-if(tipo == 'cliente'){
-los_datos = jQuery('#tabla_clientes').jqGrid('getRowData',id);
-}
-
-// agregar item via ajax
-$.ajax({
-type: "GET",
-url: '{{=URL(r=request, c="ialt", f="agregar_item")}}',
-data: {cbte: el_cbte, tipo: tipo, id: los_datos.id},
-success: agregarCallback
-});
-
-// actualizar la tabla de la órden
-
-}
-
-function agregarCallback(data, status){
-
-$("#tabla_detalles").trigger("reloadGrid");
-$("#tabla_items_tributo").trigger("reloadGrid");
-$("#tabla_items_cbtesasoc").trigger("reloadGrid");
-$("#tabla_items_permisos").trigger("reloadGrid");
-
-actualizarTotal();
-}
-
-//var lastsel_bebidas;
-$(document).ready(function(){
-
-$( "div.tabs" ).tabs();
-
-jQuery("#tabla_productos").jqGrid({ url: '{{=URL(r = request, f="call", args=["json", "productos"])}}', datatype: "json", colNames:
-
-['ID','Nombre', 'Precio', 'IVA'], colModel:[ {name:'id', index:'id', width:50}, {name:'ds',index:'ds', width: 200}, 
-
-{name:'precio',index:'precio', width:50}, {name:'iva',index:'iva', width:50}], rowNum:10, rowList:[10,20,30], pager: '#pager1',
-
-sortname: 'ID', viewrecords: true, sortorder: "desc", caption:"Productos", onSelectRow: function(id){agregarItem('producto', id, el_cbte);} 
-
-}); jQuery("#tabla_productos").jqGrid('navGrid','#pager1',{edit:false,add:false,del:false});
-
-jQuery("#tabla_clientes").jqGrid({ url: '{{=URL(r = request, f="call", args=["json", "clientes"])}}', datatype: "json", colNames:
-
-['ID','Nombre', 'CUIT', 'Domicilio', 'Email'], colModel:[ {name:'id', index:'id'}, {name:'nombre_cliente',index:'nombre_cliente'}, 
-
-{name:'nro_doc',index:'nro_doc'}, {name:'domicilio_cliente',index:'domicilio_cliente'}, {name:'email',index:'email'}], rowNum:10, rowList:
-
-[10,20,30], pager: '#pager2', sortname: 'ID', viewrecords: true, sortorder: "desc", caption:"Clientes", onSelectRow: function(id)
-
-{agregarItem('cliente', id, el_cbte);} }); jQuery("#tabla_clientes").jqGrid('navGrid','#pager2',{edit:false,add:false,del:false});
-
-jQuery("#tabla_tributos").jqGrid({ url: '{{=URL(r = request, f="call", args=["json", "tributos"])}}', datatype: "json", colNames:
-
-['ID','Nombre', 'Alicuota'], colModel:[ {name:'id', index:'id'}, {name:'ds',index:'ds'}, {name:'aliquota',index:'aliquota'}],
-
-rowNum:10, rowList:[10,20,30], pager: '#pager3', sortname: 'ID', viewrecords: true, sortorder: "desc", caption:"Tributos", onSelectRow: 
-
-function(id){agregarItem('tributo', id, el_cbte);} }); jQuery("#tabla_tributos").jqGrid('navGrid','#pager3',
-
-{edit:false,add:false,del:false});
-
-jQuery("#tabla_cbtesasoc").jqGrid({ url: '{{=URL(r = request, f="call", args=["json", "comprobantes"])}}', datatype: "json", colNames:
-
-['ID','IDWS', 'Webservice', 'Tipo', 'Nro'], colModel:[ {name:'id', index:'id'}, {name:'id_ws',index:'id_ws'}, 
-
-{name:'webservice',index:'webservice'}, {name:'tipocbte',index:'tipocbte'}, {name:'cbte_nro',index:'cbte_nro'}], rowNum:10, rowList:
-
-[10,20,30], pager: '#pager4', sortname: 'ID', viewrecords: true, sortorder: "desc", caption:"Cbtes. asoc.", onSelectRow: function(id)
-
-{agregarItem('comprobanteasociado', id, el_cbte);} }); jQuery("#tabla_cbtesasoc").jqGrid('navGrid','#pager4',
-
-{edit:false,add:false,del:false});
-
-/* Items */
-
-jQuery("#tabla_detalles").jqGrid({ url: '{{=URL(r = request, f="call", args=["json", "detalles"])}}' + "/" + el_cbte, datatype: "json", 
-
-colNames:['ID','Codigo','Ds','Qty','Precio','Umed','Imp total','Iva id','Ncm','Sec','Bonif','Imp iva','Base imp iva', 
-
-'Base imp tributo'], colModel:[ {name:'id',index:'id', width:50}, {name:'codigo',index:'codigo', width:50}, {name:'ds',index:'ds'}, {name:'qty',index:'qty', width:50, editable: true}, {name: 
-
-'precio', index: 'precio', width:50}, {name: 'umed', index: 'umed', width:50}, {name: 'imp_total', index: 'imp_total', width:50, editable: 
-
-true}, {name: 'iva', index: 'iva', width:50}, {name: 'ncm', index: 'ncm', width:50}, {name: 'sec', index: 'sec', width:50}, {name:
-
-'bonif', index: 'bonif', width:50, editable: true}, {name: 'imp_iva', index: 'imp_iva', width:50, editable: true}, {name: 'base_imp_iva', 
-
-index: 'base_imp_iva', width:50, editable: true}, {name: 'base_imp_tributo', index: 'base_imp_tributo', width:50, editable: true}], 
-
-rowNum:10, rowList:[10,20,30], pager: '#pager6', sortname: 'ID', viewrecords: true, sortorder: "desc", caption:"Detalle de cbte", editurl: 
-
-'{{=URL(r = request, f="call", args=["json", "editar_item", "detalle"])}}' , loadComplete: actualizarTotal
- }); jQuery("#tabla_detalles").jqGrid('navGrid','#pager6',{edit:true,add:false,del:true});
-
-
-jQuery("#tabla_items_tributo").jqGrid({ url: '{{=URL(r = request, f="call", args=["json", "items_tributo"])}}' + "/" + el_cbte, datatype: 
-
-"json", colNames:['ID','Tributo','Base Imp','Importe'], colModel:[ {name:'id',index:'id'}, {name:'tributo',index:'tributo'}, 
-
-{name:'base_imp',index:'base_imp', editable: true}, {name:'importe',index:'importe', editable: true}], rowNum:10, rowList:[10,20,30], 
-
-pager: '#pager7', sortname: 'ID', viewrecords: true, sortorder: "desc", caption:"Detalle de tributos", editurl: '{{=URL(r = request, 
-
-f="call", args=["json", "editar_item", "tributo"])}}' , loadComplete: actualizarTotal
- }); jQuery("#tabla_items_tributo").jqGrid('navGrid','#pager7',{edit:true,add:false,del:true});
-
-jQuery("#tabla_items_cbtesasoc").jqGrid({ url: '{{=URL(r = request, f="call", args=["json", "cbtes_asoc"])}}' + "/" + el_cbte, datatype: 
-
-"json", colNames:['ID','Comprobante','Asociado'], colModel:[ {name:'id',index:'id'}, {name:'comprobante',index:'comprobante'}, 
-
-{name:'asociado',index:'asociado'}], rowNum:10, rowList:[10,20,30], pager: '#pager8', sortname: 'ID', viewrecords: true, sortorder: "desc", 
-
-caption:"Detalle de Cbtes. asoc.", editurl: '{{=URL(r = request, f="call", args=["json", "editar_item", "comprobanteasociado"])}}' ,
-
-loadComplete: actualizarTotal
- }); jQuery("#tabla_items_cbtesasoc").jqGrid('navGrid','#pager8',{edit:true,add:false,del:true});
-
-jQuery("#tabla_items_permisos").jqGrid({ url: '{{=URL(r = request, f="call", args=["json", "permisos"])}}' + "/" + el_cbte, datatype: 
-
-"json", colNames:['ID','Tipo reg','ID permiso', 'Dst merc'], colModel:[ {name:'id',index:'id'}, {name:'tipo_reg',index:'tipo_reg', 
-
-editable: true}, {name:'id_permiso',index:'id_permiso', editable: true}, {name:'dst_merc',index:'dst_merc', editable: true}], rowNum:10, 
-
-rowList:[10,20,30], pager: '#pager9', sortname: 'ID', viewrecords: true, sortorder: "desc", caption:"Detalle de permisos", editurl: 
-
-'{{=URL(r = request, f="call", args=["json", "editar_item", "permiso"])}}' , loadComplete: actualizarTotal
- }); jQuery("#tabla_items_permisos").jqGrid('navGrid','#pager9',{edit:true,add:false,del:true});
-
-})
-
-/* ?orden={{#orden.id}} */
-</script>
+{{if session.efectos:}}
+{{ include 'facturalibre-ialt-script.html'}}
 
 <div id="caja_listas" class="tabs">
     <ul>
@@ -192,7 +14,7 @@ rowList:[10,20,30], pager: '#pager9', sortname: 'ID', viewrecords: true, sortord
         <li><a href="#tabs-6">Datos cbte.</a></li>
         <li><a href="#tabs-7">Autorización</a></li>
     </ul>
-    
+
     <div id="tabs-1">
         <div  class="tabla_dinamica">
             <table id="tabla_productos"></table>
@@ -221,7 +43,7 @@ rowList:[10,20,30], pager: '#pager9', sortname: 'ID', viewrecords: true, sortord
             <div id="pager7" class="jqgrid"></div>
         </div>
     </div>
-    
+
     <div id="tabs-4">
         <div class="tabla_dinamica">
             <table id="tabla_cbtesasoc" class="jqgrid"></table>
@@ -232,7 +54,7 @@ rowList:[10,20,30], pager: '#pager9', sortname: 'ID', viewrecords: true, sortord
             <div id="pager8" class="jqgrid"></div>
         </div>
     </div>
-    
+
     <div id="tabs-5">
         <div class="tabla_dinamica">
             <input type="button" value="Agregar permiso" onclick="js:agregarPermiso();" id="boton_agregar_permiso">
@@ -240,13 +62,13 @@ rowList:[10,20,30], pager: '#pager9', sortname: 'ID', viewrecords: true, sortord
         <div id="pager9" class="jqgrid"></div>
         </div>
     </div>
-    
+
     <div id="tabs-6">
         <div id="datos" class="form_largo">
             {{=LOAD('ialt','form_cbte.load',ajax=True)}}
         </div>
     </div>
-    
+
     <div id="tabs-7">
         <div id="autorizar" class="tabla_dinamica">
             {{=A("Nuevo comprobante", _href=URL(r=request, c="ialt", f="index.html", args=["nuevo",]))}}
@@ -254,10 +76,15 @@ rowList:[10,20,30], pager: '#pager9', sortname: 'ID', viewrecords: true, sortord
                 {{=LOAD('ialt','vista_previa.load',ajax=True)}}
             </div>
             <div id="autorizar" class="tabla_dinamica">
-            
+
                 {{=LOAD(url = URL(c='ialt_servicios_web', f='autorizar.load'), ajax=True)}}
             </div>
         </div>
     </div>
-    
+
 </div>
+
+
+{{ else:}}
+  {{=SCRIPT("window.alert('La interfase alternativa es incompatible con la versión de su navegador.');")}}
+{{pass}}

@@ -17,7 +17,19 @@ def comprobante_seleccionar_cliente():
 
 
 @auth.requires(auth.has_membership('administrador') or auth.has_membership('emisor') or auth.has_membership('invitado'))
+def reprocesar():
+    try:
+        session.comprobante = request.args[0]
+    except (AttributeError, KeyError, TypeError, ValueError):
+        response.flash = "La referencia de cbte. no es válida."
+
+    redirect(URL(r=request, c="emision", f="iniciar"))
+
+
+
+@auth.requires(auth.has_membership('administrador') or auth.has_membership('emisor') or auth.has_membership('invitado'))
 def iniciar():
+
     variables = None
     webservice = None
     puntodeventa = None
@@ -25,6 +37,8 @@ def iniciar():
     variablesusuario = None
     
     fecha = datetime.datetime.now()
+
+    if 'nuevo' in request.args: session.comprobante = None
 
     try:
         getattr(session, 'comprobante')
@@ -53,8 +67,8 @@ def iniciar():
     'moneda_id', 'moneda_ctz','imp_iibb', 'obs_comerciales', \
     'obs', 'forma_pago', 'fecha_venc_pago', 'fecha_serv_desde', 'fecha_serv_hasta']
 
-    if 'wsfex' == variables.webservice:
-        campos_generales += ['dst_cmp', 'dstcuit', 'incoterms', 'incoterms_ds', 'idioma_cbte', 'tipo_expo', 'permiso_existente']
+    if 'wsfex' == variablesusuario.webservice:
+        campos_generales += ['dst_cmp', 'dstcuit', 'id_impositivo', 'incoterms', 'incoterms_ds', 'idioma_cbte', 'tipo_expo', 'permiso_existente']
 
     # creo un formulario para el comprobante (TODO: modificar)
     form = SQLFORM(db.comprobante, session.comprobante,

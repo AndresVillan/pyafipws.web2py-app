@@ -6,14 +6,6 @@
 {{nombre_cliente = " "}}
 {{pass}}
 
-<!-- script type="text/javascript">
-   /* FacturaLibre 
-   //window.alert("web2py static-ajax");
-   $(document).ready(function(){$("#tabs").tabs();})
-   //window.alert("Fin de static-ajax-tabs");
-   FacturaLibre */
-</script -->
-
 {{ if not form.vars.webservice:}}
 
 {{try:}}
@@ -59,5 +51,6 @@
     </div>
     <div id="tabs-3">
     {{=UL(LI("Punto de venta: " + str(punto_vta)), LI("Webservice: " + str(webservice)))}}
+    {{=A("Cancelar cbte.", _href=URL(r=request, c='emision', f='iniciar', args=['nuevo',]))}}
     </div>
 </div>

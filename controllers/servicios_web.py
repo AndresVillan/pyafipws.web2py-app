@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+def utftolatin(text):
+    return unicode(text, "utf-8").encode("latin-1")
+
 response.title = "Servicios Web AFIP"
 
 from xml.parsers.expat import ExpatError
@@ -61,19 +64,12 @@ def calcular_comprobante(comprobante):
     
     for p in range(len(detalles)):
         iva = db(db.iva.id==detalles[p].iva).select().first()
-        """
-        if tipocbte.discriminar:
-            detalles[p].imp_neto = (detalles[p].qty * detalles[p].precio) -detalles[p].bonif
-            detalles[p].imp_iva = detalles[p].imp_neto * iva.aliquota
-            detalles[p].imp_total = detalles[p].imp_neto + detalles[p].imp_iva
-            
-        else:
-            detalles[p].imp_iva = 0
-            detalles[p].imp_neto = (detalles[p].qty * detalles[p].precio) -detalles[p].bonif
-            detalles[p].imp_total = detalles[p].imp_neto
-         """   
 
-        detalles[p].imp_neto = (detalles[p].qty * detalles[p].precio) -detalles[p].bonif
+        try:
+            detalles[p].imp_neto = (detalles[p].qty * detalles[p].precio) -detalles[p].bonif
+        except TypeError:
+            detalles[p].imp_neto
+            
         try:
             detalles[p].imp_iva = detalles[p].imp_neto * iva.aliquota
         except TypeError:
@@ -113,10 +109,14 @@ def comprobante_sumar_iva(comprobante):
         
         for detalle in detalles:
             if detalle.iva == alicuota:
-                # sumar iva
-                if not id: id = str(detalle.iva.cod)
-                base_imp += detalle.base_imp_iva
-                importe += detalle.imp_iva
+                try:
+                    # sumar iva
+                    if not id: id = str(detalle.iva.cod)
+                    base_imp += detalle.base_imp_iva
+                    importe += detalle.imp_iva
+                except TypeError:
+                    """ TODO: manejo de errores en cómputo de ítem. """
+                    pass
 
         if importe > 0:
             sumas.append(dict(id = id, base_imp = base_imp, importe = importe))
@@ -137,7 +137,15 @@ else:
 
 
 if variables.produccion:
-    WSDL, WSAA_URL = None, None
+    WSDL = {
+    'wsfe': None,
+    'wsfev1': "https://servicios1.afip.gov.ar/wsfev1/service.asmx?WSDL",
+    'wsfex': "https://servicios1.afip.gov.ar/wsfex/service.asmx", # ?WSDL
+    'wsbfe': "https://servicios1.afip.gov.ar/wsbfe/service.asmx", # ?WSDL
+    'wsmtxca': "https://serviciosjava.afip.gob.ar/wsmtxca/services/MTXCAService?wsdl",
+     }
+    WSAA_URL = "https://wsaa.afip.gov.ar/ws/services/LoginCms"
+    
 else:
     WSDL = {
     'wsfe': "http://wswhomo.afip.gov.ar/wsfe/service.asmx?WSDL",
@@ -687,6 +695,7 @@ def autorizar():
                     webservice = SERVICE
                     )
                 elif result['FecResp']['resultado'] == "R":
+                    session.comprobante = None
                     actualizar = dict(resultado = "R")
                     
         elif SERVICE=='wsfev1':
@@ -759,9 +768,9 @@ def autorizar():
                 if fedetresp["Resultado"] == "A":
                     session.comprobante = None
                     # aprobado
-                    obstmp = []
+                    obstmp = str()
                     for obs in fedetresp.get('Observaciones', []):
-                        obstmp.append("%(Code)s: %(Msg)s" % (obs['Obs']))                
+                        obstmp += "%(Code)s: %(Msg)s. " % obs['Obs']
                     
                     actualizar = dict(
                     obs = obstmp,
@@ -796,10 +805,10 @@ def autorizar():
                 'Cbte_nro': comprobante.cbte_nro,
                 'Tipo_expo': comprobante.tipo_expo or 1,
                 'Permiso_existente': comprobante.permiso_existente,
-                'Dst_cmp': comprobante.dst_cmp,
-                'Cliente': comprobante.nombre_cliente,
+                'Dst_cmp': comprobante.dst_cmp.cod,
+                'Cliente': unicode(comprobante.nombre_cliente, "utf-8"),
                 'Cuit_pais_cliente': comprobante.dstcuit.cuit,
-                'Domicilio_cliente': comprobante.domicilio_cliente,
+                'Domicilio_cliente': unicode(comprobante.domicilio_cliente, "utf-8"), # genera excepción Unicode si se usan caracteres no ASCII
                 'Id_impositivo': comprobante.id_impositivo,
                 'Moneda_Id': comprobante.moneda_id.cod,
                 'Moneda_ctz': comprobante.moneda_ctz,
@@ -813,7 +822,7 @@ def autorizar():
 
                 # listas
                 'Items': [{ 'Item': {
-                'Pro_codigo': detalle.codigo, 'Pro_ds': detalle.ds, 'Pro_qty': detalle.qty, 'Pro_umed': detalle.umed.cod, 'Pro_precio_uni': detalle.precio,
+                'Pro_codigo': detalle.codigo, 'Pro_ds': unicode(detalle.ds, "utf-8"), 'Pro_qty': detalle.qty, 'Pro_umed': detalle.umed.cod, 'Pro_precio_uni': detalle.precio,
                 'Pro_total_item': (detalle.imp_total)
                 }} for detalle in db(db.detalle.comprobante == comprobante).select()],
                 'Permisos': [{ 'Permiso': { 'Id_permiso': permiso.id_permiso, 'Dst_merc': permiso.dst_merc
@@ -847,10 +856,11 @@ def autorizar():
                     resultado=result["FEXResultAuth"]['Resultado'],
                     id_ws = result["FEXResultAuth"]["Id"],
                     err_code = result["FEXErr"]["ErrCode"],
-                    err_msg = result["FEXErr"]["ErrMsg"],                    
+                    err_msg = result["FEXErr"]["ErrMsg"],
                     webservice = SERVICE
                     )
                     db.xml.insert(request = client.xml_request, response = client.xml_response)
+                    session.comprobante = None
                     
                 if  result["FEXErr"]["ErrCode"] or result["FEXResultAuth"]["Motivos_Obs"]:
                     # almacenar el informe de errores u observaciones
@@ -890,6 +900,7 @@ def autorizar():
                 errortmp = result["BFEAuthorizeResult"]["BFEErr"]
                 actualizar = dict(err_code = unicode(errortmp["ErrCode"]), 
                 err_msg = unicode(errortmp["ErrMsg"]), resultado = "R")
+                session.comprobante = None
 
             else:
                 # extraigo la respuesta (auth y eventos)            
@@ -974,31 +985,29 @@ def autorizar():
             if result['resultado'] in ("A", "O"):
                 cbteresp = result['comprobanteResponse']              
                 fecha_cbte = cbteresp['fechaEmision'],
-                # actualizar["cbte_nro"] = comprobante.cbte_nro, # 1L cbteresp['numeroComprobante'] # no actualizar el campo (error de db)
-                # actualizar["punto_vta"] = comprobante.punto_vta, # 4000 cbteresp['numeroPuntoVenta'] # no actualizar el campo (error de db)
                 fecha_vto = cbteresp['fechaVencimientoCAE'],
                 actualizar["cae"] = cbteresp['CAE'], # 60423794871430L,
 
                 if resultado == u"A":
                     session.comprobante = None
                 else:
-                    actualizar["obs"] += "" # observaciones de cbte
                     response.flash = "El cbte tiene observaciones"
                     session.comprobante = None
                     
             elif result['resultado'] == "R":
                 session.comprobante = None
-                errorestmp = []
                 for error in result["arrayErrores"]:
-                   actualizar["obs"] += "Error: " + str(error["codigoDescripcion"]["codigo"]) \
-                   + " " + unicode(error["codigoDescripcion"]["descripcion"]) + ". "
+                    obs.append("%(codigo)s: %(descripcion)s" % (error['codigoDescripcion']))
+
                 
             for error in result.get('arrayObservaciones', []):
                obs.append("%(codigo)s: %(descripcion)s" % (error['codigoDescripcion']))
-                    
-            actualizar["obs"] += str(obs)
+
+            for error in obs:
+                actualizar["obs"] += "Error %(codigo)s: %(descripcion)s. " % error['codigoDescripcion']
+
             actualizar["resultado"] = result['resultado']
-    
+
         else:
             pass
 
@@ -1015,8 +1024,9 @@ def autorizar():
 
 
     except (AttributeError, ValueError, TypeError, KeyError), ee:
+        raise        
         db.xml.insert(request = client.xml_request, response = client.xml_response)
-        return dict(resultado = {"fault": "Se produjo un error al procesar los datos del comprobante o los datos enviados son insuficientes."}, pdf = None)
+        return dict(resultado = {"fault": "Se produjo un error al procesar los datos del comprobante o los datos enviados son insuficientes. %s" % str(ee)}, pdf = None)
 
 
     # actualizo el registro del comprobante con el resultado:
@@ -1043,12 +1053,16 @@ if SERVICE:
                     wsdl = WSDL[SERVICE],
                     cache = PRIVATE_PATH,
                     ns = "ser",
-                    trace = False)
+                    trace = False,
+                    # voidstr = u'FACTURALIBREVALORNULL' # comentar esta línea para pysimplesoap sin modificar
+                    )
         else:
             client = SoapClient( 
                     wsdl = WSDL[SERVICE],
                     cache = PRIVATE_PATH,
-                    trace = False)
+                    trace = False,
+                    # voidstr = u'FACTURALIBREVALORNULL' # comentar esta línea para pysimplesoap sin modificar
+                    )
 
     except HTTPError, e:
         session.mensaje = "Error al solicitar el ticket de acceso: %s" % str(e)

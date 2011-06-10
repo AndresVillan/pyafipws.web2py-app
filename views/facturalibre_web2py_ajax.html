@@ -1,0 +1,40 @@
+{{try:}}
+  {{theme = db.variablesusuario[auth.user_id].theme}}
+  {{if not theme:}}
+    {{theme = 'smoothness'}}
+  {{pass}}
+{{except (ValueError, KeyError, TypeError, AttributeError):}}
+  {{theme = 'smoothness'}}
+{{pass}}
+
+{{try:}}
+  {{ session.navegador = str(request.env.http_user_agent)}}
+{{except (ValueError, KeyError, AttributeError, TypeError):}}
+  {{ session.navegador = ''}}
+{{pass}}
+
+{{if "MSIE 6" in session.navegador:}}
+  {{session.efectos = False}}
+{{else:}}
+  {{session.efectos = True}}
+{{pass}}
+
+{{if session.efectos:}}
+  {{
+    # jQuery UI (FacturaLibre)
+    response.files.insert(100, URL('static', 'css/facturalibre.css'))
+    response.files.insert(101, URL('static','css/%s/jquery-ui-1.8.13.custom.css' % theme))
+    response.files.insert(102, URL('static','js/jquery-ui-1.8.13.custom.min.js'))
+    response.files.insert(103, URL('static','js/facturalibre-widgets.js'))    
+    # agregado para jqgrid
+    response.files.insert(104, URL('static','css/ui.jqgrid.css'))
+    response.files.insert(105, URL('static','js/i18n/grid.locale-es.js'))
+    response.files.insert(106, URL('static','js/jquery.jqGrid.min.js'))
+  }}
+
+{{else:}}
+  {{if not session.has_key("navegadorincompatible"):}}
+  {{=SCRIPT("window.alert('Se deshabilitaron los widget jQuery: Actualice su navegador a una versión compatible.');")}}
+  {{session.navegadorincompatible = True}}
+  {{pass}}
+{{pass}}
