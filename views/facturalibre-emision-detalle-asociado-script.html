@@ -1,0 +1,53 @@
+<SCRIPT TYPE="text/javascript" _id="script_pre_carga_asociado">
+// autocalcular al descargar el formulario
+// (para carga de productos desde la base de datos)
+
+$(document).ready(function(){
+  try{
+    var asocTipoCbte = "{{=form.vars.asoc_tipocbte or ''}}";
+    var asocCbteNro = "{{=form.vars.asoc_cbte_nro or ''}}";
+    var asocPuntoVta = "{{=form.vars.asoc_punto_vta or ''}}";
+  }
+  catch(e){
+  /* error al descargar variables */
+  }
+
+
+  function actualizarAsociado(){
+    // (antes del ingreso a la base de datos)
+    if (asocCbteNro != ""){
+      // completar formulario de ingreso de detalle
+
+      /* Importante: ¡Estos elementos cambian
+      con las modificaciones del model y los form en web2py! */
+
+      /* Actualizar el form */
+      $("#formulario_ingreso_detalle_asociado [name=asoc_tipocbte]").val(asocTipoCbte);
+      $("#formulario_ingreso_detalle_asociado [name=asoc_cbte_nro]").val(asocCbteNro);
+      $("#formulario_ingreso_detalle_asociado [name=asoc_punto_vta]").val(asocPuntoVta);
+
+      /* window.alert(
+      $("#formulario_ingreso_detalle_asociado [name=asoc_tipocbte]").val() + " " +
+      $("#formulario_ingreso_detalle_asociado [name=asoc_cbte_nro]").val() + " " +
+      $("#formulario_ingreso_detalle_asociado [name=asoc_punto_vta]").val()); */
+
+
+      // actualizar previsualización
+      $("#previo_asoc_cbte_nro").val(asocCbteNro);
+      $("#previo_asoc_punto_vta").val(asocPuntoVta);
+      $("#previo_asoc_tipocbte").val(asocTipoCbte);
+    }
+  }
+
+  // cargar el ítem si se presionó el botón ingresar
+  $('#boton_ingresar_detalle_asociado').bind('click', function(event){
+    // actualizar los valores de qty y bonif
+    asocCbteNro = $("#previo_asoc_cbte_nro").val();
+    asocPuntoVta = $("#previo_asoc_punto_vta").val();
+    asocTipoCbte = $("#previo_asoc_tipocbte").val();
+    actualizarAsociado();
+    $('#formulario_ingreso_detalle_asociado').submit();
+  });
+  /* actualizarPermiso(); */
+});
+</SCRIPT>

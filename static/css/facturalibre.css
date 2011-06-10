@@ -1,0 +1,171 @@
+/* Hoja de estilo para pyafipws-web2py-app */
+
+/* casilleros de texto del formulario para ingresar detalles */
+
+/* agrandar los dropdown menu */
+form input[type="submit"]{
+width: 7em;
+}
+
+div.detalles_previos label{
+}
+
+div.detalles_previos{
+margin-top: 1em;
+margin-bottom: 1em;
+display: block;
+clear: both;
+}
+
+div.detalles_previos input, div.detalles_previos select{
+clear: left;
+width: 10em;
+}
+
+div.detalles_previos span{
+margin-right: 1em;
+display: inline;
+float: left;
+}
+
+select{
+/*font-size: 0.7em*/;
+height: 2em;
+}
+
+div.flash{
+position: absolute;
+z-index: 2000;
+}
+
+table.jqgrid{
+}
+
+div.formulario_largo{
+}
+
+div.jqgrid{
+}
+
+#boton_agregar_permiso{
+/*margin-bottom: 0.5em;*/
+}
+
+div.tabla_dinamica{
+/*overflow: auto;
+float: left;
+margin-right: 1em;*/
+}
+
+div.tabla_dinamica_doble{
+/*overflow: auto;
+width: 46%;
+float: left;
+margin-right: 1em;*/
+}
+
+table{
+/*overflow: scroll;*/
+}
+
+select, option, input{
+}
+
+table.tabla_detalle{
+clear: both;
+display: block;
+margin-top: 1em;
+margin-bottom: 1em;
+}
+
+
+
+.excluir{display: none;}
+
+div.extenso{
+overflow: auto;
+}
+
+.tabla_detalle input, .tabla_detalle select{
+width: 90%;
+margin-right: 2em;
+}
+
+.tabla_detalle input.texto{
+width: 10em;
+}
+
+.tabla_detalle input.valor{
+}
+
+
+.tabla_detalle input[type=button]{
+width: 7em;
+margin-left: 1em;
+}
+
+tr.detalles_previos td{
+}
+
+div.form_comprobante{
+/*height: 23em;
+overflow: auto;*/
+}
+
+.form_comprobante select, .form_comprobante option, .form_comprobante input{
+/*height: 2em;*/
+}
+
+.form_largo option, .form_largo select, .form_largo input{
+/*height: 2em;*/
+}
+
+.form_comprobante input{
+/*margin-right: 0.5em;*/
+}
+
+.form_comprobante td{
+/* padding: 0.5em 0.5em;
+margin: 0.5em 0.5em; */
+}
+
+table.extenso{
+overflow: auto;
+}
+
+#tabs, .tabs{
+z-index: 10;
+position: relative;
+margin-bottom: 1em;
+}
+
+div.tabla_dinamica, div.tabla_dinamica_doble{
+margin-bottom: 1em;
+}
+
+#boton_agregar_permiso{
+margin-bottom: 1em;
+}
+
+
+#statusbar{
+/* */
+position: relative;
+z-index: 500;
+height: 3em;
+}
+
+ul.sf-menu{
+/* */
+z-index: 1000;
+position: relative;
+}
+
+
+div#page{
+position: relative;
+z-index: 5;
+}
+
+div#menu_desplegable_facturalibre{
+/* */}
