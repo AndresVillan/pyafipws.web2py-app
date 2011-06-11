@@ -3,13 +3,13 @@
 migrate = True
 
 # Constantes (para la aplicación)
-THEMES = ['smoothness', 'exite-bike', 'lefrog', 'trontastic']
+THEMES = ['smoothness', 'ui-lightness', 'ui-darkness', 'redmond', 'overcast', 'exite-bike', 'lefrog', 'trontastic', 'start', 'sunny']
 WEBSERVICES = ['wsfe','wsbfe','wsfex','wsfev1', 'wsmtxca']
 INCOTERMS = ['EXW','FCA','FAS','FOB','CFR','CIF','CPT','CIP','DAF','DES','DEQ','DDU','DDP']
 CONCEPTOS = {'1': 'Productos', '2': 'Servicios', '3': 'Otros/ambos'}
 IDIOMAS = {'1':'Español', '2': 'Inglés', '3': 'Portugués'}
 SINO = {'S': 'Si', 'N': 'No'}
-SINOVACIO = {'S': 'Si', 'N': 'No', u'FACTURALIBREVALORNULL': 'Vacío'}
+SINOVACIO = {'S': 'Si', 'N': 'No', "": 'Vacío'}
 PROVINCIAS = {0: u'C.A.B.A.',1: u'Buenos Aires', 2: u'Catamarca', 3: u'Córdoba',4: u'Corrientes', 5: u'Entre Ríos', 6:
 u'Jujuy', 7: u'Mendoza', 8: u'La Rioja', 9: u'Salta', 10: u'San Juan', 11:
 u'San Luis', 12: u'Santa Fe', 13: u'Santiago del Estero', 14:

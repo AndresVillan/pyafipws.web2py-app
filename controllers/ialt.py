@@ -27,7 +27,7 @@ def index():
     rendered by views/default/index.html or views/generic.html
     """
     if not session.has_key('ialt'):
-        response.flash = T('FacturaLibre: interfase alternativa')
+        response.flash = T('FacturaLibre: interfaz de usuario alternativa')
         session.comprobante = None
         session.ialt = True
 

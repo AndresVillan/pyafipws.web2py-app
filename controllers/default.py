@@ -7,10 +7,10 @@ def index():
     """
     
     if not session.bienvenida:
-        response.flash = T('FacturaLibre. Aplicación en desarrollo')
+        response.flash = T('FacturaLibre. Aplicación web para factura electrónica')
         session.bienvenida = True
     
-    return dict(message=T('FacturaLibre. Aplicación en desarrollo'))
+    return dict(message=T('FacturaLibre. Aplicación web para factura electrónica'))
 
 
 def user():
