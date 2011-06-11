@@ -1,6 +1,6 @@
 ## -*- coding: utf-8 -*-
 
-# Interfase alternativa (jqgrid)
+# Interfaz alternativa (jqgrid)
 
 def utftolatin(text):
     return unicode(text, "utf-8").encode("latin-1")
@@ -1063,14 +1063,14 @@ if SERVICE:
                     cache = PRIVATE_PATH,
                     ns = "ser",
                     trace = False,
-                    # voidstr = u'FACTURALIBREVALORNULL' # comentar esta línea para pysimplesoap sin modificar
+                    # voidstr = True # comentar esta línea para pysimplesoap sin modificar
                     )
         else:
             client = SoapClient(
                     wsdl = WSDL[SERVICE],
                     cache = PRIVATE_PATH,
                     trace = False,
-                    # voidstr = u'FACTURALIBREVALORNULL' # comentar esta línea para pysimplesoap sin modificar
+                    # voidstr = True # comentar esta línea para pysimplesoap sin modificar
                     )
 
     except HTTPError, e:
