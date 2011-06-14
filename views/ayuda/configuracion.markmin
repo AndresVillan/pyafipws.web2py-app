@@ -1,0 +1,45 @@
+Secciones de ayuda: [[Inicio page:inicio]] [[Configuración page:configuracion]] [[Emisión page:emision]]
+
+# Configuración
+
+Al ingresar a la sección ''**Configurar**'' por primera vez la aplicación generará la cuenta de usuario administrativa administrador@localhost.
+
+[[configurar attachment:34.png center 480px]]
+
+La clave de acceso por defecto es "facturalibre". Luego es posible modificar la contraseña por medio de la herramienta de autenticación ubicada en la barra para manejo de cuentas de usuario. Utilice los comandos ''**[ fin de sesión | profile | password]**''
+
+**Nota para usuarios de la demo:** se requiere crear una cuenta de usuario para explorar la aplicación. Ingrese por primera vez con el comando ''**Registrarse**'' de la herramienta para autenticación. La autorización de comprobantes requiere habilitación previa de un usuario administrador (solicitar el rol emisor).
+
+### Carga inicial de tablas
+
+La carga inicial de tablas consiste en completar los registros con parámetros para facturación como países, tipos de comprobantes y otras categorías impositivas. Para generar los registros de las tablas de FacturaLibre utilizar los link en la pestaña ''**Inicial**'' de la sección ''**Configurar**''.
+
+[[panel-de-control attachment:15.png center 480px]]
+
+Este procedimiento de configuración inicial es requisito para el funcionamiento de la aplicación previo a cualquier otra acción del usuario. Si el conteo de registros por tabla no es cero, el proceso de carga de la tabla se ha generado correctamente.
+
+### Variables generales
+
+Luego de la carga inicial de tablas de la aplicación se deben especificar los datos de certificados, emisor y preferencias. Ingrese a la sección ''**Configurar**''. En la pestaña ''**Variables Grales**''. Se muestran los parametros almacenados actualmente.
+
+[[panel-de-control attachment:12.png center 480px]]
+
+Para modificarlos seleccione el link ''**(modificar)**''. Se deben especificar los nombres de los archivos .crt y .key tramitados ante AFIP, el cuit del emisor y opciones por defecto para gestión de comprobantes. Los archivos .crt y .key deben copiarse en la carpeta web2py->applications->fe->private
+
+[[panel-de-control attachment:14.png center 480px]]
+
+### Variables de usuario
+
+Son variables opcionales pero permiten automatizar la carga de formularios. Se configuran en la pestaña Variables de usuario de la sección "Configurar"
+
+[[panel-de-control attachment:11.png center 480px]]
+
+### Altas bajas y modificaciones
+
+Para ingresar y modificar elementos como clientes, productos/servicios ó puntos de venta ingrese a la pestaña ''**ABM**'' ubicada en la sección ''**Configurar**'' del menú superior.
+
+[[panel-de-control attachment:16.png center 480px]]
+
+La modificación de elementos de tablas se realiza en la vista ''**Modificar registros**'', incluída en la pestaña ''**ABM**''. Para modificar/eliminar un registro selecciónelo haciendo clic en el número (columna ''**ID**'')
+
+[[panel-de-control attachment:17.png center 480px]] 

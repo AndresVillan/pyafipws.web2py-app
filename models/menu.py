@@ -36,6 +36,10 @@ response.menu = [
     ]),
     (T('Configurar'), False, URL(request.application,'setup','index'), []),
     (T('Ayuda'), False, None , [
+        (T('Inicio'), False, URL(r = request, c="ayuda", f="inicio"), []),
+        (T('Configuración'), False, URL(r = request, c="ayuda", f="configuracion"), []),        
+        (T('Emisión'), False, URL(r = request, c="ayuda", f="emision"), []),                
+        (T('FacturaLibre'), False, "http://www.sistemasagiles.com.ar/trac/wiki/FacturaLibre", []),    
         (T('Información General'), False, "http://www.sistemasagiles.com.ar/trac/wiki/FacturaElectronica", []),
         (T('Información Técnica'), False, "http://www.sistemasagiles.com.ar/trac/wiki/ManualPyAfipWs", [
             (T('WSFEv0'), False, "http://www.sistemasagiles.com.ar/trac/wiki/PyAfipWs", []),

@@ -1,0 +1,9 @@
+{{extend 'layout.html'}}
+<h1>Manual de usuario</h1>
+<div class="ayuda">
+{{try:}}
+    {{=plugin_wiki.embed_page(articulo)}}
+{{except (KeyError, ValueError, TypeError, ImportError, AttributeError, NameError):}}
+    {{=P("No se pudo cargar la ayuda de plugin_wiki.")}}
+{{pass}}
+</div>
