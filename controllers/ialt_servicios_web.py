@@ -809,7 +809,7 @@ def autorizar():
                 'Cbte_nro': comprobante.cbte_nro,
                 'Tipo_expo': comprobante.tipo_expo or 1,
                 'Permiso_existente': comprobante.permiso_existente,
-                'Dst_cmp': comprobante.dst_cmp,
+                'Dst_cmp': comprobante.dst_cmp.cod,
                 'Cliente': unicode(comprobante.nombre_cliente, "utf-8"),
                 'Cuit_pais_cliente': comprobante.dstcuit.cuit,
                 'Domicilio_cliente': unicode(comprobante.domicilio_cliente, "utf-8"),
@@ -835,6 +835,7 @@ def autorizar():
                 'Cbte_tipo': comprobanteasociado.asociado.tipocbte.cod, 'Cbte_punto': comprobanteasociado.asociado.punto_vta, 'Cbte_numero': comprobanteasociado.asociado.cbte_nro
                 }} for comprobanteasociado in db(db.comprobanteasociado.comprobante == comprobante).select()],
             })['FEXAuthorizeResult']
+
                     
             if 'FEXResultAuth' in result:        
                 if result["FEXResultAuth"]["Resultado"] == "A":
@@ -867,10 +868,15 @@ def autorizar():
                     session.comprobante = None
 
                     
-                if  result["FEXErr"]["ErrCode"] or result["FEXResultAuth"]["Motivos_Obs"]:
-                    # almacenar el informe de errores u observaciones
-                    db.xml.insert(request = client.xml_request, response = client.xml_response)
-        
+            if  result["FEXErr"]["ErrCode"] or result["FEXResultAuth"]["Motivos_Obs"]:
+                # almacenar el informe de errores u observaciones
+                if result["FEXErr"]:
+                    actualizar["err_msg"] = result["FEXErr"]["ErrMsg"]
+                    actualizar["err_code"] = result["FEXErr"]["ErrCode"]
+                    actualizar["resultado"] = "R"
+
+                db.xml.insert(request = client.xml_request, response = client.xml_response)
+
           
         elif SERVICE=='wsbfe':
 

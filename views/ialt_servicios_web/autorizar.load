@@ -1,9 +1,11 @@
 {{if pdf:}}
 {{=pdf}}
 {{pass}}
+
 {{if au_form:}}
 {{=au_form}}
 {{pass}}
+
 {{if resultado:}}
 
 {{if "fault" in resultado:}}
