@@ -1,0 +1,71 @@
+ Secciones de ayuda: [[Inicio page:inicio]] [[Configuración page:configuracion]] [[Emisión page:emision]]
+
+# Emisión
+
+Existen dos modos disponibles. Emisión secuencial (Datos de cbte/Carga de detalles/Autorización) y Emisión asíncrona. El segundo modo de uso permite la carga de datos del comprobante sin cálculo automático de totales e impuestos.
+
+### Emisión secuencial
+
+[[panel-de-control attachment:26.png center 480px]]
+
+Al ingresar a la sección emisión secuencial se deben completar los datos principales del comprobante.
+
+[[panel-de-control attachment:22.png center 480px]]
+
+Para seleccionar un cliente ingrese a la lista desde el link **''Seleccionar cliente''** y confirme la selección con clic en la columna ''**ID**'' del cliente
+
+[[panel-de-control attachment:24.png center 480px]]
+
+Para avanzar a la próxima instancia seleccione el botón ''**Enviar**'' en la parte inferior del formulario.
+
+Luego del ingreso de los datos iniciales del comprobante se pueden cargar los detalles, tributos y comprobantes asociados. Para avanzar o retroceder en las instancias de creación del comprobante utilice los link ''**Avanzar**'' y ''**Retroceder**'' en la parte inferior de la página
+
+[[panel-de-control attachment:23.png center 480px]]
+
+En la pestaña ''**detalles**'', los productos/servicios disponibles se pueden cargar seleccionando desde una lista (link ''**cargar producto**'') y por código.
+
+[[panel-de-control attachment:25.png center 480px]]
+
+Al seleccionar un producto desde la lista los datos del producto se cargan en un formulario previo desde el cual se puede calcular monto por cantidad, impuesto y bonificación. Para recalcular en pantalla los totales del ítem modifique el campo ''**cantidad**'' o ''**bonificación**'' y presione la tecla de tabulación (''**tab**''). Si desea agregar el ítem en el comprobante haga clic en el botón ''**Ingresar detalle**''. Los detalles se pueden editar o eliminar haciendo clic sobre el número de detalle (columna ''**ID**'')
+
+[[panel-de-control attachment:19.png center 480px]]
+
+La carga por código consiste en ingresar el número de código completo en el campo ''**Carga por código**'' y luego presionar la tecla de tabulación (''**tab**''). El ítem se cargará en el formulario previo para cálculo del detalle. Ingrese el detalle con el botón ''**Ingresar detalle**''
+
+[[panel-de-control attachment:20.png center 480px]]
+
+Para el ingreso de comprobantes asociados especificar el número de comprobante, el tipo de documento y el punto de venta. El número a especificar corresponde a la numeración autorizada para el punto de venta. Se puede consultar en el campo ''**cbte nro**'' de la lista de comprobantes emitidos, en la sección consultas.
+
+### Emisión asíncrona
+
+Ingrese al item ''**Asíncrona**'' del menú superior ''**Emisión**'' de FacturaLibre.
+
+[[panel-de-control attachment:33.png center 480px]]
+
+Las pestañas dividen conceptos (Detalle, Tributo, Cbte asociado, Datos generales). Para ingresar un ítem en el comprobante se debe hacer clic en el concepto de la tabla superior.
+
+[[panel-de-control attachment:30.png center 480px]]
+
+Los ítem agregados se visualizan en la tabla inferior de cada sección. Las tablas inferiores permiten edición y eliminación de cada ítem. Para editar un ítem márquelo con un clic izquierdo del ratón y luego seleccione la imagen del lápiz en la parte inferior de la tabla.
+
+[[panel-de-control attachment:28.png center 480px]]
+
+El borrado del ítem se realiza con la imagen de la papelera junto al lápiz de edición, marcando el ítem a borrar con el ratón.
+
+[[panel-de-control attachment:29.png center 480px]]
+
+La función ''**vista previa**'' en la pestaña de autorización permite hacer una consulta de los datos básicos del comprobante antes de enviar la solicitud a los web services de AFIP
+
+[[panel-de-control attachment:32.png center 480px]]
+
+Se debe marcar un cliente para generar el comprobante. Márquelo con clic en el ítem correspondiente al cliente seleccionado. El elemento marcado se resalta con color
+
+[[panel-de-control attachment:31.png center 480px]]
+
+La sección de datos del comprobante permite cargar totales y otros parámetros de facturación como fechas y moneda. El ingreso de totales para el comprobante y por cada ítem es obligatorio para solicitar la autorización.
+
+[[panel-de-control attachment:27.png center 480px]]
+
+Recuerde cargar los totales por detalle previamente a la solicitud de autorización en la tabla inferior de la pestaña ''**detalles**''.
+
+````

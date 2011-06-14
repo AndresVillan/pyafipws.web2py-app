@@ -1,0 +1,49 @@
+{{extend 'layout.html'}}
+<h1>Manual de usuario</h1>
+<div class="ayuda">
+<p>Secciones de ayuda:&nbsp;{{=A("Inicio", _href=URL(f="inicio"))}}&nbsp;{{=A("Configuración", _href=URL(f="configuracion"))}}&nbsp;{{=A("Emisión", _href=URL(f="emision"))}}</p>
+
+{{=H1("Configuración")}}
+
+<p>Al ingresar a la sección {{=EM("Configurar")}} por primera vez la aplicación generará la cuenta de usuario administrativa administrador@localhost.</p>
+
+{{=IMG(_class="ayuda-imagen", _src="/%s/static/images/acceso-configurar.png" % request.application)}}
+
+<p>La clave de acceso por defecto es <em>facturalibre</em>. Luego es posible modificar la contraseña por medio de la herramienta de autenticación ubicada en la barra para manejo de cuentas de usuario. Utilice los comandos <em>[fin de sesión | profile | password]</em></p>
+<p><em>Nota para usuarios de la demo</em> se requiere crear una cuenta de usuario para explorar la aplicación. Ingrese por primera vez con el comando <em>Registrarse</em> de la herramienta para autenticación. La autorización de comprobantes requiere habilitación previa de un usuario administrador (solicitar el rol emisor).</p>
+
+{{=H3("Carga inicial de tablas")}}
+
+<p>La carga inicial de tablas consiste en completar los registros con parámetros para facturación como países, tipos de comprobantes y otras categorías impositivas. Para generar los registros de las tablas de FacturaLibre utilizar los link en la pestaña <em>Inicial</em> de la sección <em>Configurar</em>.</p>
+
+{{=IMG(_class="ayuda-imagen", _src="/%s/static/images/panel-de-control.png" % request.application)}}
+
+<p>Este procedimiento de configuración inicial es requisito para el funcionamiento de la aplicación previo a cualquier otra acción del usuario. Si el conteo de registros por tabla no es cero, el proceso de carga de la tabla se ha generado correctamente.</p>
+
+{{=H3("Variables generales")}}
+
+<p>Luego de la carga inicial de tablas de la aplicación se deben especificar los datos de certificados, emisor y preferencias. Ingrese a la sección <em>Configurar</em>. En la pestaña <em>Variables Grales</em>. Se muestran los parametros almacenados actualmente.</p>
+
+{{=IMG(_class="ayuda-imagen", _src="/%s/static/images/variables-generales.png" % request.application)}}
+
+<p>Para modificarlos seleccione el link <em>modificar</em>. Se deben especificar los nombres de los archivos .crt y .key tramitados ante AFIP, el cuit del emisor y opciones por defecto para gestión de comprobantes. Los archivos .crt y .key deben copiarse en la carpeta web2py->applications->fe->private</p>
+
+{{=IMG(_class="ayuda-imagen", _src="/%s/static/images/formulario-variables-generales.png" % request.application)}}
+
+{{=H3("Variables de usuario")}}
+
+<p>Son variables opcionales pero permiten automatizar la carga de formularios. Se configuran en la pestaña Variables de usuario de la sección {{=EM("Configurar")}}</p>
+
+{{=IMG(_class="ayuda-imagen", _src="/%s/static/images/variables-usuario.png" % request.application)}}
+
+{{H3("Altas bajas y modificaciones")}}
+
+<p>Para ingresar y modificar elementos como clientes, productos/servicios ó puntos de venta ingrese a la pestaña {{=EM("ABM")}} ubicada en la sección {{=EM("Configurar")}} del menú superior.</p>
+
+{{=IMG(_class="ayuda-imagen", _src="/%s/static/images/abm.png" % request.application)}}
+
+<p>La modificación de elementos de tablas se realiza en la vista {{=EM("Modificar registros")}}, incluída en la pestaña <em>ABM</em>. Para modificar/eliminar un registro selecciónelo haciendo clic en el número (columna <em>ID</em>)</p>
+
+{{=IMG(_class="ayuda-imagen", _src="/%s/static/images/abm-modificar-registros.png" % request.application)}}
+
+</div>

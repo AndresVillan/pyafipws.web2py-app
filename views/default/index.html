@@ -44,6 +44,7 @@ Luego de varios años de experiencia desarrollando interfaces y herramientas par
     </div>
     <div id="tabs-4">
 <h3>Modo de uso</h3>
+<p>Para instrucciones detalladas vea el {{=A("manual de usuario", _href=URL(r=request, c="ayuda", f="index", args=["inicio",]))}}</p>
 Basicamente la operatoria es la siguiente:
 <ul>
     <li>Paso 1: Completar los campos generales del comprobante: <b>{{=A("Comenzar...",_href=URL(r=request,c="emision",f="iniciar"))}}</b></li>
@@ -52,28 +53,8 @@ Basicamente la operatoria es la siguiente:
 </ul>
 
 El sitio también contempla la funcionalidad de {{=A("Consultas",_href=URL(r=request,c="consultas",f="comprobantes"))}} para revisar las facturas electrónicas.
-
-<h3>Configuración</h3>
-<p>Al ingresar a la sección "Configurar" por primera vez la aplicación generará la cuenta de usuario administrativa administrador@localhost. La clave de acceso por defecto es "facturalibre". Luego es posible modificar la contraseña por medio de la herramienta de autenticación ubicada en la barra para manejo de cuentas de usuario. Utilice los comandos [ fin de sesión | profile | password]</p>
-<p>Nota para usuarios de la demo: se requiere crear una cuenta de usuario para explorar la aplicación. Ingrese por primera vez con el comando "Registrarse" de la herramienta para autenticación. La autorización de comprobantes requiere habilitación previa de un usuario administrador (solicitar el rol emisor).</p>
-<h5>Variables generales</h5>
-<p>Luego de la carga inicial de tablas de la aplicación se deben especificar los datos de certificados, emisor y preferencias.
-Ingrese a la sección Configurar. En la pestaña "Variables Grales." se muestran los parametros almacenados actualmente. Para modificarlos seleccione el link "(modificar)". Se deben especificar los nombres de los archivos .crt y .key tramitados ante AFIP, el cuit del emisor y opciones por defecto para gestión de comprobantes. Los archivos .crt y .key deben copiarse en la carpeta web2py/applications/fe/private</p>
-<h5>Variables de usuario</h5>
-<p>Son variables opcionales pero permiten automatizar la carga de formularios. Se configuran en la pestaña Variables de usuario de la sección "Configurar"</p>
-<h5>Altas bajas y modificaciones de tablas</h5>
-<p>Para ingresar y modificar elementos como clientes, productos/servicios ó puntos de venta ingrese a la pestaña ABM ubicada en la sección "Configurar" del menú superior. La modificación de elementos de tablas se realiza en la vista "Modificar registros", incluída en la pestaña ABM. Para modificar/eliminar un registro selecciónelo haciendo clic en el número (columna ID)</p>
-<h3>Emisión</h3>
-<p>Existen dos modos disponibles. Emisión secuencial (Datos de cbte/Carga de detalles/Autorización) y Emisión asíncrona. El segundo modo de uso permite la carga de datos del comprobante sin cálculo automático de totales e impuestos.</p>
-<h5>Emisión secuencial</h5>
-<p>Luego del ingreso de los datos iniciales del comprobante se pueden cargar los detalles, tributos y comprobantes asociados. En la pestaña detalles, los productos/servicios disponibles se pueden cargar seleccionando desde una lista (link "cargar producto") y por código. Al seleccionar un producto desde la lista los datos del producto se cargan en un formulario previo desde el cual se puede calcular monto por cantidad, impuesto y bonificación. Para recalcular en pantalla los totales del ítem modifique el campo cantidad o bonificación y presione la tecla de tabulación (tab). Si desea agregar el ítem en el comprobante haga clic en el botón "Ingresar detalle". Los detalles se pueden editar o eliminar haciendo clic sobre el número de detalle (columna ID)</p>
-<p>La carga por código consiste en ingresar el número de código completo en el campo "Carga por código" y luego presionar la tecla de tabulación. El ítem se cargará en el formulario previo para cálculo del detalle. Ingrese el detalle con el botón "Ingresar detalle"</p>
-<p>Para el ingreso de comprobantes asociados especificar el número de comprobante, el tipo de documento y el punto de venta. El número a especificar corresponde a la numeración autorizada para el punto de venta. Se puede consultar en el campo "cbte nro" de la lista de comprobantes emitidos)</p>
-<h5>Emisión asíncrona</h5>
-<p>Ingrese al item "Asíncrona" del menú superior "Emisión" de FacturaLibre. Las pestañas dividen conceptos (Detalle, Tributo, Cbte asociado, Datos generales). Para ingresar un ítem en el comprobante se debe hacer clic en el concepto de la tabla superior. Los ítem agregados se visualizan en la tabla inferior de cada sección. Las tablas inferiores permiten edición y eliminación de cada ítem. Para editar un ítem márquelo con un clic izquierdo del ratón y luego seleccione la imagen del lápiz en la parte inferior de la tabla. El borrado del ítem se realiza con la imagen de la papelera junto al lápiz de edición, marcando el ítem a borrar con el ratón.</p><p>La función "vista previa" en la pestaña de autorización permite hacer una consulta de los datos básicos del comprobante antes de enviar la solicitud a los web services de AFIP</p>
-<p>Se debe marcar un cliente para generar el comprobante. Márquelo con clic en el ítem correspondiente al cliente seleccionado. El elemento marcado se resalta con color</p>
-<p>La sección de datos del comprobante permite cargar totales y otros parámetros de facturación como fechas y moneda. El ingreso de totales es obligatorio para solicitar la autorización</p>
     </div>
+    
     <div id="tabs-5">
 <h3>Contacto</h3>
 Los interesados pueden contactarse con:

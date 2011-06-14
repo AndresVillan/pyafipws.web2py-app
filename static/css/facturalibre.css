@@ -2,6 +2,10 @@
 
 /* casilleros de texto del formulario para ingresar detalles */
 
+em{
+font-weight: bold;
+}
+
 /* agrandar los dropdown menu */
 form input[type="submit"]{
 width: 7em;
@@ -169,3 +173,14 @@ z-index: 5;
 
 div#menu_desplegable_facturalibre{
 /* */}
+
+div.ayuda{
+background-color: rgb(239, 239, 239);
+padding: 1em;
+}
+
+img.ayuda-imagen{
+width: 480px;
+display: block;
+margin-bottom: 1em;
+}
