@@ -31,6 +31,7 @@ def comprobante_represent(field):
     dr = None
     try:
         dr = str(db.comprobante[field].id)
+
     except (TypeError, KeyError, AttributeError):
         dr = None
     return dr
@@ -223,6 +224,7 @@ db.define_table('comprobante',
     Field('localidad_cliente', type='string', length=50),
     Field('provincia_cliente', type='string', length=50),
     Field('condicioniva_cliente', length=50),
+    Field('cp_cliente', comment="Código postal", default = ""),
     Field('email', type='string', length=100),    
     Field('id_impositivo', type='string', length=50,
             comment='CNJP, RUT, RUC (exportación)'),
@@ -286,8 +288,7 @@ db.define_table('detalle',
             requires=IS_FLOAT_IN_RANGE(0.0001, 1000000000)),
     Field('precio', type='double', notnull=False,
             requires=IS_FLOAT_IN_RANGE(0.01, 1000000000), default = 0.01, represent = importe_represent),
-    Field('umed', type=db.umed,
-            ),
+    Field('umed', type=db.umed),
     Field('imp_total', type='double', label='Subtotal',
             requires=IS_NOT_EMPTY(), default = 0.00, represent = importe_represent),
     Field('iva', type=db.iva, label='IVA',
@@ -353,6 +354,7 @@ db.define_table('cliente', Field('nombre_cliente', type='string', length=200),
     Field('provincia_cliente', type='reference provincia', comment='Provincia (id)'),
     Field('email', type='string', length=100),    
     Field('condicioniva', 'reference condicioniva'), \
+    Field('cp', comment="Código postal", default=""), \
     Field('id_impositivo', type='string', length=50,
             comment='CNJP, RUT, RUC (exportación)'), migrate=migrate)
 

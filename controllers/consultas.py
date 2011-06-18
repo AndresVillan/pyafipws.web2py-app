@@ -18,7 +18,7 @@ headers={'detalle.id':'ID Detalle', 'detalle.ds':'Descripción', 'detalle.qty':'
 
 
 @auth.requires_login()
-def comprobantes():
+def lista_comprobantes():
     """ Consulta de comprobantes con parámetros para filtro """
     form_enviado = False
    
@@ -202,25 +202,25 @@ def comprobantes():
         A( str(session.consulta_comprobante[secc][0])+ \
         "-" + str(session.consulta_comprobante[secc][-1]),\
         _href=URL(r=request, \
-        c="consultas", f="comprobantes", vars={"seccion": secc})) \
+        c="consultas", f="lista_comprobantes", vars={"seccion": secc})) \
         for secc in range(len(session.consulta_comprobante))]    
 
         # obtengo la sección seleccionada como texto
         if len(los_link) > 0:
             la_seccion = los_link[int(seccion)]
             primera = A( 'Primera', _href=URL(r=request, \
-        c="consultas", f="comprobantes", vars={"seccion": 0}))
+        c="consultas", f="lista_comprobantes", vars={"seccion": 0}))
             ultima = A( 'Última', _href=URL(r=request, \
-        c="consultas", f="comprobantes", vars={"seccion": len(los_link) -1}))
+        c="consultas", f="lista_comprobantes", vars={"seccion": len(los_link) -1}))
 
         if int(seccion) > 0:
             anterior = A("Anterior", _href=URL(r=request, \
-            c="consultas", f="comprobantes", vars={"seccion": int(seccion) -1}))
+            c="consultas", f="lista_comprobantes", vars={"seccion": int(seccion) -1}))
         else: anterior = None
         
         if int(seccion) < len(los_link) -1:
             posterior = A("Posterior", _href=URL(r=request, \
-            c="consultas", f="comprobantes", vars={"seccion": int(seccion) +1}))
+            c="consultas", f="lista_comprobantes", vars={"seccion": int(seccion) +1}))
         else:
             posterior = None
 
@@ -232,7 +232,7 @@ def comprobantes():
 
 
 @auth.requires_login()
-def detalles():
+def lista_detalles():
     los_detalles = db(db.detalle).select()
     return dict(detalles = los_detalles)
 
@@ -257,3 +257,44 @@ def productoporcodigo():
     except (KeyError, AttributeError):
         id = None
     return dict(id = id, existente = existente)
+
+
+@auth.requires_login()
+def consulta():
+    """ listado de tabla con webgrid """
+
+    try:
+        table = request.vars.table
+    except (AttributeError, KeyError, ValueError, TypeError):
+        table = None
+
+    if table:
+        grid = webgrid.WebGrid(crud)
+        grid.datasource = db[table]
+        grid.pagesize = 10
+
+        if table == "detalle":
+            grid.fields=["detalle.codigo", "detalle.ds", "detalle.qty", "detalle.precio", "detalle.iva", "detalle.imp_total"]
+
+        elif table == "comprobante":
+            grid.fields=["comprobante.resultado", "comprobante.tipocbte", "comprobante.cbte_nro", "comprobante.fecha_cbte", "comprobante.nombre_cliente", "comprobante.imp_total"]
+            
+            # genera un error TypeError por suma de int y None
+            # grid.totals = ["comprobante.imp_total",]
+            
+        elif table == "cliente":
+            grid.fields=["cliente.nombre_cliente","cliente.nro_doc","cliente.email","cliente.condicioniva","cliente.localidad_cliente"]
+            
+        elif table == "producto":
+            grid.fields=["producto.ds", "producto.codigo", "producto.iva", "producto.precio", "producto.umed"]
+
+        grid.css_prefix = "consulta"
+        grid.enabled_rows = ['header','filter', 'pager','footer', 'add_links']
+        grid.action_links = ['view','edit']
+        grid = grid()
+
+    else:
+        grid = None
+        
+    return dict(grid=grid) #notice the ()
+

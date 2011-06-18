@@ -20,8 +20,13 @@ response.menu = [
 (T('Asíncrona'), False, URL(request.application,'ialt','index'), []), \
     ]),
     (T('Consultas'), False, False, \
-     [(T('Comprobantes'), False, URL(request.application,'consultas', 'comprobantes', vars={"nueva": "true"})),(T('Detalles'), False, URL(request.application,'consultas', 'detalles'))]),    
-
+     [ \
+         (T('Comprobantes'), False, URL(request.application,'consultas', 'consulta', vars={"table": "comprobante"})), \
+         (T('Detalles'), False, URL(request.application,'consultas', 'consulta', vars={"table": "detalle"})), \
+         (T('Clientes'), False, URL(request.application,'consultas', 'consulta', vars={"table": "cliente"})), \
+         (T('Productos'), False, URL(request.application,'consultas', 'consulta', vars={"table": "producto"})), \
+         (T('Listar comprobantes.'), False, URL(request.application,'consultas', 'lista_comprobantes', vars={"nueva": "true"})), \
+         (T('Listar detalles'), False, URL(request.application,'consultas', 'lista_detalles'))]), \
     (T('Servicios Web'), False, None , [
         (T('Estado (dummy)'), False, "", [
             (T('WSFEv0'), False, URL(request.application,'servicios_web','dummy',args="wsfe"), []),
@@ -58,6 +63,7 @@ response.menu = [
 ## mind that plugins may also affect menu
 ##########################################
 
+"""
 response.menu+=[
     (T('Edit'), False, URL('admin', 'default', 'design/%s' % request.application),
      [
@@ -85,3 +91,4 @@ response.menu+=[
             ]
    ),
   ]
+"""

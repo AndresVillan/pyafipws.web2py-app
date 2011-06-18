@@ -1,3 +1,5 @@
 {{if cbte_update_form:}}
 {{=cbte_update_form}}
+{{else:}}
+{{=P("El formulario se canceló. Para reproceso seleccione ", EM("Reprocesar"), " en el detalle del cbte.")}}
 {{pass}}

@@ -65,7 +65,7 @@ def index():
 
 @auth.requires(auth.has_membership('administrador') or auth.has_membership('emisor') or auth.has_membership('invitado'))
 def form_cbte():
-    if not session.comprobante: return dict(form = None)
+    if not session.comprobante: return dict(cbte_update_form = None)
 
     variables = db(db.variablesusuario.usuario == auth.user_id).select().first()
     if variables: 
@@ -87,6 +87,17 @@ def form_cbte():
         cbte_update_form.vars.webservice = webservice
     
     return dict(cbte_update_form = cbte_update_form)
+
+
+@auth.requires(auth.has_membership('administrador') or auth.has_membership('emisor') or auth.has_membership('invitado'))
+def reprocesar():
+    session.ialt = True
+    try:
+        session.comprobante = request.args[0]
+    except (AttributeError, KeyError, TypeError, ValueError):
+        response.flash = "La referencia de cbte. no es válida."
+
+    redirect(URL(r=request, c="ialt", f="index"))
 
 
 def user():
@@ -373,7 +384,7 @@ def agregar_item():
         telefono_cliente = el_cliente.telefono_cliente, \
         provincia_cliente = el_cliente.provincia_cliente, \
         condicioniva_cliente = el_cliente.condicioniva, \
-        email = el_cliente.email, id_impositivo = el_cliente.id_impositivo)
+        email = el_cliente.email, id_impositivo = el_cliente.id_impositivo, cp_cliente = el_cliente.cp)
 
         
     elif el_tipo == "comprobanteasociado":
