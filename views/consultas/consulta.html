@@ -1,0 +1,16 @@
+{{extend 'layout.html'}}
+<h1>Consulta</h1>
+<div id="tabs">
+    <ul>
+        <li><a href="#tabs-1">Consulta</a></li>
+    </ul>
+    <div id="tabs-1">
+        <div class="grid">
+            {{if grid:}}
+                {{=grid}}
+            {{else:}}
+                {{=H3("No hay registros")}}
+            {{pass}}
+        </div>
+    </div>
+</div>

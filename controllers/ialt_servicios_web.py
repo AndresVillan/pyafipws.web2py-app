@@ -2,6 +2,15 @@
 
 # Interfaz alternativa (jqgrid)
 
+def moneyornone(obj):
+    try:
+        fon = "%.2f" % float(obj)
+    except (TypeError, ValueError):
+        fon = None
+    return fon
+
+
+
 def utftolatin(text):
     return unicode(text, "utf-8").encode("latin-1")
 
@@ -58,41 +67,6 @@ def detalles_bono_fiscal(comprobante):
     return items
 
 
-def calcular_comprobante(comprobante):
-    """ Cálculo del cbte usando una sección
-    de código de Marcelo como ejemplo para el
-    bucle de consulta a la base de datos"""
-
-    detalles = db(db.detalle.comprobante==comprobante.id).select()
-    tipocbte = db(db.tipocbte.id==comprobante.tipocbte).select().first()
-    
-    for p in range(len(detalles)):
-        iva = db(db.iva.id==detalles[p].iva).select().first()
-
-        try:
-            detalles[p].imp_neto = (detalles[p].qty * detalles[p].precio) -detalles[p].bonif
-        except TypeError:
-            detalles[p].imp_neto = 0
-            
-        try:
-            detalles[p].imp_iva = detalles[p].imp_neto * iva.aliquota
-        except TypeError:
-            detalles[p].imp_iva = 0.00
-        detalles[p].imp_total = detalles[p].imp_neto + detalles[p].imp_iva
-
-    neto = sum([detalle.imp_neto for detalle in detalles], 0.00)
-    
-    if not int(comprobante.tipocbte.cod) in [11, 12, 13, 15]:
-        liq = sum([detalle.imp_iva for detalle in detalles], 0.00)
-        total = sum([detalle.imp_total for detalle in detalles], 0.00)
-        
-    else:
-        liq = 0.0
-        total = neto
-
-    return True
-
-
 def comprobante_sumar_iva(comprobante):
     """ calcula los totales de iva por item de un cbte. Devuelve un arreglo bidimensional (dict/list) con valores por alícuota. """
     alicuotas = set()
@@ -117,7 +91,7 @@ def comprobante_sumar_iva(comprobante):
                     # no sumar items con valores None
                     pass
 
-        if importe > 0:
+        if (importe > 0) or (id =="3"):
             sumas.append(dict(id = id, base_imp = base_imp, importe = importe))
 
     return sumas
@@ -602,7 +576,6 @@ def autorizar():
         # autorizar el cbte
         pass
     elif au_form.errors:
-        response.flash = str(form.errors)
         return dict(resultado = None, pdf = None, au_form = au_form)
     else:
         return dict(resultado = None, pdf = None, au_form = au_form)
@@ -615,7 +588,7 @@ def autorizar():
 
        
     # cálculo de cbte para autorización
-    calcular_comprobante(comprobante)
+    # calcular_comprobante(comprobante)
         
     result = {}
     actualizar = {}
@@ -703,6 +676,7 @@ def autorizar():
                     session.comprobante = None
                     
         elif SERVICE=='wsfev1':
+            actualizar = {}
             # campos período de servicio: borrar si es tipo 1
             if comprobante.concepto == 1:
                 comprobante.fecha_serv_desde = ""
@@ -790,10 +764,22 @@ def autorizar():
                 else:
                     # rechazado
                     actualizar = dict(resultado = "R", cbte_nro = None)
-
                     
                 if ('Errors' in result or 'Observaciones' in fedetresp):
-                    # almacenar el informe de errores u observaciones
+                    """ almacenar el informe de errores u observaciones
+                    y los errores / observaciones """
+                    if 'Errors' in result:
+                        actualizar["err_code"] = ""
+                        actualizar["err_msg"] = ""
+                        for err in result["Errors"]:
+                            actualizar["err_code"] += str(err["Code"]) + ". "
+                            actualizar["err_msg"] += str(err["Msg"]) + ". "
+
+                    if "Observaciones" in fedetresp:
+                        actualizar["obs"] = ""
+                        for obs in fedetresp["Observaciones"]:
+                            actualizar["obs"] += str(obs["Obs"]["Code"]) + " " + str(obs["Obs"]["Msg"]) + ". "
+
                     db.xml.insert(request = client.xml_request, response = client.xml_response)
                     
 
@@ -829,53 +815,53 @@ def autorizar():
                 'Pro_codigo': detalle.codigo, 'Pro_ds': unicode(detalle.ds, "utf-8"), 'Pro_qty': detalle.qty, 'Pro_umed': detalle.umed.cod, 'Pro_precio_uni': detalle.precio,
                 'Pro_total_item': (detalle.imp_total)
                 }} for detalle in db(db.detalle.comprobante == comprobante).select()],
-                'Permisos': [{ 'Permiso': { 'Id_permiso': permiso.id_permiso, 'Dst_merc': permiso.dst_merc
+                'Permisos': [{ 'Permiso': { 'Id_permiso': permiso.id_permiso, 'Dst_merc': permiso.dst_merc.cod
                 }} for permiso in db(db.permiso.comprobante == comprobante).select()],
                 'Cmps_asoc': [{ 'Cmp_asoc': {
                 'Cbte_tipo': comprobanteasociado.asociado.tipocbte.cod, 'Cbte_punto': comprobanteasociado.asociado.punto_vta, 'Cbte_numero': comprobanteasociado.asociado.cbte_nro
                 }} for comprobanteasociado in db(db.comprobanteasociado.comprobante == comprobante).select()],
             })['FEXAuthorizeResult']
 
-                    
-            if 'FEXResultAuth' in result:        
-                if result["FEXResultAuth"]["Resultado"] == "A":
-                    session.comprobante = None
-                    # aprobado
-                    actualizar = dict(
-                    obs = result["FEXResultAuth"]["Motivos_Obs"],
-                    resultado=result["FEXResultAuth"]['Resultado'],
-                    cae=result["FEXResultAuth"]["Cae"],
-                    fecha_cbte = ymd2date(result["FEXResultAuth"]["Fch_cbte"]),
-                    cbte_nro = result["FEXResultAuth"]["Cbte_nro"],
-                    fecha_vto = ymd2date(result["FEXResultAuth"]["Fch_venc_Cae"]),
-                    punto_vta = result["FEXResultAuth"]["Punto_vta"],
-                    reproceso = result["FEXResultAuth"]["Reproceso"],
-                    id_ws = result["FEXResultAuth"]["Id"],
-                    webservice = SERVICE
-                    )
-                    
+
+            if 'FEXResultAuth' in result:
+                if "Resultado" in result["FEXResultAuth"]:
+                    if result["FEXResultAuth"]["Resultado"] == "A":
+                        session.comprobante = None
+                        # aprobado
+                        actualizar = dict(
+                        obs = result["FEXResultAuth"]["Motivos_Obs"],
+                        resultado=result["FEXResultAuth"]['Resultado'],
+                        cae=result["FEXResultAuth"]["Cae"],
+                        fecha_cbte = ymd2date(result["FEXResultAuth"]["Fch_cbte"]),
+                        cbte_nro = result["FEXResultAuth"]["Cbte_nro"],
+                        fecha_vto = ymd2date(result["FEXResultAuth"]["Fch_venc_Cae"]),
+                        punto_vta = result["FEXResultAuth"]["Punto_vta"],
+                        reproceso = result["FEXResultAuth"]["Reproceso"],
+                        id_ws = result["FEXResultAuth"]["Id"],
+                        webservice = SERVICE
+                        )
+                    else:
+                        # rechazado
+                        actualizar = dict(
+                        obs = result["FEXResultAuth"]["Motivos_Obs"],
+                        resultado=result["FEXResultAuth"]['Resultado'],
+                        id_ws = result["FEXResultAuth"]["Id"],
+                        err_code = result["FEXErr"]["ErrCode"],
+                        err_msg = result["FEXErr"]["ErrMsg"],
+                        webservice = SERVICE
+                        )
+                        session.comprobante = None
+
+                    if  result["FEXErr"]["ErrCode"] or result["FEXResultAuth"]["Motivos_Obs"]:
+                        # almacenar el informe de errores u observaciones
+                        db.xml.insert(request = client.xml_request, response = client.xml_response)
                 else:
-                    # rechazado
-                    actualizar = dict(
-                    obs = result["FEXResultAuth"]["Motivos_Obs"],
-                    resultado=result["FEXResultAuth"]['Resultado'],
-                    id_ws = result["FEXResultAuth"]["Id"],
-                    err_code = result["FEXErr"]["ErrCode"],
-                    err_msg = result["FEXErr"]["ErrMsg"],                    
-                    webservice = SERVICE
-                    )
+                    try:
+                        actualizar = dict(err_code = result["FEXErr"]["ErrCode"], err_msg = result["FEXErr"]["ErrMsg"])
+                    except (AttributeError, ValueError, TypeError, KeyError):
+                        actualizar = dict(obs = "Error al procesar la respuesta del web service.")
+
                     db.xml.insert(request = client.xml_request, response = client.xml_response)
-                    session.comprobante = None
-
-                    
-            if  result["FEXErr"]["ErrCode"] or result["FEXResultAuth"]["Motivos_Obs"]:
-                # almacenar el informe de errores u observaciones
-                if result["FEXErr"]:
-                    actualizar["err_msg"] = result["FEXErr"]["ErrMsg"]
-                    actualizar["err_code"] = result["FEXErr"]["ErrCode"]
-                    actualizar["resultado"] = "R"
-
-                db.xml.insert(request = client.xml_request, response = client.xml_response)
 
           
         elif SERVICE=='wsbfe':
@@ -943,18 +929,18 @@ def autorizar():
 
             fact = {
             'codigoTipoDocumento': comprobante.tipodoc.cod,
-            'numeroDocumento': nro_doc_tmp,
+            'numeroDocumento':comprobante.nro_doc.replace("-", ""),
             'codigoTipoComprobante': comprobante.tipocbte.cod,
-            'numeroPuntoVenta': comprobante.punto_vta, 
-            'numeroComprobante': comprobante.cbte_nro, 
-            'importeTotal': comprobante.imp_total or "0.00", 
-            'importeNoGravado': comprobante.imp_tot_conc or "0.00",
-            'importeGravado': comprobante.imp_neto or "0.00", 
-            'importeSubtotal': comprobante.imp_subtotal or comprobante.imp_neto or "0.00", # 'imp_iva': imp_iva,
-            'importeOtrosTributos': comprobante.imp_trib or None, 
-            'importeExento': comprobante.imp_op_ex or "0.00", 
+            'numeroPuntoVenta': comprobante.punto_vta,
+            'numeroComprobante': comprobante.cbte_nro,
+            'importeTotal': moneyornone(comprobante.imp_total),
+            'importeNoGravado': moneyornone(comprobante.imp_tot_conc),
+            'importeGravado': moneyornone(comprobante.imp_neto),
+            'importeSubtotal': moneyornone(float(comprobante.imp_neto) + float(comprobante.imp_op_ex) + float(comprobante.imp_tot_conc)), # 'imp_iva': imp_iva,
+            'importeOtrosTributos': moneyornone(comprobante.imp_trib),
+            'importeExento': moneyornone(comprobante.imp_op_ex),
             'fechaEmision': date2y_m_d(comprobante.fecha_cbte) or None,
-            'codigoMoneda': comprobante.moneda_id.cod, 
+            'codigoMoneda': comprobante.moneda_id.cod,
             'cotizacionMoneda': comprobante.moneda_ctz,
             'codigoConcepto': comprobante.concepto,
             'observaciones': comprobante.obs_comerciales,
@@ -963,29 +949,29 @@ def autorizar():
             'fechaServicioHasta': date2y_m_d(comprobante.fecha_serv_hasta) or None,
             'arrayComprobantesAsociados': [{'comprobanteAsociado': {
                 'codigoTipoComprobante': cbte_asoc.asociado.tipocbte.cod,
-                'numeroPuntoVenta': cbte_asoc.asociado.punto_vta, 
+                'numeroPuntoVenta': cbte_asoc.asociado.punto_vta,
                 'numeroComprobante': cbte_asoc.asociado.cbte_nro }} for cbte_asoc in db(db.comprobanteasociado.comprobante == comprobante).select()],
             'arrayOtrosTributos': [ {'otroTributo': {
-                'codigo': tributo.tributo.id, 
-                'descripcion': tributo.tributo.ds, 
-                'baseImponible': tributo.base_imp, 
-                'importe': tributo.importe }} for tributo in db(db.detalletributo.comprobante == comprobante).select()],
-            'arraySubtotalesIVA': [{'subtotalIVA': { 
+                'codigo': tributo.tributo.id,
+                'descripcion': tributo.tributo.ds,
+                'baseImponible': moneyornone(tributo.base_imp),
+                'importe': moneyornone(tributo.importe)}} for tributo in db(db.detalletributo.comprobante == comprobante).select()],
+            'arraySubtotalesIVA': [{'subtotalIVA': {
                 'codigo': iva["id"],
-                'importe': iva["importe"],
+                'importe': moneyornone(iva["importe"]),
                 }} for iva in comprobante_sumar_iva(comprobante)],
             'arrayItems': [{'item':{
                 'unidadesMtx': it.umed.cod,
                 'codigoMtx': it.codigomtx or "0000000000000",
-                'codigo': it.codigo,                
+                'codigo': it.codigo,
                 'descripcion': it.ds,
                 'cantidad': it.qty,
                 'codigoUnidadMedida': it.umed.cod,
                 'precioUnitario': it.precio,
-                'importeBonificacion': it.bonif or "0.00",
+                'importeBonificacion': moneyornone(it.bonif),
                 'codigoCondicionIVA': it.iva.cod,
-                'importeIVA': it.imp_iva or "0.00",
-                'importeItem': it.imp_total or "0.00"}} for it in db(db.detalle.comprobante == comprobante).select()]
+                'importeIVA': moneyornone(it.imp_iva),
+                'importeItem': moneyornone(it.imp_total)}} for it in db(db.detalle.comprobante == comprobante).select()]
             }
 
             result = client.autorizarComprobante(
@@ -1005,7 +991,6 @@ def autorizar():
                 if resultado == u"A":
                     session.comprobante = None
                 else:
-                    response.flash = "El cbte tiene observaciones"
                     session.comprobante = None
                     
             elif result['resultado'] == "R":
@@ -1015,10 +1000,10 @@ def autorizar():
                     obs.append("%(codigo)s: %(descripcion)s" % (error['codigoDescripcion']))
                 
             for error in result.get('arrayObservaciones', []):
-                obs.append("%(codigo)s: %(descripcion)s" % (error['codigoDescripcion']))
+                obs.append("%(codigo)s: %(descripcion)s. " % (error['codigoDescripcion']))
 
             for error in obs:
-                actualizar["obs"] += "Error %(codigo)s: %(descripcion)s. " % error['codigoDescripcion']
+                actualizar["obs"] += error
 
             actualizar["resultado"] = result['resultado']
     
@@ -1028,10 +1013,7 @@ def autorizar():
 
     except SoapFault,sf:
         db.xml.insert(request = client.xml_request, response = client.xml_response)
-        return dict( resultado = {'fault': sf.faultstring, 
-                'xml_request': client.xml_request, 
-                'xml_response': client.xml_response,
-        }, pdf = None, au_form = au_form)
+        return dict( resultado = {'fault': sf.faultstring}, pdf = None, au_form = au_form)
 
     except ExpatError, ee:
         db.xml.insert(request = client.xml_request, response = client.xml_response)        

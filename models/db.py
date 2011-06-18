@@ -105,3 +105,9 @@ def autenticacion_usuario(form):
     
 auth.settings.login_onaccept = autenticacion_usuario
 auth.settings.register_onaccept = autenticacion_usuario
+
+# dirigir las consultas crud a abm.py
+crud.settings.controller = "abm"
+
+# webgrid
+webgrid = local_import('webgrid')

@@ -1,0 +1,66 @@
+{{extend 'layout.html'}}
+<h1>Comprobantes</h1>
+<div id="tabs">
+    <ul>
+        {{if consulta:}}
+        <li><a href="#tabs-2">Lista</a></li>
+        {{pass}}
+        <li><a href="#tabs-1">Consulta</a></li>
+    </ul>
+    <div id="tabs-1">
+      <div class="form_comprobante">
+{{=form}}
+      </div>
+    </div>
+{{if consulta:}}
+    <div id="tabs-2">
+{{if los_comprobantes:}}
+
+{{if registros:}}
+{{=H5("Mostrando %s registros por página" % registros)}}
+{{pass}}
+
+{{if los_link:}}
+
+Secciones ({{=laseccion}}):
+{{=primera}}
+{{if (int(seccion) -1)  > -1:}}
+{{=anterior}}
+{{pass}}
+
+{{contador = 0}}
+
+{{for link in los_link:}}
+{{contador +=1}}
+
+{{if (contador > int(seccion) -5) and (contador < int(seccion) +5):}}
+{{=link}}
+{{pass}}
+
+{{pass}}
+
+{{if (int(seccion) +1) < len(los_link):}}
+{{=posterior}}
+{{pass}}
+{{=ultima}}
+{{pass}}
+
+
+<!-- El sqltable con los registros-->
+<div class="extenso">
+{{if los_comprobantes != None:}}
+{{ headers = 'fieldname:capitalize' }}
+{{ columns = ['comprobante.id', 'comprobante.id_ws', 'comprobante.tipocbte', 'comprobante.cbte_nro', 'comprobante.webservice', 'comprobante.punto_vta', 'comprobante.fecha_cbte', 'comprobante.nombre_cliente' ] }}
+{{=DIV(SQLTABLE(los_comprobantes, headers = headers, columns = columns, linkto=URL(\
+        r=request, c='consultas', f='detalle')))}}
+{{pass}}
+</div>
+
+{{else:}}
+{{if consulta:}}
+{{=H3("No hay registros")}}
+{{pass}}
+{{pass}}
+    </div>
+{{pass}}
+</div>

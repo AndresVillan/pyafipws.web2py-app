@@ -9,7 +9,8 @@
     {{if comprobante:}}
         <span>{{=email}}&nbsp;</span>
         <span>{{=A("Descargar PDF", _href=URL(r = request, c="salida", f="invoice", args = ["comprobante", comprobante.id])) }}&nbsp;</span>
-        <span>{{=A("Reprocesar", _href=URL(r = request, c="emision", f="reprocesar", args = [comprobante.id])) }}</span>
+        <span>{{=A("Reprocesar", _href=URL(r = request, c="emision", f="reprocesar", args = [comprobante.id])) }}&nbsp;</span>
+        <span>{{=A("Reprocesar (carga manual de totales)", _href=URL(r = request, c="ialt", f="reprocesar", args = [comprobante.id])) }}</span>
         <span>{{=SQLFORM(db.comprobante, comprobante.id, readonly = True)}}</span>
     {{pass}}
     </div>

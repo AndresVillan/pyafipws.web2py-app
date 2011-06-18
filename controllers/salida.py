@@ -3,8 +3,14 @@
 
 import os
 
+WSDESC = {"wsmtxca": u"Exportación", "wsfev1": "Mercado interno", "wsfex": u"Factura electrónica MTXCA", "wsbfe": "Bonos fiscales"}
+
 def utftolatin(text):
-    return unicode(text, "utf-8").encode("latin-1")
+    try:
+        return unicode(text, "utf-8").encode("latin-1")
+    except TypeError:
+        # None es ""
+        return ""
 
 def crear_pdf(comprobante):
     """ pdf básico con el detalle del comprobante para la demo """
@@ -190,7 +196,11 @@ def invoice():
              title=utftolatin(el_cbte.nombre_cliente), author=utftolatin(las_variables.empresa),
              subject=utftolatin(db.tipocbte[el_cbte.tipocbte].ds), keywords="Electronic TAX Invoice")
 
-    detail = "Detalles del comprobante"
+    if el_cbte.obs_comerciales:
+        detail = el_cbte.obs_comerciales
+    else:
+        detail = ""
+        
     items = []
 
     i = 0
@@ -209,6 +219,9 @@ def invoice():
     # divide and count lines
     lines = 0
     li_items = []
+
+    unit = qty = code = None
+
     for it in items:
         qty = it['qty']
         code = it['code']
@@ -260,12 +273,28 @@ def invoice():
         f["company_name"] = utftolatin(las_variables.empresa)
         f["company_logo"] = logo
         f["company_header1"] = utftolatin(las_variables.domicilio)
-        f["company_header2"] = str(las_variables.url)
+        f["company_header2"] = "CUIT " + str(las_variables.cuit)
         f["company_footer1"] = utftolatin(el_cbte.tipocbte.ds)
-        f["company_footer2"] = str(las_variables.cuit).replace("_", "")
-        f['number'] = str(el_cbte.cbte_nro)
+        
+        try:
+            f["company_footer2"] = WSDESC[el_cbte.webservice]
+        except KeyError:
+            f["company_footer2"] = u"Factura electrónica"
+            
+        f['number'] = str(el_cbte.punto_vta).zfill(4) + "-" + str(el_cbte.cbte_nro).zfill(7)
         f['payment'] = utftolatin(el_cbte.forma_pago)
+        f['document_type'] = el_cbte.tipocbte.ds[-1:]
 
+        try:
+            cae = str(el_cbte.cae)
+            if cae == "None": cae = "0000000000"
+            elif "|" in cae: cae = cae.strip("|")
+            f['barcode'] = cae
+            f['barcode_readable'] = "CAE: " + cae
+        except (TypeError, ValueError, KeyError, AttributeError):
+            f['barcode'] = "0000000000"
+            f['barcode_readable'] = u"CAE: no registrado" 
+            
         try:
             issue_date = el_cbte.fecha_cbte.strftime("%d-%m-%Y")
         except (TypeError, AttributeError):
@@ -282,6 +311,10 @@ def invoice():
 
         f['customer_name'] = utftolatin(el_cbte.nombre_cliente)
         f['customer_address'] = utftolatin(el_cbte.domicilio_cliente)
+        f['customer_vat'] = utftolatin(el_cbte.cp_cliente)
+        f['customer_phone'] = utftolatin(el_cbte.telefono_cliente)
+        f['customer_city'] = utftolatin(el_cbte.localidad_cliente)
+        f['customer_taxid'] = utftolatin(el_cbte.nro_doc)
 
         # print line item...
         li = 0

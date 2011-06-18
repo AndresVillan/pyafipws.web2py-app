@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
 
+def moneyornone(obj):
+    try:
+        fon = "%.2f" % float(obj)
+    except (TypeError, ValueError):
+        fon = None
+    return fon
+
 def utftolatin(text):
     return unicode(text, "utf-8").encode("latin-1")
 
@@ -61,37 +68,77 @@ def calcular_comprobante(comprobante):
 
     detalles = db(db.detalle.comprobante==comprobante.id).select()
     tipocbte = db(db.tipocbte.id==comprobante.tipocbte).select().first()
-    
+
+    imp_op_ex = 0
+    imp_tot_conc = 0
+    # sumas sin iva
+    parciales = []
+
     for p in range(len(detalles)):
         iva = db(db.iva.id==detalles[p].iva).select().first()
-
         try:
-            detalles[p].imp_neto = (detalles[p].qty * detalles[p].precio) -detalles[p].bonif
-        except TypeError:
-            detalles[p].imp_neto
+            parcial_detalle = (detalles[p].qty * detalles[p].precio) -detalles[p].bonif
+        except (ValueError, TypeError, KeyError, AttributeError):
+            parcial_detalle = 0.0
             
-        try:
-            detalles[p].imp_iva = detalles[p].imp_neto * iva.aliquota
-        except TypeError:
-            detalles[p].imp_iva = 0.00            
-        detalles[p].imp_total = detalles[p].imp_neto + detalles[p].imp_iva
+        parciales.append(parcial_detalle)
+            
+        if iva.cod in ["1", "2"]:
+            detalles[p].imp_iva = 0.0
+            detalles[p].imp_total = parcial_detalle 
 
-    neto = sum([detalle.imp_neto for detalle in detalles], 0.00)         
-    
+        else:
+            try:
+                detalles[p].imp_iva = parcial_detalle * iva.aliquota
+                detalles[p].imp_total = detalles[p].imp_iva + parcial_detalle
+            except TypeError:
+                detalles[p].imp_iva = 0.0
+                detalles[p].imp_total = 0.0
+
+    neto = sum([((detalle.precio * detalle.qty) -detalles[p].bonif) for detalle in detalles if not (detalle.iva.cod in ["2", "1"])], 0.00)
+    imp_op_ex = sum([detalle.imp_total for detalle in detalles if (detalle.iva.cod == "2")], 0.00)
+    imp_tot_conc = sum([detalle.imp_total for detalle in detalles if (detalle.iva.cod == "1")], 0.00)
+
     if not int(comprobante.tipocbte.cod) in [11, 12, 13, 15]:
         liq = sum([detalle.imp_iva for detalle in detalles], 0.00)
-        total = sum([detalle.imp_total for detalle in detalles], 0.00)
-        
     else:
         liq = 0.0
-        total = neto
 
-    
+    total = imp_op_ex + imp_tot_conc + neto + liq
+
     comprobante.imp_total = total
     comprobante.imp_neto = neto
     comprobante.impto_liq = liq
+    comprobante.imp_op_ex = imp_op_ex
+    comprobante.imp_tot_conc = imp_tot_conc
 
     return True
+
+
+def comprobante_sumar_no_gravado(comprobante):
+    suma = 0.0
+    detalles = db(db.detalle.comprobante == comprobante).select()
+    for det in detalles:
+        if det.iva.cod == "1":
+            try:
+                suma += float(det.imp_total)
+            except (AttributeError, KeyError, ValueError, TypeError):
+                # error al convertir el valor a número.
+                pass
+    return suma
+
+
+def comprobante_sumar_exento(comprobante):
+    suma = 0.0
+    detalles = db(db.detalle.comprobante == comprobante).select()
+    for det in detalles:
+        if det.iva.cod == "2":
+            try:
+                suma += float(det.imp_total)
+            except (AttributeError, KeyError, ValueError, TypeError):
+                # error al convertir el valor a número.
+                pass
+    return suma
 
 
 def comprobante_sumar_iva(comprobante):
@@ -118,7 +165,7 @@ def comprobante_sumar_iva(comprobante):
                     """ TODO: manejo de errores en cómputo de ítem. """
                     pass
 
-        if importe > 0:
+        if (importe > 0) or (id == "3"):
             sumas.append(dict(id = id, base_imp = base_imp, importe = importe))
 
     return sumas
@@ -610,7 +657,10 @@ def autorizar():
        
     # cálculo de cbte para autorización
     calcular_comprobante(comprobante)
-        
+
+    # comprobante.imp_op_ex = comprobante_sumar_iva(comprobante)
+    # comprobante.imp_tot_conc = comprobante_sumar_no_gravado(comprobante)
+    
     result = {}
     actualizar = {}
 
@@ -699,6 +749,7 @@ def autorizar():
                     actualizar = dict(resultado = "R")
                     
         elif SERVICE=='wsfev1':
+            actualizar = {}
             # campos período de servicio: borrar si es tipo 1
             if comprobante.concepto == 1:
                 comprobante.fecha_serv_desde = ""
@@ -733,7 +784,7 @@ def autorizar():
                     'ImpTotConc': comprobante.imp_tot_conc or 0.00,
                     'ImpNeto': "%.2f" % comprobante.imp_neto,
                     'ImpOpEx': comprobante.imp_op_ex or 0.00,
-                    'ImpTrib': comprobante.imp_iibb or 0.00,
+                    'ImpTrib': comprobante.imp_trib or 0.00,
                     'ImpIVA': "%.2f" % comprobante.impto_liq,
                     # Fechas solo se informan si Concepto in (2,3)
                     'FchServDesde': comprobante.fecha_serv_desde and comprobante.fecha_serv_desde.strftime("%Y%m%d"),
@@ -787,9 +838,22 @@ def autorizar():
                     # rechazado
                     actualizar = dict(resultado = "R", cbte_nro = None)
 
-                    
+
                 if ('Errors' in result or 'Observaciones' in fedetresp):
-                    # almacenar el informe de errores u observaciones
+                    """ almacenar el informe de errores u observaciones
+                    y los errores / observaciones """
+                    if 'Errors' in result:
+                        actualizar["err_code"] = ""
+                        actualizar["err_msg"] = ""
+                        for err in result["Errors"]:
+                            actualizar["err_code"] += str(err["Code"]) + ". "
+                            actualizar["err_msg"] += str(err["Msg"]) + ". "
+
+                    if "Observaciones" in fedetresp:
+                        actualizar["obs"] = ""
+                        for obs in fedetresp["Observaciones"]:
+                            actualizar["obs"] += str(obs["Obs"]["Code"]) + " " + str(obs["Obs"]["Msg"]) + ". "
+
                     db.xml.insert(request = client.xml_request, response = client.xml_response)
                     
 
@@ -825,48 +889,54 @@ def autorizar():
                 'Pro_codigo': detalle.codigo, 'Pro_ds': unicode(detalle.ds, "utf-8"), 'Pro_qty': detalle.qty, 'Pro_umed': detalle.umed.cod, 'Pro_precio_uni': detalle.precio,
                 'Pro_total_item': (detalle.imp_total)
                 }} for detalle in db(db.detalle.comprobante == comprobante).select()],
-                'Permisos': [{ 'Permiso': { 'Id_permiso': permiso.id_permiso, 'Dst_merc': permiso.dst_merc
+                'Permisos': [{ 'Permiso': { 'Id_permiso': permiso.id_permiso, 'Dst_merc': permiso.dst_merc.cod
                 }} for permiso in db(db.permiso.comprobante == comprobante).select()],
                 'Cmps_asoc': [{ 'Cmp_asoc': {
                 'Cbte_tipo': comprobanteasociado.asociado.tipocbte.cod, 'Cbte_punto': comprobanteasociado.asociado.punto_vta, 'Cbte_numero': comprobanteasociado.asociado.cbte_nro
                 }} for comprobanteasociado in db(db.comprobanteasociado.comprobante == comprobante).select()],
             })['FEXAuthorizeResult']
-                    
-            if 'FEXResultAuth' in result:        
-                if result["FEXResultAuth"]["Resultado"] == "A":
-                    session.comprobante = None
-                    # aprobado
-                    actualizar = dict(
-                    obs = result["FEXResultAuth"]["Motivos_Obs"],
-                    resultado=result["FEXResultAuth"]['Resultado'],
-                    cae=result["FEXResultAuth"]["Cae"],
-                    fecha_cbte = ymd2date(result["FEXResultAuth"]["Fch_cbte"]),
-                    cbte_nro = result["FEXResultAuth"]["Cbte_nro"],
-                    fecha_vto = ymd2date(result["FEXResultAuth"]["Fch_venc_Cae"]),
-                    punto_vta = result["FEXResultAuth"]["Punto_vta"],
-                    reproceso = result["FEXResultAuth"]["Reproceso"],
-                    id_ws = result["FEXResultAuth"]["Id"],
-                    webservice = SERVICE
-                    )
-                    
+
+            if 'FEXResultAuth' in result:
+                if "Resultado" in result["FEXResultAuth"]:
+                    if result["FEXResultAuth"]["Resultado"] == "A":
+                        session.comprobante = None
+                        # aprobado
+                        actualizar = dict(
+                        obs = result["FEXResultAuth"]["Motivos_Obs"],
+                        resultado=result["FEXResultAuth"]['Resultado'],
+                        cae=result["FEXResultAuth"]["Cae"],
+                        fecha_cbte = ymd2date(result["FEXResultAuth"]["Fch_cbte"]),
+                        cbte_nro = result["FEXResultAuth"]["Cbte_nro"],
+                        fecha_vto = ymd2date(result["FEXResultAuth"]["Fch_venc_Cae"]),
+                        punto_vta = result["FEXResultAuth"]["Punto_vta"],
+                        reproceso = result["FEXResultAuth"]["Reproceso"],
+                        id_ws = result["FEXResultAuth"]["Id"],
+                        webservice = SERVICE
+                        )
+                    else:
+                        # rechazado
+                        actualizar = dict(
+                        obs = result["FEXResultAuth"]["Motivos_Obs"],
+                        resultado=result["FEXResultAuth"]['Resultado'],
+                        id_ws = result["FEXResultAuth"]["Id"],
+                        err_code = result["FEXErr"]["ErrCode"],
+                        err_msg = result["FEXErr"]["ErrMsg"],
+                        webservice = SERVICE
+                        )
+                        session.comprobante = None
+
+                    if  result["FEXErr"]["ErrCode"] or result["FEXResultAuth"]["Motivos_Obs"]:
+                        # almacenar el informe de errores u observaciones
+                        db.xml.insert(request = client.xml_request, response = client.xml_response)
                 else:
-                    # rechazado
-                    actualizar = dict(
-                    obs = result["FEXResultAuth"]["Motivos_Obs"],
-                    resultado=result["FEXResultAuth"]['Resultado'],
-                    id_ws = result["FEXResultAuth"]["Id"],
-                    err_code = result["FEXErr"]["ErrCode"],
-                    err_msg = result["FEXErr"]["ErrMsg"],
-                    webservice = SERVICE
-                    )
+                    try:
+                        actualizar = dict(err_code = result["FEXErr"]["ErrCode"], err_msg = result["FEXErr"]["ErrMsg"])
+                    except (AttributeError, ValueError, TypeError, KeyError):
+                        actualizar = dict(obs = "Error al procesar la respuesta del web service.")
+
                     db.xml.insert(request = client.xml_request, response = client.xml_response)
-                    session.comprobante = None
-                    
-                if  result["FEXErr"]["ErrCode"] or result["FEXResultAuth"]["Motivos_Obs"]:
-                    # almacenar el informe de errores u observaciones
-                    db.xml.insert(request = client.xml_request, response = client.xml_response)
-        
-          
+
+
         elif SERVICE=='wsbfe':
 
             result = client.BFEAuthorize(\
@@ -932,12 +1002,12 @@ def autorizar():
             'codigoTipoComprobante': comprobante.tipocbte.cod,
             'numeroPuntoVenta': comprobante.punto_vta, 
             'numeroComprobante': comprobante.cbte_nro, 
-            'importeTotal': comprobante.imp_total, 
-            'importeNoGravado': comprobante.imp_tot_conc or "0.00",
-            'importeGravado': comprobante.imp_neto, 
-            'importeSubtotal': comprobante.imp_subtotal or comprobante.imp_neto, # 'imp_iva': imp_iva,
-            'importeOtrosTributos': comprobante.imp_trib or None, 
-            'importeExento': comprobante.imp_op_ex or "0.00", 
+            'importeTotal': moneyornone(comprobante.imp_total),
+            'importeNoGravado': moneyornone(comprobante.imp_tot_conc),
+            'importeGravado': moneyornone(comprobante.imp_neto),
+            'importeSubtotal': moneyornone(float(comprobante.imp_neto) + float(comprobante.imp_op_ex) + float(comprobante.imp_tot_conc)), # 'imp_iva': imp_iva,
+            'importeOtrosTributos': moneyornone(comprobante.imp_trib),
+            'importeExento': moneyornone(comprobante.imp_op_ex),
             'fechaEmision': date2y_m_d(comprobante.fecha_cbte) or None,
             'codigoMoneda': comprobante.moneda_id.cod, 
             'cotizacionMoneda': comprobante.moneda_ctz,
@@ -953,24 +1023,24 @@ def autorizar():
             'arrayOtrosTributos': [ {'otroTributo': {
                 'codigo': tributo.tributo.id, 
                 'descripcion': tributo.tributo.ds, 
-                'baseImponible': tributo.base_imp, 
-                'importe': tributo.importe }} for tributo in db(db.detalletributo.comprobante == comprobante).select()],
+                'baseImponible': moneyornone(tributo.base_imp),
+                'importe': moneyornone(tributo.importe)}} for tributo in db(db.detalletributo.comprobante == comprobante).select()],
             'arraySubtotalesIVA': [{'subtotalIVA': { 
                 'codigo': iva["id"],
-                'importe': iva["importe"],
+                'importe': moneyornone(iva["importe"]),
                 }} for iva in comprobante_sumar_iva(comprobante)],
             'arrayItems': [{'item':{
                 'unidadesMtx': it.umed.cod,
                 'codigoMtx': it.codigomtx or "0000000000000",
-                'codigo': it.codigo,                
+                'codigo': it.codigo,
                 'descripcion': it.ds,
                 'cantidad': it.qty,
                 'codigoUnidadMedida': it.umed.cod,
                 'precioUnitario': it.precio,
-                'importeBonificacion': it.bonif or "0.00",
+                'importeBonificacion': moneyornone(it.bonif),
                 'codigoCondicionIVA': it.iva.cod,
-                'importeIVA': it.imp_iva or "0.00",
-                'importeItem': it.imp_total or "0.00"}} for it in db(db.detalle.comprobante == comprobante).select()]
+                'importeIVA': moneyornone(it.imp_iva),
+                'importeItem': moneyornone(it.imp_total)}} for it in db(db.detalle.comprobante == comprobante).select()]
             }
 
             result = client.autorizarComprobante(
@@ -983,7 +1053,7 @@ def autorizar():
             # actualizar = dict()
             obs = []
             if result['resultado'] in ("A", "O"):
-                cbteresp = result['comprobanteResponse']              
+                cbteresp = result['comprobanteResponse']
                 fecha_cbte = cbteresp['fechaEmision'],
                 fecha_vto = cbteresp['fechaVencimientoCAE'],
                 actualizar["cae"] = cbteresp['CAE'], # 60423794871430L,
@@ -1001,10 +1071,10 @@ def autorizar():
 
                 
             for error in result.get('arrayObservaciones', []):
-               obs.append("%(codigo)s: %(descripcion)s" % (error['codigoDescripcion']))
+               obs.append("%(codigo)s: %(descripcion)s. " % (error['codigoDescripcion']))
 
             for error in obs:
-                actualizar["obs"] += "Error %(codigo)s: %(descripcion)s. " % error['codigoDescripcion']
+                actualizar["obs"] += error
 
             actualizar["resultado"] = result['resultado']
 
@@ -1014,10 +1084,7 @@ def autorizar():
 
     except SoapFault,sf:
         db.xml.insert(request = client.xml_request, response = client.xml_response)
-        return dict( resultado = {'fault': sf.faultstring, 
-                'xml_request': client.xml_request, 
-                'xml_response': client.xml_response,
-        }, pdf = None)
+        return dict( resultado = {'fault': sf.faultstring}, pdf = None)
 
     except ExpatError, ee:
         return dict(resultado = "Error en el Cliente SOAP. Formato de respuesta inválido.", pdf = None)

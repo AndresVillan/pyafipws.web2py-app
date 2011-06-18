@@ -2,6 +2,19 @@
 
 /* casilleros de texto del formulario para ingresar detalles */
 
+
+div.grid{
+overflow: auto;
+}
+
+.consulta-webgrid select{
+width: 9em;
+}
+
+.consulta-webgrid td, .consulta-webgrid th{
+width: 10em;
+}
+
 em{
 font-weight: bold;
 }

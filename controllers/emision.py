@@ -104,6 +104,7 @@ def iniciar():
         form.vars.localidad_cliente = cliente.localidad_cliente.ds
         form.vars.provincia_cliente = cliente.provincia_cliente.ds
         form.vars.email = cliente.email
+        form.vars.cp_cliente = cliente.cp
 
     # valido el formulario (si han enviado datos)
     if form.accepts(request.vars, session, dbio=False, formname="iniciar_comprobante"):
