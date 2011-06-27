@@ -74,7 +74,7 @@ def form_cbte():
         webservice = 'wsfev1'
 
     campos_generales = ['id_ws', 'webservice',  'fecha_cbte', 'tipocbte', 'punto_vta', 'cbte_nro', 'concepto', 'imp_total', 'imp_tot_conc', 'imp_neto', 'impto_liq', 'impto_liq_rni', 'imp_op_ex', 'impto_perc', 'imp_iibb', 'imp_subtotal', 'imp_trib', 'impto_perc_mun', 'imp_internos', 'moneda_id', 'moneda_ctz', 'obs_comerciales', 'obs', 'forma_pago', 'zona', 'fecha_venc_pago', 'fecha_serv_desde', 'fecha_serv_hasta', 'formato_id']
-    if webservice == "wsfex": campos_generales += ['permiso_existente', 'id_impositivo', 'dst_cmp', 'dstcuit', 'incoterms', 'incoterms_ds', 'idioma_cbte', 'tipo_expo']
+    if webservice == "wsfex": campos_generales += ['permiso_existente', 'id_impositivo', 'dst_cmp', 'dstcuit', 'incoterms', 'incoterms_ds', 'idioma_cbte', 'tipo_expo', 'operacion']
     
     cbte_update_form = SQLFORM(db.comprobante, session.comprobante, \
     fields = campos_generales, keepvalues = True, _id="formulario_comprobante")

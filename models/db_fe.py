@@ -18,6 +18,13 @@ u'Neuquen', 21: u'La Pampa', 22: u'Río Negro', 23: u'Santa Cruz', 24: u'Tierra 
 FORMASPAGO = ['Contado/Efectivo', 'Cheque', 'Cuenta corriente', 'Transferencia', '(Sin especificar)']
 CONDICIONESIVA = {'IVA Responsable Inscripto': 1, 'IVA Responsable no Inscripto': 2, 'IVA no Responsable': 3,'IVA Sujeto Exento': 4,'Consumidor Final': 5, 'Responsable Monotributo': 6, 'Sujeto no Categorizado': 7, 'Importador del Exterior': 8, 'Cliente del Exterior': 9, 'IVA Liberado - Ley Nº 19.640': 10, 'IVA Responsable Inscripto - Agente de Percepción': 11}
 TIPOEXPO = {1: 'Exp. definitiva de bienes', 2: 'Servicios', 4: 'Otros'}
+JURIIBB = {1: u'C.A.B.A.',2: u'Buenos Aires', 2: u'Catamarca', 3: u'Córdoba',4: u'Corrientes', 5: u'Entre Ríos', 6:
+u'Jujuy', 7: u'Mendoza', 8: u'La Rioja', 9: u'Salta', 10: u'San Juan', 11:
+u'San Luis', 12: u'Santa Fe', 13: u'Santiago del Estero', 14:
+u'Tucuman', 16: u'Chaco', 17: u'Chubut', 18: u'Formosa', 19: u'Misiones', 20:
+u'Neuquen', 21: u'La Pampa', 22: u'Río Negro', 23: u'Santa Cruz', 24: u'Tierra del Fuego'}
+OPERACION={"Z": "Exportaciones a la zona franca", "X": "Exportaciones al exterior", "E": "Operaciones exentas"}
+
 
 def importe_represent(field):
     try:
@@ -83,7 +90,6 @@ def detalle_calcular_base_iva(r):
     base_iva = (r['precio'] * r['qty']) -r['bonif']
     return base_iva
 
-
 # Tablas dinámicas (pueden cambiar por AFIP/Usuario):
 
 # CUIT del País de destino
@@ -91,11 +97,10 @@ db.define_table('dstcuit', Field('cod'), Field('ds'), Field('cuit'), migrate = m
 
 # Tipo de documento (FCA, FCB, FCC, FCE, NCA, RCA, etc.)
 
-
 db.define_table('tipocbte', Field('cod'), Field('ds'), Field('discriminar', 'boolean'), migrate=migrate, format='%(ds)s')
 
 # condición IVA (Tipo de responsable)
-db.define_table('condicioniva', Field('codigo'), Field('ds'), \
+db.define_table('condicioniva', Field('cod'), Field('ds'), \
     format='%(ds)s', \
     migrate=migrate)
 
@@ -240,6 +245,7 @@ db.define_table('comprobante',
     Field('imp_trib', type='double', represent = importe_represent),
     Field('impto_perc_mun', type='double', represent = importe_represent),
     Field('imp_internos', type='double', represent = importe_represent),
+    Field('imp_nac', type='double', represent = importe_represent, comment="Impuestos nacionales (RG 1361)"),
     Field('moneda_id', type=db.moneda, length=3),
     Field('moneda_ctz', type='double', default='1.000'),
     Field('obs_comerciales', type='string', length=1000),
@@ -261,6 +267,8 @@ db.define_table('comprobante',
             comment='(servicios)', default=request.now.date()),
     Field('cae', type='string', writable=False),
     Field('fecha_vto', type='date', length=8, writable=False),
+    Field('fecha_anulacion', type='date', length=8,
+            comment='Para cbtes anulados (Campo RG 1361)'),
     Field('resultado', type='string', length=1, writable=False),
     Field('reproceso', type='string', length=1, writable=False),
     Field('motivo', type='text', length=40, writable=False),
@@ -269,6 +277,10 @@ db.define_table('comprobante',
     Field('formato_id', type='integer'),
     Field('tipo_expo', 'integer', requires = IS_IN_SET(TIPOEXPO), default = 1),
     Field('usuario', 'reference auth_user', default=auth.user_id, requires = IS_NOT_EMPTY(), writable = False),
+    Field('hojas', type='integer', default=1, writable=False, comment='(Campo RG 1361)'),
+    Field('operacion', requires=IS_EMPTY_OR(IS_IN_SET(OPERACION)), comment='(Campo RG 1361)'),
+    Field('anulado', type='boolean', default=False),
+    Field('anulado_motivo'),
     migrate=migrate)
 
 db.comprobante.dstcuit.represent=dstcuit_represent
@@ -304,6 +316,8 @@ db.define_table('detalle',
             comment='Importe de IVA liquidado', represent = importe_represent),
     Field('base_imp_iva', 'double', represent = importe_represent),
     Field('base_imp_tributo', 'double', represent = importe_represent),
+    Field('anulado', type='boolean', default=False),
+    Field('anulado_motivo'),
     migrate=migrate)
 
 db.detalle.umed.represent=lambda id: db.umed[id].ds
@@ -359,17 +373,14 @@ db.define_table('cliente', Field('nombre_cliente', type='string', length=200),
             comment='CNJP, RUT, RUC (exportación)'), migrate=migrate)
 
 # punto de venta
-db.define_table('puntodeventa', Field('numero', 'integer', unique = True), Field('nombre'), Field('domicilio'), Field('localidad', 'reference localidad'), Field('provincia', 'reference provincia'), migrate = migrate, format='%(nombre)s')
+db.define_table('puntodeventa', Field('numero', 'integer', unique = True), Field('nombre'), Field('domicilio'), Field('localidad', 'reference localidad'), Field('provincia', 'reference provincia'), Field('juriibb', requires = IS_EMPTY_OR(IS_IN_SET(JURIIBB)), comment="Jurisdicción de ingresos brutos"), migrate = migrate, format='%(nombre)s')
 
 # variables generales (único registro)
-
-# Nota: el texto aviso y asunto de cbte se puede adaptar usando las siguientes etiquetas:
-# {{=empresa}} {{=cliente}} {{=tipocbte}} {{=cbte_nro}} {{=fecha_cbte}} {{=fecha_vto}}
 
 db.define_table('variables', Field('puntodeventa', 'reference puntodeventa'), Field('cuit'), Field('domicilio'), Field('telefono'), Field('localidad', 'reference localidad'), Field('provincia', 'reference provincia'), Field('certificate'), Field('private_key'), Field('produccion', 'boolean', default = False), Field('moneda', 'reference moneda'), Field('webservice', requires = IS_IN_SET(WEBSERVICES), default='wsfe'), Field('tipocbte', 'reference tipocbte'), Field('venc_pago', 'integer', default=30),  Field('forma_pago', requires = IS_IN_SET(FORMASPAGO), default = '(Sin especificar)'), Field('empresa'), Field('url', comment='Ubicación de la App (por ejemplo http://localhost:8000/facturalibre)'), Field('aviso_de_cbte_texto', 'text', comment = 'Cuerpo del correo con el aviso de comprobante', \
 default = 'Estimado/s {{=cliente}}. Nos comunicamos para informar que se ha emitido el documento {{=tipocbte}} {{=punto_vta}}-{{=cbte_nro}}, con fecha {{=fecha_cbte}}.\nPuede descargar el comprobante en formato pdf desde la siguiente dirección: {{=url_descarga}}.\n{{=empresa}}\n. Mensaje generado por la app FacturaLibre: www.sistemasagiles.com.ar/fe'), \
 Field('aviso_de_cbte_asunto', comment = 'Asunto del correo con el aviso de comprobante', \
-default='{{=tipocbte}} {{=cbte_nro}}'), Field('mail_servidor', comment='smtp.example.com:puerto'), Field('mail_sender', comment='usuario@example.com'), Field('mail_login', comment='usuario:password'), Field('logo', 'upload'), migrate = migrate)
+default='{{=tipocbte}} {{=cbte_nro}}'), Field('mail_server', comment='smtp.example.com:puerto'), Field('mail_sender', comment='usuario@example.com'), Field('mail_login', comment='usuario:password'), Field('logo', 'upload'), migrate = migrate)
 
 db.variables.moneda.represent = lambda id: db.moneda[id].ds
 
@@ -394,10 +405,15 @@ def cbte_asociado_comprobante_represent(field):
 db.comprobanteasociado.asociado.represent=cbte_asociado_asociado_represent
 db.comprobanteasociado.comprobante.represent=cbte_asociado_comprobante_represent
 
-"""
-# detalle tributo asociado
-db.define_table('detalletributo', Field('comprobante', 'reference comprobante'), Field('tributo', 'reference tributo'), Field('importe', 'double'), migrate = migrate)
-"""
+""" Tablas para informe de compras RG 1361"""
+# tablas para RG 1361
+db.define_table("aduana", Field("ds"), Field("cod"), migrate = migrate)
+db.define_table("destinacion", Field("ds"), Field("cod"), migrate = migrate)
+db.define_table("vendedor", Field("tipodoc", type=db.tipodoc), Field("nro_doc", type="integer"), Field("nombre"), migrate = migrate)
+
+db.define_table('compra', Field('fecha', type='date', default=request.now.date(), requires=IS_NOT_EMPTY(), comment='Fecha de emisión'), Field('tipocbte', type=db.tipocbte), Field('controlador', type='boolean', default=False, comment="Controlador fiscal"), Field("punto_vta", type="integer", default=1), Field("cbte_nro", type="integer"), Field('fecha_contable', type='date', default=request.now.date(), requires=IS_NOT_EMPTY(), comment='Fecha de registración contable'), Field("aduana", type=db.aduana), Field("destinacion", type=db.destinacion), Field("despacho", comment="Número de despacho"), Field("despacho_digito", comment="Dígito verificador del número de despacho"), Field("vendedor", type=db.vendedor), Field("imp_total", type="double", default=0.0), Field("imp_tot_conc", type="double", default=0.0, comment="Total no gravado"), Field("imp_neto", type="double", default=0.0), Field("iva", type=db.iva), Field("imp_iva", type="double", default=0.0), Field("imp_op_ex", type="double", default=0.0, comment="Total oper. exentas"), Field("imp_cta_iva", type="double", comment="Importe de percepciones o pagos a cuenta de IVA"), Field("imp_nac", type="double", comment="Importe de percepciones o pagos a cuenta de otros impuestos nacionales"), Field("imp_iibb", type="double", comment="Importe de percepciones de ingresos brutos"), Field("imp_munic", type="double", comment="Importe de percepciones de impuestos municipales"), Field("imp_internos", type="double", comment="Importe de percepciones de impuestos internos"), Field("condicioniva", type=db.condicioniva), Field("moneda_id", type=db.moneda), Field("moneda_ctz", type="double", default=1.0, comment="Tipo de cambio"), Field("alicuotas", type="integer", default=1, comment="Cantidad de alícuotas IVA"), Field("operacion", comment="Código de operación"), Field("cai"), Field('fecha_vto', type='date', default=request.now.date(), requires=IS_NOT_EMPTY(), comment='Fecha de vencimiento'), Field("obs_comerciales", comment="Información adicional"), migrate = migrate)
+
+""" Fin de tablas para informe de compras RG 1361"""
 
 # variables por usuario
 db.define_table('variablesusuario', Field('usuario', 'reference auth_user', unique = True, writable = False), Field('puntodeventa', 'reference puntodeventa', represent = lambda id: db.puntodeventa[id].numero), Field('moneda', 'reference moneda'), Field('webservice', requires = IS_IN_SET(WEBSERVICES), default='wsfe'), Field('tipocbte', 'reference tipocbte'), Field('venc_pago', 'integer', default=30), Field('forma_pago', requires = IS_IN_SET(FORMASPAGO), default = '(Sin especificar)'), Field('theme', requires = IS_IN_SET(THEMES), default = 'smoothness'), migrate = migrate)

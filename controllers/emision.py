@@ -68,7 +68,7 @@ def iniciar():
     'obs', 'forma_pago', 'fecha_venc_pago', 'fecha_serv_desde', 'fecha_serv_hasta']
 
     if 'wsfex' == variablesusuario.webservice:
-        campos_generales += ['dst_cmp', 'dstcuit', 'id_impositivo', 'incoterms', 'incoterms_ds', 'idioma_cbte', 'tipo_expo', 'permiso_existente']
+        campos_generales += ['dst_cmp', 'dstcuit', 'id_impositivo', 'incoterms', 'incoterms_ds', 'idioma_cbte', 'tipo_expo', 'permiso_existente', 'operacion']
 
     # creo un formulario para el comprobante (TODO: modificar)
     form = SQLFORM(db.comprobante, session.comprobante,
@@ -105,6 +105,7 @@ def iniciar():
         form.vars.provincia_cliente = cliente.provincia_cliente.ds
         form.vars.email = cliente.email
         form.vars.cp_cliente = cliente.cp
+        form.vars.condicioniva_cliente = cliente.condicioniva.cod
 
     # valido el formulario (si han enviado datos)
     if form.accepts(request.vars, session, dbio=False, formname="iniciar_comprobante"):

@@ -12,12 +12,21 @@
 
 # requerir usuario administrador
 
+# TODO: Carga de registros desde csv completa cuando la base de datos es local (mismo host)
 
 import os, csv
 
 fuente_localidades = os.path.join(\
 request.env.web2py_path,'applications',\
 request.application,'private') + '/localidades.csv'
+
+fuente_aduanas = os.path.join(\
+request.env.web2py_path,'applications',\
+request.application,'private') + '/aduanas.csv'
+
+fuente_destinaciones = os.path.join(\
+request.env.web2py_path,'applications',\
+request.application,'private') + '/destinaciones.csv'
 
 
 """ roles: emisor, auditor, invitado:
@@ -366,7 +375,6 @@ def crear_localidades():
     db(db.localidad.id > -1).delete()
     contador = 0
 
-    """
     # 1) para cada registro de csv crear un registro de la base
     # utilizando código de localidad y de provincia (referencia)
     
@@ -385,18 +393,87 @@ def crear_localidades():
                 registros += 1
         except (ValueError, AttributeError, TypeError), e:
             errores += 1
+
     """
-    
+    # reemplazar por carga de csv en bases de datos remotas
     try:
         caba = db(db.provincia.cod == 0).select().first().id
     except (ValueError, TypeError, KeyError, AttributeError):
         raise HTTP(500, "Se deben crear los registros de provincias.")
-        
+
     db.localidad.insert(cod=0, ds="Ciudad Autónoma de Buenos Aires", provincia=caba)
     registros +=1
+    """
 
     return dict(registros = registros, errores = errores, \
                 lista = A('Ver lista', _href=URL(r=request, c='setup', f='index')))
+
+
+@auth.requires(auth.has_membership("administrador"))
+def crear_aduanas():
+    """ crea aduanas en la base de datos
+    """
+
+    errores = 0
+    registros = 0
+    db(db.aduana.id > -1).delete()
+    contador = 0
+
+    # 1) para cada registro de csv crear un registro de la base
+    # utilizando código de aduana
+
+    # 2) abrir csv con módulo intérprete
+    spamReader = csv.reader(open(fuente_aduanas, "r"))
+
+    db.commit()
+    # No usar sin sqlite: no sirve para bases de datos remotas (consulta extensa)
+    for linea in spamReader:
+        contador +=1
+        try:
+            if (int(linea[0]) and (len(linea[1]) > 0)):
+                # modificar (una consulta por registro)
+                db.aduana.insert(cod=str(int(linea[0])), ds=linea[1])
+                registros += 1
+        except (ValueError, AttributeError, TypeError), e:
+            errores += 1
+
+    return dict(registros = registros, errores = errores, \
+                lista = A('Ver lista', _href=URL(r=request, c='setup', f='index')))
+
+
+@auth.requires(auth.has_membership("administrador"))
+def crear_destinaciones():
+    """ crea aduanas en la base de datos
+    """
+
+    errores = 0
+    registros = 0
+    db(db.destinacion.id > -1).delete()
+    contador = 0
+
+    # 1) para cada registro de csv crear un registro de la base
+    # utilizando código de aduana
+
+    # 2) abrir csv con módulo intérprete
+    spamReader = csv.reader(open(fuente_destinaciones, "r"))
+
+    lista_errores = []
+
+    db.commit()
+    # No usar sin sqlite: no sirve para bases de datos remotas (consulta extensa)
+    for linea in spamReader:
+        contador +=1
+        try:
+            if (linea[0] and (len(linea[1]) > 0)):
+                # modificar (una consulta por registro)
+                db.destinacion.insert(cod=str(linea[0]), ds=linea[1])
+                registros += 1
+        except (ValueError, AttributeError, TypeError), e:
+            errores += 1
+            lista_errores.append(str(e))
+
+    return dict(registros = registros, errores = errores, \
+                lista = A('Ver lista', _href=URL(r=request, c='setup', f='index')), lista_errores = lista_errores)
 
 
 @auth.requires(auth.has_membership("administrador"))
