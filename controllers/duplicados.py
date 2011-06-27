@@ -4,8 +4,15 @@ import os, csv, datetime, calendar
 
 ARCHIVOS = {"CARPETA_DUPLICADOS": os.path.join("applications",
 request.application, "private"), "modelo": {"cabecera":
-{1: "registro_cabecera_1.csv", 2: "registro_cabecera_2.csv"}},
-"informe": {"cabecera":"CABECERA_AAAAMM.txt"}}
+{1: "registro_cabecera_1.csv", 2: "registro_cabecera_2.csv"},
+"detalle": {None:"registro_detalle.csv",}, "ventas":
+{1: "registro_ventas_1.csv", 2: "registro_ventas_2.csv"}, "compras":
+{1: "registro_compras_1.csv", 2: "registro_compras_2.csv"},
+"otras_percepciones": {None:"registro_otras_percepciones.csv",}},
+"informe": {"cabecera":"CABECERA_AAAAMM.txt",
+"detalle":"DETALLE_AAAAMM.txt", "ventas":"VENTAS_AAAAMM.txt",
+"compras":"COMPRAS_AAAAMM.txt",
+"otras_percepciones":"OTRAS_PERCEPCIONES_AAAAMM.txt"}}
 
 def lista_comprobantes(pedestal, umbral):
     """ Devuelve un listado de la tabla db.comprobante
@@ -222,7 +229,7 @@ class Sired():
 
     def fecha(self, f):
         try:
-            f = int(f.strftime("%Y%m&d"))
+            f = int(f.strftime("%Y%m%d"))
         except self.ERRORES_CAMPOS, e:
             f = 0
         return f
@@ -234,6 +241,7 @@ class Sired():
             l = "0"
         return l
 
+@auth.requires_login()
 def informe():
     registros = 0
     nombre = request.args[0]
@@ -258,6 +266,10 @@ def informe():
         
     return dict(errores = isr.errores, nombre = nombre, registros = registros,
     texto = TEXTAREA(texto, _class="duplicado"))
-    
 
-    
+@auth.requires_login()
+def index():
+    form = SQLFORM.factory(Field("ciclo", "integer", requires=IS_IN_SET(range(2000, 2021))), Field("mes", "integer", requires=IS_IN_SET(range(1, 13))), Field("informe", requires=IS_IN_SET(["cabecera", "detalle", "ventas", "compras", "otras_percepciones"])))
+    if form.accepts(request.vars, session):
+        redirect(URL(f="informe", args=(form.vars.informe, form.vars.ciclo.zfill(4), form.vars.mes.zfill(4))))
+    return dict(form = form)
