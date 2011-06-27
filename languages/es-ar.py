@@ -58,6 +58,7 @@
 'Description': 'Descripción',
 'Design for': 'Diseño para',
 'Detalles': 'Detalles',
+'Duplicados': 'Duplicados',
 'E-mail': 'Correo electrónico',
 'EDIT': 'EDITAR',
 'Edit': 'Editar',
