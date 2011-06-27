@@ -55,7 +55,7 @@
 'currency';'T';42,00;90,00;67,00;94,00;'Arial';10,00;0;0;0;0;65535;'I';'Pesos';0
 'item_quantity';'T';15;97;30;102;'Arial';10,00;0;0;0;0;65535;'C';'Cantidad.';0
 'item_code';'T';30;97;45;102;'Arial';10,00;0;0;0;0;65535;'C';'Cod.';0
-'item_description';'T';45;97;140;102;'Arial';10,00;0;0;0;0;65535;'C';u'Descripcion';0
+'item_description';'T';45;97;140;102;'Arial';10,00;0;0;0;0;65535;'C';'Descripcion';0
 'item_price';'T';140;97;160;102;'Arial';10,00;0;0;0;0;65535;'C';'Precio';0
 'item_amount';'T';160;97;185;102;'Arial';10,00;0;0;0;0;65535;'C';'Monto';0
 'item_quantity01';'T';15;103;25;108;'Arial';10,00;0;0;0;0;65535;'D';'';0

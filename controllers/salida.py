@@ -3,7 +3,7 @@
 
 import os
 
-WSDESC = {"wsmtxca": u"Exportación", "wsfev1": "Mercado interno", "wsfex": u"Factura electrónica MTXCA", "wsbfe": "Bonos fiscales"}
+WSDESC = {"wsmtxca": u"Factura electrónica MTXCA", "wsfev1": "Mercado interno", "wsfex": u"Exportación", "wsbfe": "Bonos fiscales"}
 
 def utftolatin(text):
     try:
@@ -12,8 +12,183 @@ def utftolatin(text):
         # None es ""
         return ""
 
+def crear_pdf(el_cbte):
+    from gluon.contrib.pyfpdf import Template
+    import os.path
+    # generate sample invoice (according Argentina's regulations)
+    los_detalles = db(db.detalle.comprobante == el_cbte.id).select()
+    las_variables = db(db.variables).select().first()
+
+    import random
+    from decimal import Decimal
+
+    # read elements from db
+    template = db(db.pdftemplate.title == "Demo invoice pyfpdf").select().first()
+    elements = db(db.pdfelement.pdftemplate==template.id).select(orderby=db.pdfelement.priority)
+
+    f = Template(format="A4",
+             elements = elements,
+             title=utftolatin(el_cbte.nombre_cliente), author=utftolatin(las_variables.empresa),
+             subject=utftolatin(db.tipocbte[el_cbte.tipocbte].ds), keywords="Electronic TAX Invoice")
+
+    if el_cbte.obs_comerciales:
+        detail = el_cbte.obs_comerciales
+    else:
+        detail = ""
+
+    items = []
+
+    i = 0
+
+    for detalle in los_detalles:
+        i += 1
+        ds = utftolatin(detalle.ds)
+        qty = str(detalle.qty)
+        price = str(detalle.precio)
+        code = str(detalle.codigo)
+        items.append(dict(code=code, unit=str(detalle.umed.ds[:1]),
+                          qty=qty, price=price,
+                          amount=str(detalle.imp_total),
+                          ds="%s: %s" % (i,ds)))
+
+    # divide and count lines
+    lines = 0
+    li_items = []
+
+    unit = qty = code = None
+
+    for it in items:
+        qty = it['qty']
+        code = it['code']
+        unit = it['unit']
+        for ds in f.split_multicell(it['ds'], 'item_description01'):
+            # add item description line (without price nor amount)
+            li_items.append(dict(code=code, ds=ds, qty=qty, unit=unit, price=None, amount=None))
+            # clean qty and code (show only at first)
+            unit = qty = code = None
+        # set last item line price and amount
+        li_items[-1].update(amount = it['amount'],
+                            price = it['price'])
+
+    obs="\n<U>Detalle:</U>\n\n" + detail
+    for ds in f.split_multicell(obs, 'item_description01'):
+        li_items.append(dict(code=code, ds=ds, qty=qty, unit=unit, price=None, amount=None))
+
+    # calculate pages:
+    lines = len(li_items)
+    max_lines_per_page = 24
+    pages = lines / (max_lines_per_page - 1)
+    if lines % (max_lines_per_page - 1): pages = pages + 1
+
+    # completo campos y hojas
+    for page in range(1, pages+1):
+        f.add_page()
+        f['page'] = u'Página %s de %s' % (page, pages)
+        if pages>1 and page<pages:
+            s = u'Continúa en la página %s' % (page+1)
+        else:
+            s = ''
+        f['item_description%02d' % (max_lines_per_page+1)] = s
+
+        try:
+            if not las_variables.logo:
+                logo = os.path.join(request.env.web2py_path,"applications",request.application,"static","images", "logo_fpdf.png")
+
+            else:
+                # path al logo
+                logo = os.path.join(request.env.web2py_path,"applications",request.application,"uploads", las_variables.logo)
+
+        except (AttributeError, ValueError, KeyError, TypeError):
+            logo = os.path.join(request.env.web2py_path,"applications",request.application,"static","images", "logo_fpdf.png")
+
+        f["company_name"] = utftolatin(las_variables.empresa)
+        f["company_logo"] = logo
+        f["company_header1"] = utftolatin(las_variables.domicilio)
+        f["company_header2"] = "CUIT " + str(las_variables.cuit)
+        f["company_footer1"] = utftolatin(el_cbte.tipocbte.ds)
+
+        try:
+            f["company_footer2"] = WSDESC[el_cbte.webservice]
+        except KeyError:
+            f["company_footer2"] = u"Factura electrónica"
+
+        f['number'] = str(el_cbte.punto_vta).zfill(4) + "-" + str(el_cbte.cbte_nro).zfill(7)
+        f['payment'] = utftolatin(el_cbte.forma_pago)
+        f['document_type'] = el_cbte.tipocbte.ds[-1:]
+
+        f['customer_address'] = utftolatin('Dirección')
+        f['item_description'] = utftolatin('Descripción')
+
+        try:
+            cae = str(el_cbte.cae)
+            if cae == "None": cae = "0000000000"
+            elif "|" in cae: cae = cae.strip("|")
+            f['barcode'] = cae
+            f['barcode_readable'] = "CAE: " + cae
+        except (TypeError, ValueError, KeyError, AttributeError):
+            f['barcode'] = "0000000000"
+            f['barcode_readable'] = u"CAE: no registrado"
+
+        try:
+            issue_date = el_cbte.fecha_cbte.strftime("%d-%m-%Y")
+        except (TypeError, AttributeError):
+            issue_date = ""
+
+        try:
+            due_date = el_cbte.fecha_vto.strftime("%d-%m-%Y")
+        except (TypeError, AttributeError):
+            due_date = ""
+
+        f['issue_date'] = issue_date
+
+        f['due_date'] = due_date
+
+        f['customer_name'] = utftolatin(el_cbte.nombre_cliente)
+        f['customer_address'] = utftolatin(el_cbte.domicilio_cliente)
+        f['customer_vat'] = utftolatin(el_cbte.cp_cliente)
+        f['customer_phone'] = utftolatin(el_cbte.telefono_cliente)
+        f['customer_city'] = utftolatin(el_cbte.localidad_cliente)
+        f['customer_taxid'] = utftolatin(el_cbte.nro_doc)
+
+        # print line item...
+        li = 0
+        k = 0
+        total = Decimal("0.00")
+        for it in li_items:
+            k = k + 1
+            if k > page * (max_lines_per_page - 1):
+                break
+            if it['amount']:
+                total += Decimal("%.6f" % float(it['amount']))
+            if k > (page - 1) * (max_lines_per_page - 1):
+                li += 1
+                if it['qty'] is not None:
+                    f['item_quantity%02d' % li] = it['qty']
+                if it['code'] is not None:
+                    f['item_code%02d' % li] = it['code']
+                if it['unit'] is not None:
+                    f['item_unit%02d' % li] = it['unit']
+                f['item_description%02d' % li] = it['ds']
+                if it['price'] is not None:
+                    f['item_price%02d' % li] = "%0.3f" % float(it['price'])
+                if it['amount'] is not None:
+                    f['item_amount%02d' % li] = "%0.2f" % float(it['amount'])
+
+        if pages == page:
+            f['net'] = "%0.2f" % (total/Decimal("1.21"))
+            f['vat'] = "%0.2f" % (total*(1-1/Decimal("1.21")))
+            f['total_label'] = 'Total:'
+        else:
+            f['total_label'] = 'SubTotal:'
+        f['total'] = "%0.2f" % float(total)
+
+    return f.render('invoice.pdf', dest='S')
+
+
+
+"""
 def crear_pdf(comprobante):
-    """ pdf básico con el detalle del comprobante para la demo """
+    ''' pdf básico con el detalle del comprobante para la demo '''
     pdf = None
 
     if comprobante:
@@ -98,6 +273,7 @@ def crear_pdf(comprobante):
     # prepare PDF to download:
 
     return pdf
+"""
 
 
 @auth.requires_login()
@@ -113,11 +289,11 @@ def comprobante():
 
     else:
         pdf = crear_pdf(comprobante)
-    
+
     response.headers['Content-Type']='application/pdf'
-    return pdf.output(dest='S')
-    
-        
+    # return pdf.output(dest='S')
+    return pdf
+
 
 @auth.requires(auth.has_membership('administrador') or auth.has_membership('emisor'))        
 def guardar_comprobante():
@@ -130,7 +306,8 @@ def guardar_comprobante():
         pdf = crear_pdf(comprobante)
       
     archivo = open(COMPROBANTES_PATH + "/" + str(comprobante.id) + ".pdf", "w")
-    archivo.write(pdf.output(dest='S'))
+    # archivo.write(pdf.output(dest='S'))
+    archivo.write(pdf)
     archivo.close()
     
     return dict(mensaje = "Se guardó el archivo " + str(comprobante.id) + ".pdf" )
@@ -175,178 +352,13 @@ def crear_factura_base():
 
 
 def invoice():
-    from gluon.contrib.pyfpdf import Template
-    import os.path
-
-    # generate sample invoice (according Argentina's regulations)
-
+    invoice = None
     el_cbte = db.comprobante[request.args[1]]
-    los_detalles = db(db.detalle.comprobante == el_cbte.id).select()
-    las_variables = db(db.variables).select().first()
-    
-    import random
-    from decimal import Decimal
+    if el_cbte is None:
+        raise HTTP(500, "Comprobante inexistente.")
 
-    # read elements from db
-    template = db(db.pdftemplate.title == "Demo invoice pyfpdf").select().first()
-    elements = db(db.pdfelement.pdftemplate==template.id).select(orderby=db.pdfelement.priority)
-
-    f = Template(format="A4",
-             elements = elements,
-             title=utftolatin(el_cbte.nombre_cliente), author=utftolatin(las_variables.empresa),
-             subject=utftolatin(db.tipocbte[el_cbte.tipocbte].ds), keywords="Electronic TAX Invoice")
-
-    if el_cbte.obs_comerciales:
-        detail = el_cbte.obs_comerciales
-    else:
-        detail = ""
-        
-    items = []
-
-    i = 0
-    
-    for detalle in los_detalles:
-        i += 1
-        ds = utftolatin(detalle.ds)
-        qty = str(detalle.qty)
-        price = str(detalle.precio)
-        code = str(detalle.codigo)
-        items.append(dict(code=code, unit=str(detalle.umed.ds[:1]),
-                          qty=qty, price=price,
-                          amount=str(detalle.imp_total),
-                          ds="%s: %s" % (i,ds)))
-
-    # divide and count lines
-    lines = 0
-    li_items = []
-
-    unit = qty = code = None
-
-    for it in items:
-        qty = it['qty']
-        code = it['code']
-        unit = it['unit']
-        for ds in f.split_multicell(it['ds'], 'item_description01'):
-            # add item description line (without price nor amount)
-            li_items.append(dict(code=code, ds=ds, qty=qty, unit=unit, price=None, amount=None))
-            # clean qty and code (show only at first)
-            unit = qty = code = None
-        # set last item line price and amount
-        li_items[-1].update(amount = it['amount'],
-                            price = it['price'])
-
-    obs="\n<U>Detalle:</U>\n\n" + detail
-    for ds in f.split_multicell(obs, 'item_description01'):
-        li_items.append(dict(code=code, ds=ds, qty=qty, unit=unit, price=None, amount=None))
-
-    # calculate pages:
-    lines = len(li_items)
-    max_lines_per_page = 24
-    pages = lines / (max_lines_per_page - 1)
-    if lines % (max_lines_per_page - 1): pages = pages + 1
-
-    # completo campos y hojas
-    for page in range(1, pages+1):
-        f.add_page()
-        f['page'] = u'Página %s de %s' % (page, pages)
-        if pages>1 and page<pages:
-            s = u'Continúa en la página %s' % (page+1)
-        else:
-            s = ''
-        f['item_description%02d' % (max_lines_per_page+1)] = s
-
-        
-
-        try:
-            if not las_variables.logo:
-                logo = os.path.join(request.env.web2py_path,"applications",request.application,"static","images", "logo_fpdf.png")
-
-            else:
-                # path al logo
-                logo = os.path.join(request.env.web2py_path,"applications",request.application,"uploads", las_variables.logo)
-
-        except (AttributeError, ValueError, KeyError, TypeError):
-            logo = os.path.join(request.env.web2py_path,"applications",request.application,"static","images", "logo_fpdf.png")
-
-
-
-        f["company_name"] = utftolatin(las_variables.empresa)
-        f["company_logo"] = logo
-        f["company_header1"] = utftolatin(las_variables.domicilio)
-        f["company_header2"] = "CUIT " + str(las_variables.cuit)
-        f["company_footer1"] = utftolatin(el_cbte.tipocbte.ds)
-        
-        try:
-            f["company_footer2"] = WSDESC[el_cbte.webservice]
-        except KeyError:
-            f["company_footer2"] = u"Factura electrónica"
-            
-        f['number'] = str(el_cbte.punto_vta).zfill(4) + "-" + str(el_cbte.cbte_nro).zfill(7)
-        f['payment'] = utftolatin(el_cbte.forma_pago)
-        f['document_type'] = el_cbte.tipocbte.ds[-1:]
-
-        try:
-            cae = str(el_cbte.cae)
-            if cae == "None": cae = "0000000000"
-            elif "|" in cae: cae = cae.strip("|")
-            f['barcode'] = cae
-            f['barcode_readable'] = "CAE: " + cae
-        except (TypeError, ValueError, KeyError, AttributeError):
-            f['barcode'] = "0000000000"
-            f['barcode_readable'] = u"CAE: no registrado" 
-            
-        try:
-            issue_date = el_cbte.fecha_cbte.strftime("%d-%m-%Y")
-        except (TypeError, AttributeError):
-            issue_date = ""
-
-        try:
-            due_date = el_cbte.fecha_vto.strftime("%d-%m-%Y")
-        except (TypeError, AttributeError):
-            due_date = ""
-            
-        f['issue_date'] = issue_date
-        
-        f['due_date'] = due_date
-
-        f['customer_name'] = utftolatin(el_cbte.nombre_cliente)
-        f['customer_address'] = utftolatin(el_cbte.domicilio_cliente)
-        f['customer_vat'] = utftolatin(el_cbte.cp_cliente)
-        f['customer_phone'] = utftolatin(el_cbte.telefono_cliente)
-        f['customer_city'] = utftolatin(el_cbte.localidad_cliente)
-        f['customer_taxid'] = utftolatin(el_cbte.nro_doc)
-
-        # print line item...
-        li = 0
-        k = 0
-        total = Decimal("0.00")
-        for it in li_items:
-            k = k + 1
-            if k > page * (max_lines_per_page - 1):
-                break
-            if it['amount']:
-                total += Decimal("%.6f" % float(it['amount']))
-            if k > (page - 1) * (max_lines_per_page - 1):
-                li += 1
-                if it['qty'] is not None:
-                    f['item_quantity%02d' % li] = it['qty']
-                if it['code'] is not None:
-                    f['item_code%02d' % li] = it['code']
-                if it['unit'] is not None:
-                    f['item_unit%02d' % li] = it['unit']
-                f['item_description%02d' % li] = it['ds']
-                if it['price'] is not None:
-                    f['item_price%02d' % li] = "%0.3f" % float(it['price'])
-                if it['amount'] is not None:
-                    f['item_amount%02d' % li] = "%0.2f" % float(it['amount'])
-
-        if pages == page:
-            f['net'] = "%0.2f" % (total/Decimal("1.21"))
-            f['vat'] = "%0.2f" % (total*(1-1/Decimal("1.21")))
-            f['total_label'] = 'Total:'
-        else:
-            f['total_label'] = 'SubTotal:'
-        f['total'] = "%0.2f" % float(total)
+    invoice = crear_pdf(el_cbte)
 
     response.headers['Content-Type']='application/pdf'
-    return f.render('invoice.pdf', dest='S')
+    return invoice
+
