@@ -97,6 +97,13 @@ $(document).ready(function(){
 
   function cargarCodigo(){
     cargaPorCodigo = $("#carga_por_codigo").val();
+    /*
+    $.ajax({
+      url: "{{=URL(c='consultas', f='productoporcodigo.json')}}" + "/" + cargaPorCodigo,
+      dataType: 'json',
+      success: cargarCodigoCallback
+    });
+    */
     $.getJSON("{{=URL(c='consultas', f='productoporcodigo.json')}}" + "/" + cargaPorCodigo, cargarCodigoCallback);
   }
 
@@ -124,6 +131,11 @@ $(document).ready(function(){
 
   function sugerirProducto(){
     sugerido = $("input[name=sugerir_producto]").val();
+    /*$.ajax({
+      url: "{{=URL(c='consultas', f='producto.json')}}" + "/" + String(sugerido),
+      dataType: 'json',
+      success: callbackSugerirProducto
+    });*/
     $.getJSON("{{=URL(c='consultas', f='producto.json')}}" + "/" + String(sugerido), callbackSugerirProducto);
   }
 
@@ -145,4 +157,3 @@ $(document).ready(function(){
   calcularItem();
 });
 </SCRIPT>
- 

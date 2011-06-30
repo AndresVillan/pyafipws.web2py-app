@@ -74,6 +74,11 @@ def calcular_comprobante(comprobante):
     # sumas sin iva
     parciales = []
 
+    try:
+        tributos = sum([t.importe for t in db(db.detalletributo.comprobante == comprobante).select()], 0.00)
+    except (ValueError, TypeError):
+        tributos = 0.00
+        
     for p in range(len(detalles)):
         iva = db(db.iva.id==detalles[p].iva).select().first()
         try:
@@ -104,8 +109,9 @@ def calcular_comprobante(comprobante):
     else:
         liq = 0.0
 
-    total = imp_op_ex + imp_tot_conc + neto + liq
+    total = imp_op_ex + imp_tot_conc + neto + liq  + tributos
 
+    comprobante.imp_trib = tributos
     comprobante.imp_total = total
     comprobante.imp_neto = neto
     comprobante.impto_liq = liq
@@ -296,7 +302,6 @@ def dummy():
         else:
             result = {}
 
-
     except SoapFault,sf:
         db.xml.insert(request = repr(client.xml_request), response = repr(client.xml_response))
         result = {'fault': repr(sf.faultstring), 
@@ -306,7 +311,7 @@ def dummy():
     except ExpatError, ee:
         result = {"resultado" :"Error en el Cliente SOAP. Formato de respuesta inválido."}
       
-    return result
+    return dict(result = result)
 
 
 @auth.requires(auth.has_membership('administrador') or auth.has_membership('emisor') or auth.has_membership('invitado'))
@@ -509,9 +514,15 @@ def f_ultimo_numero_comprobante(comprobante):
 
     except ExpatError, ee:
         result = "Error en el Cliente SOAP. Formato de respuesta inválido."
-
-
+        
     return (result, valor)
+
+@auth.requires(auth.has_membership('administrador') or auth.has_membership('emisor'))
+def get_param_tributos():
+    "Recuperador de valores referenciales de tributos"
+    response = client.FEParamGetTiposTributos(
+    Auth= {"Token": TOKEN, "Sign": SIGN, "Cuit": long(CUIT)})
+    return dict(resp = response)
 
 @auth.requires(auth.has_membership('administrador') or auth.has_membership('emisor') or auth.has_membership('invitado'))
 def get_param_dstcuit():
@@ -784,7 +795,7 @@ def autorizar():
                     'ImpTotConc': comprobante.imp_tot_conc or 0.00,
                     'ImpNeto': "%.2f" % comprobante.imp_neto,
                     'ImpOpEx': comprobante.imp_op_ex or 0.00,
-                    'ImpTrib': comprobante.imp_trib or 0.00,
+                    'ImpTrib': sum([t.importe for t in db(db.detalletributo.comprobante == comprobante).select()], 0.00) or 0.00,
                     'ImpIVA': "%.2f" % comprobante.impto_liq,
                     # Fechas solo se informan si Concepto in (2,3)
                     'FchServDesde': comprobante.fecha_serv_desde and comprobante.fecha_serv_desde.strftime("%Y%m%d"),
@@ -800,9 +811,9 @@ def autorizar():
                         for cbte_asoc in db(db.comprobanteasociado.comprobante == comprobante).select()],
                     'Tributos': [
                         {'Tributo': {
-                            'Id': tributo.tributo.id, 
+                            'Id': tributo.tributo.cod, 
                             'Desc': tributo.tributo.ds,
-                            'BaseImp': None,
+                            'BaseImp': moneyornone(tributo.base_imp),
                             'Alic': tributo.tributo.aliquota,
                             'Importe': tributo.importe,
                             }}
@@ -838,7 +849,6 @@ def autorizar():
                     # rechazado
                     actualizar = dict(resultado = "R", cbte_nro = None)
 
-
                 if ('Errors' in result or 'Observaciones' in fedetresp):
                     """ almacenar el informe de errores u observaciones
                     y los errores / observaciones """
@@ -846,8 +856,8 @@ def autorizar():
                         actualizar["err_code"] = ""
                         actualizar["err_msg"] = ""
                         for err in result["Errors"]:
-                            actualizar["err_code"] += str(err["Code"]) + ". "
-                            actualizar["err_msg"] += str(err["Msg"]) + ". "
+                            actualizar["err_code"] += repr(err["Err"]["Code"]) + ". "
+                            actualizar["err_msg"] += repr(err["Err"]["Msg"]) + ". "
 
                     if "Observaciones" in fedetresp:
                         actualizar["obs"] = ""
@@ -956,8 +966,8 @@ def autorizar():
             'Impto_liq_rni': comprobante.impto_liq_rni or 0.00,
             'Imp_op_ex': comprobante.imp_op_ex or 0.00,
             'Imp_perc':  comprobante.impto_perc or 0.00,
-            'Imp_iibb':  comprobante.imp_iibb or 0.00, 
-            'Imp_perc_mun':  comprobante.impto_perc_mun or 0.00,
+            'Imp_iibb':  sum([t.importe for t in db(db.detalletributo.comprobante == comprobante).select() if t.tributo.iibb], 0.00) or 0.00,
+            'Imp_perc_mun':  sum([t.importe for t in db(db.detalletributo.comprobante == comprobante).select() if t.tributo.iibb == False], 0.00) or 0.00,
             'Imp_internos':  comprobante.imp_internos or 0.00,
             'Imp_moneda_Id': comprobante.moneda_id.cod,
             'Imp_moneda_ctz': comprobante.moneda_ctz,
@@ -1021,7 +1031,7 @@ def autorizar():
                 'numeroPuntoVenta': cbte_asoc.asociado.punto_vta, 
                 'numeroComprobante': cbte_asoc.asociado.cbte_nro }} for cbte_asoc in db(db.comprobanteasociado.comprobante == comprobante).select()],
             'arrayOtrosTributos': [ {'otroTributo': {
-                'codigo': tributo.tributo.id, 
+                'codigo': tributo.tributo.cod, 
                 'descripcion': tributo.tributo.ds, 
                 'baseImponible': moneyornone(tributo.base_imp),
                 'importe': moneyornone(tributo.importe)}} for tributo in db(db.detalletributo.comprobante == comprobante).select()],

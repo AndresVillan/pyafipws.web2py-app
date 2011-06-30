@@ -447,7 +447,6 @@ def get_param_dstcuit():
 
     return dict(resp = response, dic = repr(response))
 
-
 def f_get_param_dstcuit(variables):
     "Recuperador de valores referenciales de CUITs de Paises"
     response = client.FEXGetPARAM_DST_CUIT(
@@ -711,7 +710,7 @@ def autorizar():
                     'ImpTotConc': comprobante.imp_tot_conc or 0.00,
                     'ImpNeto': "%.2f" % comprobante.imp_neto,
                     'ImpOpEx': comprobante.imp_op_ex or 0.00,
-                    'ImpTrib': comprobante.imp_iibb or 0.00,
+                    'ImpTrib': moneyornone(comprobante.imp_trib) or 0.00,
                     'ImpIVA': "%.2f" % comprobante.impto_liq,
                     # Fechas solo se informan si Concepto in (2,3)
                     'FchServDesde': comprobante.fecha_serv_desde and comprobante.fecha_serv_desde.strftime("%Y%m%d"),
@@ -727,9 +726,9 @@ def autorizar():
                         for cbte_asoc in db(db.comprobanteasociado.comprobante == comprobante).select()],
                     'Tributos': [
                         {'Tributo': {
-                            'Id': tributo.tributo.id, 
+                            'Id': tributo.tributo.cod, 
                             'Desc': tributo.tributo.ds,
-                            'BaseImp': None,
+                            'BaseImp': moneyornone(tributo.base_imp),
                             'Alic': tributo.tributo.aliquota,
                             'Importe': tributo.importe,
                             }}
@@ -772,8 +771,8 @@ def autorizar():
                         actualizar["err_code"] = ""
                         actualizar["err_msg"] = ""
                         for err in result["Errors"]:
-                            actualizar["err_code"] += str(err["Code"]) + ". "
-                            actualizar["err_msg"] += str(err["Msg"]) + ". "
+                            actualizar["err_code"] += str(err["Err"]["Code"]) + ". "
+                            actualizar["err_msg"] += str(err["Err"]["Msg"]) + ". "
 
                     if "Observaciones" in fedetresp:
                         actualizar["obs"] = ""
@@ -883,8 +882,8 @@ def autorizar():
             'Impto_liq_rni': comprobante.impto_liq_rni or 0.00,
             'Imp_op_ex': comprobante.imp_op_ex or 0.00,
             'Imp_perc':  comprobante.impto_perc or 0.00,
-            'Imp_iibb':  comprobante.imp_iibb or 0.00, 
-            'Imp_perc_mun':  comprobante.impto_perc_mun or 0.00,
+            'Imp_iibb':  moneyornone(comprobante.imp_iibb) or 0.00, 
+            'Imp_perc_mun':  moneyornone(comprobante.impto_perc_mun) or 0.00,
             'Imp_internos':  comprobante.imp_internos or 0.00,
             'Imp_moneda_Id': comprobante.moneda_id.cod,
             'Imp_moneda_ctz': comprobante.moneda_ctz,
@@ -937,7 +936,7 @@ def autorizar():
             'importeNoGravado': moneyornone(comprobante.imp_tot_conc),
             'importeGravado': moneyornone(comprobante.imp_neto),
             'importeSubtotal': moneyornone(float(comprobante.imp_neto) + float(comprobante.imp_op_ex) + float(comprobante.imp_tot_conc)), # 'imp_iva': imp_iva,
-            'importeOtrosTributos': moneyornone(comprobante.imp_trib),
+            'importeOtrosTributos': moneyornone(comprobante.imp_trib) or 0.00,
             'importeExento': moneyornone(comprobante.imp_op_ex),
             'fechaEmision': date2y_m_d(comprobante.fecha_cbte) or None,
             'codigoMoneda': comprobante.moneda_id.cod,
@@ -952,7 +951,7 @@ def autorizar():
                 'numeroPuntoVenta': cbte_asoc.asociado.punto_vta,
                 'numeroComprobante': cbte_asoc.asociado.cbte_nro }} for cbte_asoc in db(db.comprobanteasociado.comprobante == comprobante).select()],
             'arrayOtrosTributos': [ {'otroTributo': {
-                'codigo': tributo.tributo.id,
+                'codigo': tributo.tributo.cod,
                 'descripcion': tributo.tributo.ds,
                 'baseImponible': moneyornone(tributo.base_imp),
                 'importe': moneyornone(tributo.importe)}} for tributo in db(db.detalletributo.comprobante == comprobante).select()],

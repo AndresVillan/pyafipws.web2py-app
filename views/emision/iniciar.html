@@ -30,11 +30,17 @@
 {{ punto_vta = form.vars.punto_vta }}
 {{ pass }}
 
+{{try:}}
+{{comprobante = db.comprobante[session.comprobante].cbte_nro}}
+{{except (AttributeError, KeyError, ValueError, TypeError):}}
+{{comprobante = "(Nuevo)" }}
+{{pass}}
+
 <div id="tabs">
     <ul>
         <li><a href="#tabs-1">Carga de datos</a></li>
         <li><a href="#tabs-2">Datos del cliente</a></li>
-        <li><a href="#tabs-3">Cbte Nº {{=form.vars.cbte_nro or "(nuevo)"}}</a></li>
+        <li><a href="#tabs-3">Cbte {{=comprobante}} </a></li>
     </ul>
     <div id="tabs-1">
         <div class="formulario_largo">

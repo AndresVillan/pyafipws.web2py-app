@@ -46,7 +46,6 @@ administrador_group_id = db(db.auth_group.role == "administrador").select().firs
 def nuevo_administrador():
     return dict(mensaje = "Se configuró la cuenta administrador@localhost con las opciones por defecto.")
 
-
 if emisor_group_id == None:
     emisor_group_id = db.auth_group.insert(role = "emisor", description = "Autorización de cbtes y consultas")
 
@@ -74,8 +73,6 @@ if len(db(db.auth_membership.group_id == administrador_group_id).select()) < 1:
     session.configuracion_administrador = True
     redirect(URL(f="nuevo_administrador"))
 
-
-    
 
 @auth.requires(auth.has_membership("administrador"))
 def rol_cambiar():
@@ -230,6 +227,42 @@ def crear_tipos_doc():
         db.tipodoc.insert(cod=i, ds=ds)
     return dict(ret=SQLTABLE(db(db.tipodoc.id>0).select()), \
                 lista = A('Ver lista', _href=URL(r=request, c='setup', f='index')))
+
+def crear_tributos():
+    "Crear inicialmente los tributos más usados"
+    data = """\
+1 - IIBB C.A.B.A. - 99
+2 - IIBB Buenos Aires  - 99
+2 - IIBB Catamarca  - 99
+3 - IIBB Córdoba  - 99
+4 - IIBB Corrientes  - 99
+5 - IIBB Entre Ríos  - 99
+6 - IIBB Jujuy  - 99
+7 - IIBB Mendoza  - 99
+8 - IIBB La Rioja  - 99
+9 - IIBB Salta  - 99
+10 - IIBB San Juan  - 99
+11 - IIBB San Luis  - 99
+12 - IIBB Santa Fe  - 99
+13 - IIBB Santiago del Estero  - 99
+14 - IIBB Tucumán  - 99
+16 - IIBB Chaco  - 99
+17 - IIBB Chubut  - 99
+18 - IIBB Formosa  - 99
+19 - IIBB Misiones  - 99
+20 - IIBB Neuquén  - 99
+21 - IIBB La Pampa  - 99
+22 - IIBB Río Negro  - 99
+23 - IIBB Santa Cruz  - 99
+24 - IIBB Tierra del Fuego  - 99"""
+    db(db.tributo.id>0).delete()
+    l = []
+    for d in data.split("\n"):
+        i, ds, cod = d.split(" - ")
+        db.tributo.insert(aliquota=1, juriibb=int(i), ds=ds, iibb = True, cod = int(cod))
+    return dict(ret=SQLTABLE(db(db.tributo.id>0).select()), \
+                lista = A('Ver lista', _href=URL(r=request, c='setup', f='index')))
+
 
 @auth.requires(auth.has_membership("administrador"))
 def crear_tipos_cbte():
@@ -405,7 +438,7 @@ def crear_localidades():
     registros +=1
     """
 
-    return dict(registros = registros, errores = errores, \
+    return dict(ret = "Total: " + str(registros) + " localidades", errores = str(errores) + " errores.", \
                 lista = A('Ver lista', _href=URL(r=request, c='setup', f='index')))
 
 
@@ -479,9 +512,9 @@ def crear_destinaciones():
 @auth.requires(auth.has_membership("administrador"))
 def crear_condiciones_iva():
     data = {'IVA Responsable Inscripto': 1, 'IVA Responsable no Inscripto': 2, 'IVA no Responsable': 3,'IVA Sujeto Exento': 4,'Consumidor Final': 5, 'Responsable Monotributo': 6, 'Sujeto no Categorizado': 7, 'Importador del Exterior': 8, 'Cliente del Exterior': 9, 'IVA Liberado - Ley Nº 19.640': 10, 'IVA Responsable Inscripto - Agente de Percepción': 11}
-    db(db.condicioniva.codigo>=0).delete()
+    db(db.condicioniva.id>0).delete()
     for k,v in data.items():
-        db.condicioniva.insert(codigo=v, ds=k)
+        db.condicioniva.insert(cod=v, ds=k)
     return dict(ret=SQLTABLE(db(db.condicioniva.id>-1).select()), \
                 lista = A('Ver lista', _href=URL(r=request, c='setup', f='index')))
 
@@ -489,13 +522,13 @@ def crear_condiciones_iva():
 def modificar():
     """ Listas de objetos de la base de datos """
 
-    clientes = SQLTABLE(db(db.cliente).select(), linkto = URL(f="modificar_objeto"), columns=["cliente.id", "cliente.nombre_cliente", "cliente.email", "cliente.domicilio_cliente", "cliente.nro_doc"], headers = {"cliente.id": "Editar"})
+    clientes = SQLTABLE(db(db.cliente).select(), linkto = URL(f="modificar_objeto"), columns=["cliente.id", "cliente.nombre_cliente", "cliente.email", "cliente.domicilio_cliente", "cliente.nro_doc"], headers = {"cliente.id": "Editar", "cliente.nombre_cliente": "Nombre", "cliente.email": "Email", "cliente.domicilio_cliente": "Domicilio", "cliente.nro_doc": "Nro. Doc."})
 
-    productos = SQLTABLE(db(db.producto).select(), linkto = URL(f="modificar_objeto"), columns = ["producto.id", "producto.codigo", "producto.ds", "producto.precio" ], headers = {"producto.id": "Editar"})
+    productos = SQLTABLE(db(db.producto).select(), linkto = URL(f="modificar_objeto"), columns = ["producto.id", "producto.codigo", "producto.ds", "producto.precio" ], headers = {"producto.id": "Editar", "producto.codigo": "Código", "producto.ds": "Descripción", "producto.precio": "Precio"})
 
-    tributos = SQLTABLE(db(db.tributo).select(), linkto = URL(f="modificar_objeto"), columns = ["tributo.id", "tributo.ds", "tributo.aliquota"], headers = {"tributo.id": "Editar"})
+    tributos = SQLTABLE(db(db.tributo).select(), linkto = URL(f="modificar_objeto"), columns = ["tributo.id", "tributo.ds", "tributo.aliquota"], headers = {"tributo.id": "Editar", "tributo.ds": "Descripción", "tributo.aliquota": "Alícuota"})
 
-    puntos_de_venta = SQLTABLE(db(db.puntodeventa).select(), linkto = URL(f="modificar_objeto"), columns = ["puntodeventa.id", "puntodeventa.numero", "puntodeventa.nombre"], headers = {"puntodeventa.id": "Editar"})
+    puntos_de_venta = SQLTABLE(db(db.puntodeventa).select(), linkto = URL(f="modificar_objeto"), columns = ["puntodeventa.id", "puntodeventa.numero", "puntodeventa.nombre"], headers = {"puntodeventa.id": "Editar", "puntodeventa.numero": "Número", "puntodeventa.nombre": "Nombre"})
 
     return dict(clientes = clientes, tributos = tributos, productos = productos, puntos_de_venta = puntos_de_venta)
 

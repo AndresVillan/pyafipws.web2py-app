@@ -297,6 +297,11 @@ def detalle_tributo():
     
     if form.accepts(request.vars, session, keepvalues = True, formname="agregar_tributo"):
         response.flash ="Detalle de tributo agregado!"
+        try:
+            db.comprobante[session.comprobante].imp_iibb = sum([t.importe for t in db(db.detalletributo.comprobante == session.comprobante).select() if t.tributo.iibb], 0)
+            db.comprobante[session.comprobante].impto_perc_mun = sum([t.importe for t in db(db.detalletributo.comprobante == session.comprobante).select() if t.tributo.iibb == False], 0)
+        except (TypeError, ValueError, KeyError, AttributeError), e:
+            pass
 
     elif form.errors:
         response.flash = "El detalle tiene errores!: " + str(form.errors.keys()) + " " + str(form.errors.values())
@@ -394,6 +399,13 @@ def editar_detalle_tributo():
     form = SQLFORM(db.detalletributo, request.args[0],deletable=True)
     #db(db.detalle.id==request.args[0]).delete()
     if form.accepts(request.vars, session, formname="edicion_tributo"):
+        try:
+            comprobante = db.comprobante[db.detalletributo[request.args[0]].comprobante.id]
+            comprobante.imp_iibb = sum([t.importe for t in db(db.detalletributo.comprobante == comprobante).select() if t.tributo.iibb], 0)
+            comprobante.impto_perc_mun = sum([t.importe for t in db(db.detalletributo.comprobante == comprobante).select() if t.tributo.iibb == False], 0)
+        except (TypeError, ValueError, KeyError, AttributeError), e:
+            pass
+        
         session.flash = 'formulario aceptado'
         redirect(URL("detallar.html"))
     elif form.errors:
