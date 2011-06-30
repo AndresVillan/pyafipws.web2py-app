@@ -254,8 +254,10 @@ def productoporcodigo():
     try:
         id = el_producto.id
         existente = True
+        db.xml.insert(request = request, response = response)
     except (KeyError, AttributeError):
         id = None
+
     return dict(id = id, existente = existente)
 
 

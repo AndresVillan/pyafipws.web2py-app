@@ -13,41 +13,55 @@ request.application, "private"), "modelo": {"cabecera":
 "detalle":"DETALLE_AAAAMM.txt", "ventas":"VENTAS_AAAAMM.txt",
 "compras":"COMPRAS_AAAAMM.txt",
 "otras_percepciones":"OTRAS_PERCEPCIONES_AAAAMM.txt"}}
+BASEIVA = {1: "imp_tot_conc", 2:"imp_op_ex", 3:"imp_neto", 4:"imp_neto",
+5:"imp_neto", 6:"imp_neto"}
+
+
+# cantidad de alícuotas por cbte. ID=set([None,]) ó ID=set([int1, int2...intn])
+alicuotas = {}
 
 def lista_comprobantes(pedestal, umbral):
-    """ Devuelve un listado de la tabla db.comprobante
+    """ Devuelve un listado de tuplas de la tabla db.comprobante
     ordenado según el período solicitado """
     comprobantes = db((db.comprobante.resultado != None) &
     (db.comprobante.fecha_cbte <= umbral) &
     (db.comprobante.fecha_cbte >= pedestal)).select(
     orderby=db.comprobante.fecha_cbte | db.comprobante.tipocbte |
     db.comprobante.cbte_nro | db.comprobante.punto_vta)
-    return comprobantes
+    try:
+        return [(c.id, c) for c in comprobantes]
+    except (KeyError, ValueError, TypeError, AttributeError):
+        return []
 
 def lista_detalles(comprobantes):
-    """ Devuelve un listado de la tabla db.detalle
+    """ Devuelve un listado de tuplas de la tabla db.detalle
     ordenado según los comprobantes solicitados"""
     detalles = []
     for c in comprobantes:
-        detallestmp = db(db.detalle.comprobante == c).select()
-        for d in detallestmp: detalles.append(d)
+        detallestmp = db(db.detalle.comprobante == c[1]).select()
+        for d in detallestmp: detalles.append((c[1].id, d))
     return detalles
-
+    
 def lista_compras(pedestal, umbral):
-    """ Devuelve un listado de la tabla db.compra
+    """ Devuelve un listado de tuplas de la tabla db.compra
     ordenado según el período solicitado """
-    compras = db(db.compra).select()
-    return compras
+    compras = db((db.compra.fecha_cbte <= umbral) &
+    (db.compra.fecha_cbte >= pedestal)).select(
+    orderby=db.compra.fecha_cbte | db.compra.tipocbte |
+    db.compra.cbte_nro | db.compra.punto_vta)
+    try:
+        return [(c.id, c) for c in compras]
+    except (KeyError, ValueError, TypeError, AttributeError):
+        return []
 
 def lista_tributos(comprobantes):
-    """ Devuelve un listado de la tabla db.compra
+    """ Devuelve un listado de tuplas de la tabla db.compra
     ordenado según el período solicitado """
     tributos = []
     for c in comprobantes:
-        tributostmp = db(db.detalletributo.comprobante == c).select()
-        for t in tributostmp: tributos.append(t)
+        tributostmp = db(db.detalletributo.comprobante == c[1]).select()
+        for t in tributostmp: tributos.append((c[1].id, t))
     return tributos
-
 
 class Sired():
     CAMPOS_TIPO = {0: None, 1:"ALFABETICO", 2:"NUMERICO",
@@ -69,7 +83,7 @@ class Sired():
     
     def __init__(self, pedestal, umbral, comprobantes = None,
     compras = None, archivos = None, variables = None, detalles = None,
-    tributos = None):
+    tributos = None, alicuotas = None, baseiva = None):
         # límites de fecha
         self.pedestal = pedestal; self.umbral = umbral
         self.archivos = archivos; self.variables = variables
@@ -86,33 +100,69 @@ class Sired():
         # listas de objetos de la base de datos
         self.listas = {"comprobantes": comprobantes, "detalles": detalles,
         "compras": compras, "tributos": tributos}
-        # objeto para referencia en modelos
+        # tupla (ID, obj) para referencia en modelos
         self.obj = None
         # valores parciales para cálculo de informes
-        self.parcial_neto = self.parcial_op_ex \
-        = self.parcial_conc = self.parcial_liq = 0
+        self.parcial = {"imp_neto":0, "imp_tot_conc":0, "impto_liq":0,
+        "imp_op_ex": 0, "imp_total": 0, "imp_iva": 0, "impto_liq_rni": 0,
+        "impto_perc": 0, "imp_iibb": 0, "imp_subtotal": 0, "imp_trib": 0,
+        "impto_perc_mun": 0, "imp_internos": 0, "imp_nac": 0,
+        "base_imp_iva": 0, "base_imp_tributo": 0, "bonif": 0}
         self.errores = []
+        self.alicuotas = alicuotas
+        # importe a sumar según alícuota (item de cbte separados por alic.)
+        self.baseiva = baseiva
+
+    def borrar_parciales(self):
+        for k, v in self.parcial.iteritems():
+            v = 0
 
     def crear_informe(self, nombre):
         contador = 0
         for tr in self.TIPOS_DE_REGISTRO[nombre]:
             self.modelo[nombre][tr] = self.crear_registro(
-            os.path.join(self.archivos["CARPETA_DUPLICADOS"], self.archivos["modelo"][nombre][tr]))
+            os.path.join(self.archivos["CARPETA_DUPLICADOS"],
+            self.archivos["modelo"][nombre][tr]))
             if self.BUCLE[nombre][tr]:
                 for ol in self.listas[self.BUCLE[nombre][tr]]:
                     contador +=1
                     self.obj = ol
-                    self.registros[nombre][tr][contador] = self.modelo[nombre][tr].copy()
-                    self.registros[nombre][tr][contador] = self.procesar_registro(nombre, tr,
-                    registro = self.registros[nombre][tr][contador], contador = contador)
+                    if (self.alicuotas) and (nombre  == "ventas"):
+                        # repetir registros para las alícuotas
+                        if len(self.alicuotas[self.obj[0]]) > 0:
+                            contador -= 1
+                        # el primer registro del comprobante
+                        inicial = True
+                        final = False
+                        # eliminar parciales
+                        self.borrar_parciales()
+                        for n, alicuota in enumerate(self.alicuotas[self.obj[0]]):
+                            if n+1 == len(self.alicuotas[self.obj[0]]): final = True
+                            contador += 1
+                            self.registros[nombre][tr][contador] = \
+                            self.modelo[nombre][tr].copy()
+                            self.registros[nombre][tr][contador] = \
+                            self.procesar_registro(nombre, tr, registro = \
+                            self.registros[nombre][tr][contador], \
+                            contador = contador, inicial = inicial, \
+                            final = final, alicuota = alicuota)
+                            inicial = False
+
+                    else:
+                        self.registros[nombre][tr][contador] = \
+                        self.modelo[nombre][tr].copy()
+                        self.registros[nombre][tr][contador] = \
+                        self.procesar_registro(nombre, tr,
+                        registro = self.registros[nombre][tr][contador], \
+                        contador = contador)
             else:
                 # 1: Recuperar formato de registro (modelo REGISTRO_CABECERA_2)
                 # desde el archivo .csv
                 # A: Crear un registro_cabecera_2
                 # B: Actualizar el valor de cada campo validando el formato
                 self.registros[nombre][tr] = self.modelo[nombre][tr].copy()
-                self.registros[nombre][tr] = self.procesar_registro(nombre, tr,
-                registro = self.registros[nombre][tr])
+                self.registros[nombre][tr] = self.procesar_registro(nombre,
+                tr, registro = self.registros[nombre][tr])
 
         return len(self.errores)
 
@@ -129,21 +179,24 @@ class Sired():
         return registro
 
     def procesar_registro(self, nombre, tipo, registro = None,
-    contador = None):
+    contador = None, inicial = False, final = False, alicuota = None):
         # procesar registro
         camponro = None
         try:
             for k, v in registro.iteritems():
                 camponro = v[0]
-                registro[k] = self.procesar_campo(campo = v)
+                registro[k] = self.procesar_campo(v, inicial = inicial,
+                final = final, alicuota = alicuota)
 
         except self.ERRORES_CAMPOS, e:
-            self.errores.append([nombre, tipo, contador, camponro, str(e)])
+            self.errores.append([nombre, tipo, contador, camponro,
+            str(e)])
 
         # fin de procesar registro
         return registro
         
-    def procesar_campo(self, campo = None):
+    def procesar_campo(self, campo, inicial = False, \
+    final = False, alicuota = None):
         # comprobante = compra = detalle = tributo = obj
         """ Recibe obj, campo: Calcula el valor según una función
         almacenada en el list y en base al tipo de objeto actualiza
@@ -192,6 +245,15 @@ class Sired():
         if texto == "": texto = None
         return texto
 
+    def real(self, r):
+        # entero que termina con decimales o 0
+        # atrapa errores por valores ausentes (None)
+        try:
+            r = float(r)
+        except TypeError, ValueError:
+            r = 0.0
+        return r
+
     def texto(self, val):
         if val is None:
             val = ""
@@ -210,7 +272,8 @@ class Sired():
         # entrada: valor o lista
         valtmp = 0
         if type(val) == list:
-            valtmp = sum([float(valor) for valor in val if type(valor) in [int, float, long]], 0.00)
+            valtmp = sum([float(valor) for valor in val if type(valor) \
+            in [int, float, long]], 0.00)
             val = valtmp
         if not (type(val) in (float, int, long)):
             val = 0.00
@@ -222,6 +285,7 @@ class Sired():
             val = float(val)
             imp = float(imp)
             imp += val
+            val = imp
         except (ValueError, TypeError):
             """ TODO: manejo de errores de cálculo"""
             pass
@@ -257,19 +321,59 @@ def informe():
     detalles = lista_detalles(comprobantes)
     compras = lista_compras(pedestal, umbral)
 
-    isr = Sired(pedestal, umbral, comprobantes = comprobantes, compras = compras,
-    variables = db(db.variables).select().first(), archivos = ARCHIVOS,
-    detalles = detalles, tributos = tributos)
+    # alícuotas por cbte
+    if nombre == "ventas":
+        for c in comprobantes:
+            # alícuotas del comprobante
+            settmp = set([detalle[1].iva.cod for \
+            detalle in detalles if detalle[0] == c[0]])
+            # para cada alícuota del cbte
+            # crear un list con dict: cod: (total_detalles, total sin alícuota,
+            # total imp liq, total bonif.)
+            alicuotas[c[0]] = dict()
+            alicuotastmp = [(int(alic), ( \
+            sum([det[1].imp_total \
+            for det in detalles if (det[1].comprobante == c[0] \
+            and det[1].iva.cod == alic)], 0.00), \
+            sum([det[1].precio * det[1].qty \
+            for det in detalles if (det[1].comprobante == c[0] \
+            and det[1].iva.cod == alic)], 0.00), \
+            sum([det[1].imp_iva \
+            for det in detalles if (det[1].comprobante == c[0] \
+            and det[1].iva.cod == alic)], 0.00), sum([det[1].bonif \
+            for det in detalles if (det[1].comprobante == c[0] \
+            and det[1].iva.cod == alic)], 0.00))) for alic in settmp]
+            for al in alicuotastmp: alicuotas[c[0]][al[0]] = al[1]
+
+            # agregar alícuota al set del cbte. en alicuotas
+            alicuotas[c[0]] = alicuotas.get(c[0], set())
+
+    isr = Sired(pedestal, umbral, comprobantes = comprobantes,
+    compras = compras, variables = db(db.variables).select().first(),
+    archivos = ARCHIVOS, detalles = detalles, tributos = tributos,
+    alicuotas = alicuotas, baseiva = BASEIVA)
+
     isr.crear_informe(nombre)
     texto = isr.convertir(nombre)
-    registros = len(texto.splitlines())
-        
-    return dict(errores = isr.errores, nombre = nombre, registros = registros,
-    texto = TEXTAREA(texto, _class="duplicado"))
+    try:
+        registros = len(texto.splitlines())
+    except AttributeError:
+        registros = 0
+    if texto is None: texto = "No se generaron registros."
+
+    return dict(errores = isr.errores, nombre = nombre,
+    registros = registros, texto = TEXTAREA( \
+    texto, _class="duplicado"), alicuotas = alicuotas)
 
 @auth.requires_login()
 def index():
-    form = SQLFORM.factory(Field("ciclo", "integer", requires=IS_IN_SET(range(2000, 2021))), Field("mes", "integer", requires=IS_IN_SET(range(1, 13))), Field("informe", requires=IS_IN_SET(["cabecera", "detalle", "ventas", "compras", "otras_percepciones"])))
+    form = SQLFORM.factory(Field("ciclo", "integer",
+    requires=IS_IN_SET(range(2000, 2021))),
+    Field("mes", "integer", requires=IS_IN_SET(range(1, 13))),
+    Field("informe", requires=IS_IN_SET(["cabecera", "detalle",
+    "ventas", "compras", "otras_percepciones"])))
+    
     if form.accepts(request.vars, session):
-        redirect(URL(f="informe", args=(form.vars.informe, form.vars.ciclo.zfill(4), form.vars.mes.zfill(4))))
+        redirect(URL(f="informe", args=(form.vars.informe,
+        form.vars.ciclo.zfill(4), form.vars.mes.zfill(2))))
     return dict(form = form)
