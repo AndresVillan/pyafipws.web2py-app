@@ -1,4 +1,8 @@
 {{extend 'layout.html'}}
+{{=H1(nombre + " %s-%s" % (mes, periodo))}}
+{{if errores:}}
+{{=H3("Errores")}}
 {{=BEAUTIFY(errores)}}
-{{=BEAUTIFY(registros)}}
+{{pass}}
+{{=H3("Registros procesados: %s" % str(registros))}}
 {{=texto}}

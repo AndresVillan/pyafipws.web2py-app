@@ -27,8 +27,9 @@ response.menu = [
          (T('Productos'), False, URL(request.application,'consultas', 'consulta', vars={"table": "producto"})), \
          (T('Listar comprobantes.'), False, URL(request.application,'consultas', 'lista_comprobantes', vars={"nueva": "true"})), \
          (T('Listar detalles'), False, URL(request.application,'consultas', 'lista_detalles'))]), \
-    (T('Duplicados'), False, URL(a = request.application, c="duplicados", f="index"), \
-     []), \
+    (T('Duplicados'), False, None, \
+     [(T('Generar'), False, URL(a = request.application, c="duplicados", f="index"), []), \
+     (T('Listas'), False, URL(a = request.application, c="duplicados", f="lista"), [])]), \
     (T('Servicios Web'), False, None , [
         (T('Estado (dummy)'), False, "", [
             (T('WSFEv0'), False, URL(request.application,'servicios_web','dummy',args="wsfe"), []),

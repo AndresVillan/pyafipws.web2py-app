@@ -5,7 +5,7 @@ migrate = True
 # Constantes (para la aplicación)
 THEMES = ['smoothness', 'ui-lightness', 'ui-darkness', 'redmond', 'overcast', 'exite-bike', 'lefrog', 'trontastic', 'start', 'sunny']
 WEBSERVICES = ['wsfe','wsbfe','wsfex','wsfev1', 'wsmtxca']
-TIPOTRIBUTO = {1: "Impuestos nacionales", 2: "Impuestos provinciales", 3: "Impuestos municipales", 4: "Impuestos internos", 99: "Otro"}
+TIPOTRIBUTO = {1: 'Impuestos nacionales', 2: 'Impuestos provinciales', 3: 'Impuestos municipales', 4: 'Impuestos internos', 99: 'Otro'}
 INCOTERMS = ['EXW','FCA','FAS','FOB','CFR','CIF','CPT','CIP','DAF','DES','DEQ','DDU','DDP']
 CONCEPTOS = {'1': 'Productos', '2': 'Servicios', '3': 'Otros/ambos'}
 IDIOMAS = {'1':'Español', '2': 'Inglés', '3': 'Portugués'}
@@ -19,11 +19,11 @@ u'Neuquen', 21: u'La Pampa', 22: u'Río Negro', 23: u'Santa Cruz', 24: u'Tierra 
 FORMASPAGO = ['Contado/Efectivo', 'Cheque', 'Cuenta corriente', 'Transferencia', '(Sin especificar)']
 CONDICIONESIVA = {'IVA Responsable Inscripto': 1, 'IVA Responsable no Inscripto': 2, 'IVA no Responsable': 3,'IVA Sujeto Exento': 4,'Consumidor Final': 5, 'Responsable Monotributo': 6, 'Sujeto no Categorizado': 7, 'Importador del Exterior': 8, 'Cliente del Exterior': 9, 'IVA Liberado - Ley Nº 19.640': 10, 'IVA Responsable Inscripto - Agente de Percepción': 11}
 TIPOEXPO = {1: 'Exp. definitiva de bienes', 2: 'Servicios', 4: 'Otros'}
-JURIIBB = {1: u'C.A.B.A.',2: u'Buenos Aires', 2: u'Catamarca', 3: u'Córdoba',4: u'Corrientes', 5: u'Entre Ríos', 6:
-u'Jujuy', 7: u'Mendoza', 8: u'La Rioja', 9: u'Salta', 10: u'San Juan', 11:
-u'San Luis', 12: u'Santa Fe', 13: u'Santiago del Estero', 14:
-u'Tucuman', 16: u'Chaco', 17: u'Chubut', 18: u'Formosa', 19: u'Misiones', 20:
-u'Neuquen', 21: u'La Pampa', 22: u'Río Negro', 23: u'Santa Cruz', 24: u'Tierra del Fuego'}
+JURIIBB = {1: u'C.A.B.A.',2: u'Buenos Aires', 3: u'Catamarca', 4: u'Córdoba',5: u'Corrientes', 25: u'Entre Ríos', 10:
+u'Jujuy', 13: u'Mendoza', 12: u'La Rioja', 17: u'Salta', 18: u'San Juan', 19:
+u'San Luis', 21: u'Santa Fe', 22: u'Santiago del Estero', 24:
+u'Tucuman', 6: u'Chaco', 7: u'Chubut', 9: u'Formosa', 14: u'Misiones', 15:
+u'Neuquen', 11: u'La Pampa', 16: u'Río Negro', 20: u'Santa Cruz', 23: u'Tierra del Fuego'}
 OPERACION={'Z': 'Exportaciones a la zona franca', 'X': 'Exportaciones al exterior', 'E': 'Operaciones exentas'}
 
 
@@ -416,6 +416,8 @@ db.define_table('destinacion', Field('ds'), Field('cod'), migrate = migrate)
 db.define_table('vendedor', Field('tipodoc', type=db.tipodoc), Field('nro_doc', type='integer'), Field('nombre'), migrate = migrate)
 
 db.define_table('compra', Field('fecha_cbte', type='date', default=request.now.date(), requires=IS_NOT_EMPTY(), comment='Fecha de emisión'), Field('tipocbte', type=db.tipocbte), Field('controlador', type='boolean', default=False, comment='Controlador fiscal'), Field('punto_vta', type='integer', default=1), Field('cbte_nro', type='integer'), Field('fecha_contable', type='date', default=request.now.date(), requires=IS_NOT_EMPTY(), comment='Fecha de registración contable'), Field('aduana', type=db.aduana), Field('destinacion', type=db.destinacion), Field('despacho', comment='Número de despacho'), Field('despacho_digito', comment='Dígito verificador del número de despacho'), Field('vendedor', type=db.vendedor), Field('imp_total', type='double', default=0.0), Field('imp_tot_conc', type='double', default=0.0, comment='Total no gravado'), Field('imp_neto', type='double', default=0.0), Field('iva', type=db.iva), Field('impto_liq', type='double', default=0.0), Field('imp_op_ex', type='double', default=0.0, comment='Total oper. exentas'), Field('imp_cta_iva', type='double', comment='Importe de percepciones o pagos a cuenta de IVA'), Field('imp_nac', type='double', comment='Importe de percepciones o pagos a cuenta de otros impuestos nacionales'), Field('imp_iibb', type='double', comment='Importe de percepciones de ingresos brutos'), Field('impto_perc_mun', type='double', comment='Importe de percepciones de impuestos municipales'), Field('imp_internos', type='double', comment='Importe de percepciones de impuestos internos'), Field('condicioniva', type=db.condicioniva), Field('moneda_id', type=db.moneda), Field('moneda_ctz', type='double', default=1.0, comment='Tipo de cambio'), Field('alicuotas', type='integer', default=1, comment='Cantidad de alícuotas IVA'), Field('operacion', comment='Código de operación'), Field('cai'), Field('fecha_vto', type='date', default=request.now.date(), requires=IS_NOT_EMPTY(), comment='Fecha de vencimiento'), Field('obs_comerciales', comment='Información adicional'), migrate = migrate)
+
+db.define_table('duplicado', Field('nombre'), Field('periodo', 'integer'), Field('mes', 'integer'), Field('texto', 'text'), Field('fecha', type='date', default=request.now.date(), requires=IS_NOT_EMPTY(), writable = False))
 
 ''' Fin de tablas para informe de compras RG 1361'''
 

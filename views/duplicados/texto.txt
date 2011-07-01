@@ -1,0 +1,5 @@
+{{
+   response.write(txt,escape=False)
+   response.headers['Content-Type']='text/plain'
+   response.headers['content-disposition'] = "attachment; filename=%s;" % nombre
+}}

@@ -1,0 +1,4 @@
+{{
+   response.headers['Content-Type']='text/plain'
+   response.write(txt,escape=False)
+}}
