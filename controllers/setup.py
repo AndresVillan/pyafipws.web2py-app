@@ -228,33 +228,40 @@ def crear_tipos_doc():
     return dict(ret=SQLTABLE(db(db.tipodoc.id>0).select()), \
                 lista = A('Ver lista', _href=URL(r=request, c='setup', f='index')))
 
+JURIIBB = {1: u'C.A.B.A.',2: u'Buenos Aires', 3: u'Catamarca', 4: u'Córdoba',5: u'Corrientes', 25: u'Entre Ríos', 10:
+u'Jujuy', 13: u'Mendoza', 12: u'La Rioja', 17: u'Salta', 18: u'San Juan', 19:
+u'San Luis', 21: u'Santa Fe', 22: u'Santiago del Estero', 24:
+u'Tucuman', 6: u'Chaco', 7: u'Chubut', 9: u'Formosa', 14: u'Misiones', 15:
+u'Neuquen', 11: u'La Pampa', 16: u'Río Negro', 20: u'Santa Cruz', 23: u'Tierra del Fuego'}
+
+
 def crear_tributos():
     "Crear inicialmente los tributos más usados"
     data = """\
 1 - IIBB C.A.B.A. - 99
 2 - IIBB Buenos Aires  - 99
-2 - IIBB Catamarca  - 99
-3 - IIBB Córdoba  - 99
-4 - IIBB Corrientes  - 99
-5 - IIBB Entre Ríos  - 99
-6 - IIBB Jujuy  - 99
-7 - IIBB Mendoza  - 99
-8 - IIBB La Rioja  - 99
-9 - IIBB Salta  - 99
-10 - IIBB San Juan  - 99
-11 - IIBB San Luis  - 99
-12 - IIBB Santa Fe  - 99
-13 - IIBB Santiago del Estero  - 99
-14 - IIBB Tucumán  - 99
-16 - IIBB Chaco  - 99
-17 - IIBB Chubut  - 99
-18 - IIBB Formosa  - 99
-19 - IIBB Misiones  - 99
-20 - IIBB Neuquén  - 99
-21 - IIBB La Pampa  - 99
-22 - IIBB Río Negro  - 99
-23 - IIBB Santa Cruz  - 99
-24 - IIBB Tierra del Fuego  - 99"""
+3 - IIBB Catamarca  - 99
+4 - IIBB Córdoba  - 99
+5 - IIBB Corrientes  - 99
+8 - IIBB Entre Ríos  - 99
+10 - IIBB Jujuy  - 99
+13 - IIBB Mendoza  - 99
+12 - IIBB La Rioja  - 99
+17 - IIBB Salta  - 99
+18 - IIBB San Juan  - 99
+19 - IIBB San Luis  - 99
+21 - IIBB Santa Fe  - 99
+22 - IIBB Santiago del Estero  - 99
+24 - IIBB Tucumán  - 99
+6 - IIBB Chaco  - 99
+7 - IIBB Chubut  - 99
+9 - IIBB Formosa  - 99
+14 - IIBB Misiones  - 99
+15 - IIBB Neuquén  - 99
+11 - IIBB La Pampa  - 99
+16 - IIBB Río Negro  - 99
+20 - IIBB Santa Cruz  - 99
+23 - IIBB Tierra del Fuego  - 99"""
     db(db.tributo.id>0).delete()
     l = []
     for d in data.split("\n"):

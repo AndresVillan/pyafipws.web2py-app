@@ -2,6 +2,7 @@
 # intente algo como
 
 import os
+numero_a_letra = local_import("numero_a_letra")
 
 WSDESC = {"wsmtxca": u"Factura electrónica MTXCA", "wsfev1": "Mercado interno", "wsfex": u"Exportación", "wsbfe": "Bonos fiscales"}
 
@@ -70,7 +71,18 @@ def crear_pdf(el_cbte):
         li_items[-1].update(amount = it['amount'],
                             price = it['price'])
 
-    obs="\n<U>Detalle:</U>\n\n" + detail
+    obs="\n<U>Observaciones:</U>\n\n" + detail
+
+    importetmp = str(el_cbte.imp_total).split(".")
+    monedatmp = importetmp[0]
+    try:
+        centavostmp = str(importetmp[1]).zfill(2)[:2]
+    except IndexError:
+        centavostmp = "00"
+    obs += "Son %s %s con %s/100" % (el_cbte.moneda_id.ds, numero_a_letra.convertir(int(monedatmp)), centavostmp)
+    if el_cbte.obs_comerciales is not None:
+        obs += "\n" + el_cbte.obs_comerciales
+    
     for ds in f.split_multicell(obs, 'item_description01'):
         li_items.append(dict(code=code, ds=ds, qty=qty, unit=unit, price=None, amount=None))
 

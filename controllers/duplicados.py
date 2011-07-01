@@ -1,5 +1,24 @@
 # -*- coding: utf-8 -*-
 # almacenamiento de duplicados de comprobantes RG 1361
+
+""" Copyright 2011 Alan Etkin, spametki@gmail.com.
+
+Este programa se distribuye bajo los términos de la licencia AGPLv3.
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the Affero GNU General Public License as published by
+the Free Software Foundation, version 3 of the License, or any later
+version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the Affero GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+"""
 import os, csv, datetime, calendar
 
 ARCHIVOS = {"CARPETA_DUPLICADOS": os.path.join("applications",
@@ -315,6 +334,11 @@ def informe():
     umbral = datetime.date(periodo, mes, calendar.monthrange(periodo,
     mes)[1])
     texto = None
+    
+    guardar = request.vars.get("guardar", False)
+    if guardar == "False": guardar = False
+    elif guardar == "True": guardar = True
+    else: guardar = False
 
     comprobantes = lista_comprobantes(pedestal, umbral)
     tributos = lista_tributos(comprobantes)
@@ -359,21 +383,65 @@ def informe():
         registros = len(texto.splitlines())
     except AttributeError:
         registros = 0
-    if texto is None: texto = "No se generaron registros."
+    if texto is None:
+        texto = "No se generaron registros."
+    else:
+        if guardar:
+            nombretmp = isr.archivos["informe"][nombre].replace("AAAA",
+            str(periodo).zfill(4)).replace("MM", str(mes).zfill(2))
+            archivo = open(os.path.join(isr.archivos["CARPETA_DUPLICADOS"],
+            nombretmp), "w")
+            archivo.write(texto)
+            archivo.close()
+            response.flash = "Se guardó el archivo %s" % str(nombretmp)
+            # almacenar en db
+            db.duplicado.insert(nombre = nombretmp, periodo = periodo,
+            mes = mes, texto = texto)
 
     return dict(errores = isr.errores, nombre = nombre,
     registros = registros, texto = TEXTAREA( \
-    texto, _class="duplicado"), alicuotas = alicuotas)
+    texto, _class="duplicado"), alicuotas = alicuotas,
+    periodo = periodo, mes = mes)
+
+@auth.requires_login()
+def texto():
+    try:
+        duplicado = db.duplicado[int(request.args[1])]
+        txt = duplicado.texto
+        nombre = duplicado.nombre
+    except (ValueError, TypeError, KeyError, AttributeError, IndexError), e:
+        raise HTTP(500, "Error al procesar el texto %s" % e)
+    return dict(txt = txt, nombre = nombre)
 
 @auth.requires_login()
 def index():
-    form = SQLFORM.factory(Field("ciclo", "integer",
+    form = SQLFORM.factory(Field("periodo", "integer",
     requires=IS_IN_SET(range(2000, 2021))),
-    Field("mes", "integer", requires=IS_IN_SET(range(1, 13))),
+    Field("mes", "integer", requires=IS_IN_SET({1:"enero", 2:"febrero",
+    3:"marzo", 4:"abril", 5:"mayo", 6:"junio", 7:"julio", 8:"agosto",
+    9:"septiembre", 10:"octubre", 11:"noviembre", 12:"diciembre"})),
     Field("informe", requires=IS_IN_SET(["cabecera", "detalle",
-    "ventas", "compras", "otras_percepciones"])))
+    "ventas", "compras", "otras_percepciones"])), Field("guardar",
+    "boolean", default=False))
     
     if form.accepts(request.vars, session):
-        redirect(URL(f="informe", args=(form.vars.informe,
-        form.vars.ciclo.zfill(4), form.vars.mes.zfill(2))))
+        redirect(URL(f="informe", args=[form.vars.informe,
+        form.vars.periodo.zfill(4), form.vars.mes.zfill(2)],
+        vars={"guardar": form.vars.guardar}))
     return dict(form = form)
+
+@auth.requires_login()
+def lista():
+    try:
+        periodo = int(request.vars.periodo)
+    except (ValueError, IndexError, TypeError, KeyError, AttributeError):
+        periodo = datetime.datetime.now().year
+    
+    form = SQLFORM.factory(Field("periodo", "integer",
+    requires=IS_IN_SET(range(2000, 2021)), default = periodo))
+    if form.accepts(request.vars, session): periodo = int(form.vars.periodo)
+
+    return dict(duplicados = SQLTABLE(db(db.duplicado.periodo == periodo \
+    ).select(limitby=(0,100)), linkto=URL(f="texto", extension="txt")),
+    form = form, periodo = periodo)
+    
