@@ -44,7 +44,7 @@ def crear_pdf(el_cbte):
     for detalle in los_detalles:
         i += 1
         ds = utftolatin(detalle.ds)
-        qty = str(detalle.qty)
+        qty = "%.3f" % float(detalle.qty)
         price = str(detalle.precio)
         code = str(detalle.codigo)
         items.append(dict(code=code, unit=str(detalle.umed.ds[:1]),
@@ -73,13 +73,20 @@ def crear_pdf(el_cbte):
 
     obs="\n<U>Observaciones:</U>\n\n" + detail
 
-    importetmp = str(el_cbte.imp_total).split(".")
-    monedatmp = importetmp[0]
+    # convertir a letras el importe
     try:
-        centavostmp = str(importetmp[1]).zfill(2)[:2]
-    except IndexError:
-        centavostmp = "00"
-    obs += "Son %s %s con %s/100" % (el_cbte.moneda_id.ds, numero_a_letra.convertir(int(monedatmp)), centavostmp)
+        importetmp = str(int(round(el_cbte.imp_total*100)))
+    except (ValueError, TypeError):
+        importetmp = "0000"
+    try:
+        montoiz = numero_a_letra.convertir(int(importetmp[:-2]))
+        montoder = importetmp[-2:]
+    except ValueError:
+        montoiz = "cero"
+        montoder = "00"
+        
+    obs += "Son %s %s con %s/100" % (el_cbte.moneda_id.ds, montoiz, montoder)
+
     if el_cbte.obs_comerciales is not None:
         obs += "\n" + el_cbte.obs_comerciales
     
@@ -165,13 +172,13 @@ def crear_pdf(el_cbte):
         # print line item...
         li = 0
         k = 0
-        total = Decimal("0.00")
+        total = 0.00
         for it in li_items:
             k = k + 1
             if k > page * (max_lines_per_page - 1):
                 break
             if it['amount']:
-                total += Decimal("%.6f" % float(it['amount']))
+                total += float(it['amount'])
             if k > (page - 1) * (max_lines_per_page - 1):
                 li += 1
                 if it['qty'] is not None:
@@ -182,13 +189,13 @@ def crear_pdf(el_cbte):
                     f['item_unit%02d' % li] = it['unit']
                 f['item_description%02d' % li] = it['ds']
                 if it['price'] is not None:
-                    f['item_price%02d' % li] = "%0.3f" % float(it['price'])
+                    f['item_price%02d' % li] = "%0.2f" % float(it['price'])
                 if it['amount'] is not None:
                     f['item_amount%02d' % li] = "%0.2f" % float(it['amount'])
 
         if pages == page:
-            f['net'] = "%0.2f" % (total/Decimal("1.21"))
-            f['vat'] = "%0.2f" % (total*(1-1/Decimal("1.21")))
+            f['net'] = "%0.2f" % (total/1.21)
+            f['vat'] = "%0.2f" % (total*(1-1/1.21))
             f['total_label'] = 'Total:'
         else:
             f['total_label'] = 'SubTotal:'
@@ -373,4 +380,3 @@ def invoice():
 
     response.headers['Content-Type']='application/pdf'
     return invoice
-

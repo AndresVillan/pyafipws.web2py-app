@@ -21,6 +21,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 import os, csv, datetime, calendar
 
+hoy = datetime.datetime.now()
+mesinforme = hoy.month -1
+periodoinforme = hoy.year
+if mesinforme == 0:
+    mesinforme = 12
+    periodoinforme = hoy.year -1
+
 ARCHIVOS = {"CARPETA_DUPLICADOS": os.path.join("applications",
 request.application, "private"), "modelo": {"cabecera":
 {1: "registro_cabecera_1.csv", 2: "registro_cabecera_2.csv"},
@@ -416,10 +423,10 @@ def texto():
 @auth.requires_login()
 def index():
     form = SQLFORM.factory(Field("periodo", "integer",
-    requires=IS_IN_SET(range(2000, 2021))),
+    requires=IS_IN_SET(range(2000, 2021)), default = periodoinforme),
     Field("mes", "integer", requires=IS_IN_SET({1:"enero", 2:"febrero",
     3:"marzo", 4:"abril", 5:"mayo", 6:"junio", 7:"julio", 8:"agosto",
-    9:"septiembre", 10:"octubre", 11:"noviembre", 12:"diciembre"})),
+    9:"septiembre", 10:"octubre", 11:"noviembre", 12:"diciembre"}), default = mesinforme),
     Field("informe", requires=IS_IN_SET(["cabecera", "detalle",
     "ventas", "compras", "otras_percepciones"])), Field("guardar",
     "boolean", default=False))
@@ -438,7 +445,7 @@ def lista():
         periodo = datetime.datetime.now().year
     
     form = SQLFORM.factory(Field("periodo", "integer",
-    requires=IS_IN_SET(range(2000, 2021)), default = periodo))
+    requires=IS_IN_SET(range(2000, 2021)), default = periodo), keepvalues = True)
     if form.accepts(request.vars, session): periodo = int(form.vars.periodo)
 
     return dict(duplicados = SQLTABLE(db(db.duplicado.periodo == periodo \

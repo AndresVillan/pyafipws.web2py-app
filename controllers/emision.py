@@ -367,7 +367,8 @@ def detalle_asociado():
         cbtasoc = None
         for cbte in db(db.comprobante.cbte_nro == form.vars.asoc_cbte_nro).select():
             if cbte.tipocbte.id == int(form.vars.asoc_tipocbte):
-                if cbte.punto_vta == db.puntodeventa[form.vars.asoc_punto_vta].numero:
+                # if cbte.punto_vta == db.puntodeventa[form.vars.asoc_punto_vta].numero:
+                if cbte.punto_vta == int(form.vars.asoc_punto_vta):
                     if cbte.webservice == db.comprobante[session.comprobante].webservice:
                         cbtasoc = db.comprobanteasociado.insert(comprobante = int(str(session.comprobante)), \
                         asociado = int(str(cbte.id)))
