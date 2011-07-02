@@ -668,7 +668,11 @@ def autorizar():
        
     # cálculo de cbte para autorización
     calcular_comprobante(comprobante)
-
+    otrostributostmp = sum([t.importe for t in db(db.detalletributo.comprobante == comprobante).select() if not (t.tributo.iibb)], 0.00) or 0.00
+    iibbtmp = sum([t.importe for t in db(db.detalletributo.comprobante == comprobante).select() if t.tributo.iibb], 0.00) or 0.00
+    totaltributostmp = otrostributostmp + iibbtmp
+    if otrostributostmp == 0: otrostributostmp = None
+    if totaltributostmp == 0: totaltributostmp = None
     # comprobante.imp_op_ex = comprobante_sumar_iva(comprobante)
     # comprobante.imp_tot_conc = comprobante_sumar_no_gravado(comprobante)
     
@@ -777,7 +781,7 @@ def autorizar():
                             }}
                 for det in comprobante_sumar_iva(comprobante)]
 
-                
+
             result = client.FECAESolicitar(\
             Auth={'Token': TOKEN, 'Sign': SIGN, 'Cuit': CUIT},
             FeCAEReq={
@@ -795,7 +799,7 @@ def autorizar():
                     'ImpTotConc': comprobante.imp_tot_conc or 0.00,
                     'ImpNeto': "%.2f" % comprobante.imp_neto,
                     'ImpOpEx': comprobante.imp_op_ex or 0.00,
-                    'ImpTrib': sum([t.importe for t in db(db.detalletributo.comprobante == comprobante).select()], 0.00) or 0.00,
+                    'ImpTrib': totaltributostmp,
                     'ImpIVA': "%.2f" % comprobante.impto_liq,
                     # Fechas solo se informan si Concepto in (2,3)
                     'FchServDesde': comprobante.fecha_serv_desde and comprobante.fecha_serv_desde.strftime("%Y%m%d"),
@@ -812,7 +816,7 @@ def autorizar():
                     'Tributos': [
                         {'Tributo': {
                             'Id': tributo.tributo.cod, 
-                            'Desc': tributo.tributo.ds,
+                            'Desc': unicode(tributo.tributo.ds, "utf-8"),
                             'BaseImp': moneyornone(tributo.base_imp),
                             'Alic': tributo.tributo.aliquota,
                             'Importe': tributo.importe,
@@ -966,7 +970,7 @@ def autorizar():
             'Impto_liq_rni': comprobante.impto_liq_rni or 0.00,
             'Imp_op_ex': comprobante.imp_op_ex or 0.00,
             'Imp_perc':  comprobante.impto_perc or 0.00,
-            'Imp_iibb':  sum([t.importe for t in db(db.detalletributo.comprobante == comprobante).select() if t.tributo.iibb], 0.00) or 0.00,
+            'Imp_iibb':  iibbtmp or None,
             'Imp_perc_mun':  sum([t.importe for t in db(db.detalletributo.comprobante == comprobante).select() if t.tributo.iibb == False], 0.00) or 0.00,
             'Imp_internos':  comprobante.imp_internos or 0.00,
             'Imp_moneda_Id': comprobante.moneda_id.cod,
@@ -1032,7 +1036,7 @@ def autorizar():
                 'numeroComprobante': cbte_asoc.asociado.cbte_nro }} for cbte_asoc in db(db.comprobanteasociado.comprobante == comprobante).select()],
             'arrayOtrosTributos': [ {'otroTributo': {
                 'codigo': tributo.tributo.cod, 
-                'descripcion': tributo.tributo.ds, 
+                'descripcion': unicode(tributo.tributo.ds, "utf-8"), 
                 'baseImponible': moneyornone(tributo.base_imp),
                 'importe': moneyornone(tributo.importe)}} for tributo in db(db.detalletributo.comprobante == comprobante).select()],
             'arraySubtotalesIVA': [{'subtotalIVA': { 
@@ -1043,7 +1047,7 @@ def autorizar():
                 'unidadesMtx': it.umed.cod,
                 'codigoMtx': it.codigomtx or "0000000000000",
                 'codigo': it.codigo,
-                'descripcion': it.ds,
+                'descripcion': unicode(it.ds, "utf-8"),
                 'cantidad': it.qty,
                 'codigoUnidadMedida': it.umed.cod,
                 'precioUnitario': it.precio,

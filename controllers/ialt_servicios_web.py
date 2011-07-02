@@ -710,7 +710,7 @@ def autorizar():
                     'ImpTotConc': comprobante.imp_tot_conc or 0.00,
                     'ImpNeto': "%.2f" % comprobante.imp_neto,
                     'ImpOpEx': comprobante.imp_op_ex or 0.00,
-                    'ImpTrib': moneyornone(comprobante.imp_trib) or 0.00,
+                    'ImpTrib': moneyornone(comprobante.imp_trib) or None,
                     'ImpIVA': "%.2f" % comprobante.impto_liq,
                     # Fechas solo se informan si Concepto in (2,3)
                     'FchServDesde': comprobante.fecha_serv_desde and comprobante.fecha_serv_desde.strftime("%Y%m%d"),
@@ -727,7 +727,7 @@ def autorizar():
                     'Tributos': [
                         {'Tributo': {
                             'Id': tributo.tributo.cod, 
-                            'Desc': tributo.tributo.ds,
+                            'Desc': unicode(tributo.tributo.ds, "utf-8"),
                             'BaseImp': moneyornone(tributo.base_imp),
                             'Alic': tributo.tributo.aliquota,
                             'Importe': tributo.importe,
@@ -936,7 +936,7 @@ def autorizar():
             'importeNoGravado': moneyornone(comprobante.imp_tot_conc),
             'importeGravado': moneyornone(comprobante.imp_neto),
             'importeSubtotal': moneyornone(float(comprobante.imp_neto) + float(comprobante.imp_op_ex) + float(comprobante.imp_tot_conc)), # 'imp_iva': imp_iva,
-            'importeOtrosTributos': moneyornone(comprobante.imp_trib) or 0.00,
+            'importeOtrosTributos': moneyornone(comprobante.imp_trib) or None,
             'importeExento': moneyornone(comprobante.imp_op_ex),
             'fechaEmision': date2y_m_d(comprobante.fecha_cbte) or None,
             'codigoMoneda': comprobante.moneda_id.cod,
@@ -952,7 +952,7 @@ def autorizar():
                 'numeroComprobante': cbte_asoc.asociado.cbte_nro }} for cbte_asoc in db(db.comprobanteasociado.comprobante == comprobante).select()],
             'arrayOtrosTributos': [ {'otroTributo': {
                 'codigo': tributo.tributo.cod,
-                'descripcion': tributo.tributo.ds,
+                'descripcion': unicode(tributo.tributo.ds, "utf-8"),
                 'baseImponible': moneyornone(tributo.base_imp),
                 'importe': moneyornone(tributo.importe)}} for tributo in db(db.detalletributo.comprobante == comprobante).select()],
             'arraySubtotalesIVA': [{'subtotalIVA': {
@@ -963,7 +963,7 @@ def autorizar():
                 'unidadesMtx': it.umed.cod,
                 'codigoMtx': it.codigomtx or "0000000000000",
                 'codigo': it.codigo,
-                'descripcion': it.ds,
+                'descripcion': unicode(it.ds, "utf-8"),
                 'cantidad': it.qty,
                 'codigoUnidadMedida': it.umed.cod,
                 'precioUnitario': it.precio,

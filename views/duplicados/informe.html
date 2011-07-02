@@ -1,4 +1,10 @@
 {{extend 'layout.html'}}
+<h1>Informe</h1>
+<div id="tabs">
+    <ul>
+        <li><a href="#tabs-1">Resultado</a></li>
+    </ul>
+    <div id="tabs-1">
 {{=H1(nombre + " %s-%s" % (mes, periodo))}}
 {{if errores:}}
 {{=H3("Errores")}}
@@ -6,3 +12,7 @@
 {{pass}}
 {{=H3("Registros procesados: %s" % str(registros))}}
 {{=texto}}
+<br />
+<a href={{=URL(c="duplicados", f="index")}}>Nuevo informe</a>
+    </div>
+</div>

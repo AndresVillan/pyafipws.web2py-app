@@ -97,9 +97,9 @@ def autenticacion_usuario(form):
         grupos_usuario = db(db.auth_membership.user_id == user_id).select()
         if len(grupos_usuario) < 2:
             # no se asoció el usuario a grupos de facturalibre
-            grupo_inv = db(db.auth_group.role == "invitado").select().first()
-            if grupo_inv != None:
-                db.auth_membership.insert(user_id = user_id, group_id = grupo_inv.id)
+            grupo_emis = db(db.auth_group.role == "emisor").select().first()
+            if grupo_emis != None:
+                db.auth_membership.insert(user_id = user_id, group_id = grupo_emis.id)
         
     return None
     
