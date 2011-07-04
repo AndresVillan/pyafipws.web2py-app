@@ -106,6 +106,10 @@ class Sired():
     {None: "detalles",}, "ventas": {1: "comprobantes", 2: None},
     "compras": {1: "compras", 2: None}, "otras_percepciones":
     {None: "tributos",}}
+
+    # Los parámetros de listas(por ejemplo "comprobantes") deben tener
+    #  el formato de conjunto de tuplas (ID de ref., instancia) para generar
+    # las líneas de registros de cada informe.
     
     def __init__(self, pedestal, umbral, comprobantes = None,
     compras = None, archivos = None, variables = None, detalles = None,
@@ -426,10 +430,10 @@ def index():
     requires=IS_IN_SET(range(2000, 2021)), default = periodoinforme),
     Field("mes", "integer", requires=IS_IN_SET({1:"enero", 2:"febrero",
     3:"marzo", 4:"abril", 5:"mayo", 6:"junio", 7:"julio", 8:"agosto",
-    9:"septiembre", 10:"octubre", 11:"noviembre", 12:"diciembre"}), default = mesinforme),
-    Field("informe", requires=IS_IN_SET(["cabecera", "detalle",
-    "ventas", "compras", "otras_percepciones"])), Field("guardar",
-    "boolean", default=False))
+    9:"septiembre", 10:"octubre", 11:"noviembre", 12:"diciembre"}),
+    default = mesinforme), Field("informe", requires=IS_IN_SET(["cabecera",
+    "detalle", "ventas", "compras", "otras_percepciones"])),
+    Field("guardar", "boolean", default=False))
     
     if form.accepts(request.vars, session):
         redirect(URL(f="informe", args=[form.vars.informe,

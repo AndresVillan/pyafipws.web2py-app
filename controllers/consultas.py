@@ -292,11 +292,10 @@ def consulta():
 
         grid.css_prefix = "consulta"
         grid.enabled_rows = ['header','filter', 'pager','footer', 'add_links']
-        grid.action_links = ['view','edit']
+        grid.action_links = ['view','edit', 'delete']
         grid = grid()
 
     else:
         grid = None
         
     return dict(grid=grid) #notice the ()
-
