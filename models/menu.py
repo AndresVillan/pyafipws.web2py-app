@@ -18,6 +18,7 @@ response.menu = [
     (T('Emisión'), False, None, [\
 (T('Secuencial'), False, URL(request.application,'emision','iniciar'), []), \
 (T('Asíncrona'), False, URL(request.application,'ialt','index'), []), \
+(T('Compra'), False, URL(request.application,'emision','compra'), []) \
     ]),
     (T('Consultas'), False, False, \
      [ \
@@ -25,6 +26,7 @@ response.menu = [
          (T('Detalles'), False, URL(request.application,'consultas', 'consulta', vars={"table": "detalle"})), \
          (T('Clientes'), False, URL(request.application,'consultas', 'consulta', vars={"table": "cliente"})), \
          (T('Productos'), False, URL(request.application,'consultas', 'consulta', vars={"table": "producto"})), \
+         (T('Compras'), False, URL(request.application,'consultas', 'consulta', vars={"table": "compra"})), \
          (T('Listar comprobantes.'), False, URL(request.application,'consultas', 'lista_comprobantes', vars={"nueva": "true"})), \
          (T('Listar detalles'), False, URL(request.application,'consultas', 'lista_detalles'))]), \
     (T('Duplicados'), False, None, \

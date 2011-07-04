@@ -466,3 +466,7 @@ def finalizar():
     comprobante = db(db.comprobante.id==session.comprobante).select().first()
 
     return dict(form=form, comprobante=comprobante)
+    
+@auth.requires(auth.has_membership('administrador') or auth.has_membership('emisor') or auth.has_membership('invitado'))
+def compra():
+    return dict(form = crud.create(db.compra))
