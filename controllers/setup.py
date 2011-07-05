@@ -159,7 +159,9 @@ def index():
     tributos = len(db(db.tributo).select())
     productos = len(db(db.producto).select())
     plantilla_base = db(db.pdftemplate).select().first()
-
+    aduanas = len(db(db.aduana).select())
+    destinaciones = len(db(db.destinacion).select())
+    
     esadmin = auth.has_membership("administrador")
     if not esadmin: variables = None
     return dict(tipos_doc = tipos_doc, tipos_cbte = tipos_cbte, \
@@ -170,7 +172,9 @@ def index():
                 variablesusuario = variablesusuario, \
                 condiciones_iva = condiciones_iva, roles = roles, \
                 cuit_paises = cuit_paises, clientes = clientes, \
-                productos = productos, tributos = tributos, plantilla_base = plantilla_base)
+                productos = productos, tributos = tributos, \
+                aduanas = aduanas, destinaciones = destinaciones, \
+                plantilla_base = plantilla_base)
 
 
 @auth.requires(auth.has_membership("administrador"))
@@ -537,7 +541,11 @@ def modificar():
 
     puntos_de_venta = SQLTABLE(db(db.puntodeventa).select(), linkto = URL(f="modificar_objeto"), columns = ["puntodeventa.id", "puntodeventa.numero", "puntodeventa.nombre"], headers = {"puntodeventa.id": "Editar", "puntodeventa.numero": "Número", "puntodeventa.nombre": "Nombre"})
 
-    return dict(clientes = clientes, tributos = tributos, productos = productos, puntos_de_venta = puntos_de_venta)
+    clientes = SQLTABLE(db(db.cliente).select(), linkto = URL(f="modificar_objeto"), columns=["cliente.id", "cliente.nombre_cliente", "cliente.email", "cliente.domicilio_cliente", "cliente.nro_doc"], headers = {"cliente.id": "Editar", "cliente.nombre_cliente": "Nombre", "cliente.email": "Email", "cliente.domicilio_cliente": "Domicilio", "cliente.nro_doc": "Nro. Doc."})
+
+    vendedores = SQLTABLE(db(db.vendedor).select(), linkto = URL(f="modificar_objeto"), columns = ["vendedor.id", "vendedor.nombre", "vendedor.nro_doc"], headers = {"vendedor.id": "Editar", "vendedor.nombre": "Nombre", "vendedor.nro_doc": "Nro. doc."})
+
+    return dict(clientes = clientes, tributos = tributos, productos = productos, puntos_de_venta = puntos_de_venta, vendedores = vendedores)
 
 @auth.requires(auth.has_membership("administrador"))
 def modificar_objeto():
@@ -561,4 +569,9 @@ def crear_producto():
 @auth.requires(auth.has_membership("administrador"))
 def crear_puntodeventa():
     form = crud.create(db.puntodeventa, next = URL(r = request, f="index"))
+    return dict(form = form)
+
+@auth.requires(auth.has_membership("administrador"))
+def crear_vendedor():
+    form = crud.create(db.vendedor, next = URL(r = request, f="index"))
     return dict(form = form)
