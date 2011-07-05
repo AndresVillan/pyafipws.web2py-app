@@ -13,6 +13,11 @@ def utftolatin(text):
         # None es ""
         return ""
 
+def amountorzero(amount):
+    try: amount = float(amount)
+    except (ValueError, TypeError): amount = 0.00
+    return amount
+
 def crear_pdf(el_cbte):
     from gluon.contrib.pyfpdf import Template
     import os.path
@@ -194,12 +199,12 @@ def crear_pdf(el_cbte):
                     f['item_amount%02d' % li] = "%0.2f" % float(it['amount'])
 
         if pages == page:
-            f['net'] = "%0.2f" % (total/1.21)
-            f['vat'] = "%0.2f" % (total*(1-1/1.21))
+            f['net'] = "%0.2f" % amountorzero(el_cbte.imp_neto)
+            f['vat'] = "%0.2f" % amountorzero(el_cbte.impto_liq)
             f['total_label'] = 'Total:'
         else:
             f['total_label'] = 'SubTotal:'
-        f['total'] = "%0.2f" % float(total)
+        f['total'] = "%0.2f" % amountorzero(el_cbte.imp_total)
 
     return f.render('invoice.pdf', dest='S')
 

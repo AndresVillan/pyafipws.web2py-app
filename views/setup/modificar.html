@@ -6,6 +6,7 @@
         <li><a href="#tabs-2">Clientes</a></li>
         <li><a href="#tabs-3">Tributos</a></li>
         <li><a href="#tabs-4">Puntos de venta</a></li>
+        <li><a href="#tabs-5">Vendedores</a></li>
     </ul>
     <div id="tabs-1">
     {{if len(productos) > 0:}}
@@ -25,6 +26,11 @@
     <div id="tabs-4">
     {{if len(puntos_de_venta) > 0:}}
         {{=DIV(puntos_de_venta, _style="overflow: auto;")}}
+    {{pass}}
+    </div>
+    <div id="tabs-5">
+    {{if len(vendedores) > 0:}}
+        {{=DIV(vendedores, _style="overflow: auto;")}}
     {{pass}}
     </div>
 </div>

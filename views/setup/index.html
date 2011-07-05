@@ -29,7 +29,10 @@ f='crear_umedidas'))}})</LI>
 f='crear_condiciones_iva'))}})</LI>
 <LI>Tributos: {{=tributos}} ({{=A('Crear tributos', _href=URL(r=request, c='setup', \
 f='crear_tributos'))}})</LI>
-
+<LI>Aduanas: {{=aduanas}} ({{=A('Crear aduanas', _href=URL(r=request, c='setup', \
+f='crear_aduanas'))}})</LI>
+<LI>Destinaciones: {{=destinaciones}} ({{=A('Crear destinaciones', _href=URL(r=request, c='setup', \
+f='crear_destinaciones'))}})</LI>
 {{if plantilla_base:}}
 <LI>Plantilla base (pyfpdf): {{=plantilla_base.title}}</LI>
 {{else:}}
@@ -57,6 +60,8 @@ f='crear_tributo'))}})</LI>
 f='crear_producto'))}})</LI>
 <LI>Puntos de venta: {{=puntos_de_venta}} ({{=A('Crear punto de venta', _href=URL(r=request, c='setup', \
 f='crear_puntodeventa'))}})</LI>
+<LI>Vendedores: {{=puntos_de_venta}} ({{=A('Crear vendedor', _href=URL(r=request, c='setup', \
+f='crear_vendedor'))}})</LI>
 </UL>
     </div>
     <div id="tabs-3">
